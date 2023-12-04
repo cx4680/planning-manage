@@ -23,7 +23,6 @@ type ImportBaselineRequest struct {
 
 type CloudProductBaselineExcel struct {
 	ProductType         string   `excel:"name:产品分类;" json:"productType"`            // 产品类型
-	ProductTypeCode     string   `excel:"name:分类Code;" json:"productTypeCode"`      // 产品类型编码
 	ProductName         string   `excel:"name:产品名称;" json:"productName"`            // 产品名称
 	ProductCode         string   `excel:"name:产品Code;" json:"productCode"`          // 产品编码
 	SellSpecs           string   `excel:"name:售卖规格;" json:"sellSpecs"`              // 售卖规格
