@@ -7,6 +7,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cell"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_platform"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/customer"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/ip_demand"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/network_device"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/project"
@@ -154,6 +155,13 @@ func Router(engine *gin.Engine) {
 			networkGroup.POST("/device/list", middleware.OperatorLog(DefaultEventOpInfo("获取网络设备清单", "listNetworkDevices", middleware.LIST, middleware.INFO)), network_device.ListNetworkDevices)
 			// 获取网络设备清单
 			networkGroup.POST("/device/save", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备清单", "saveDeviceList", middleware.CREATE, middleware.INFO)), network_device.SaveDeviceList)
+		}
+
+		// ipDemand
+		ipDemandGroup := v1.Group("/ipDemand")
+		{
+			// 下载IP需求表
+			ipDemandGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载IP需求表", "ipDemandListDownload", middleware.EXPORT, middleware.INFO)), ip_demand.IpDemandListDownload)
 		}
 	}
 }
