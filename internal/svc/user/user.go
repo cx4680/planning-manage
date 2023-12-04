@@ -46,18 +46,21 @@ func Login(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidUserError, http.StatusInternalServerError)
 		return
 	}
-
 	session := sessions.Default(context)
+	log.Debugf("session userId:%s", session.Get("userId"))
 	session.Set("userId", userInfo.UserId)
 	session.Save()
 	result.Success(context, ldapUser)
+	log.Debugf("session userId:%s", session.Get("userId"))
 	return
 }
 
 func Logout(context *gin.Context) {
 	session := sessions.Default(context)
+	log.Debugf("session userId:%s", session.Get("userId"))
 	session.Delete("userId")
 	session.Save()
+	log.Debugf("session userId:%s", session.Get("userId"))
 	result.Success(context, nil)
 	return
 }

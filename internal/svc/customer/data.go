@@ -20,7 +20,7 @@ type CreateCustomerRequest struct {
 
 type PageCustomerRequest struct {
 	Current      int    `json:"current"`
-	PageSize     int    `json:"pageSize"`
+	Size         int    `json:"size"`
 	CustomerName string `json:"customerName"`
 	LeaderName   string `json:"leaderName"`
 	CustomerId   int64  `json:"customerId"`
@@ -97,6 +97,7 @@ func createCustomer(customerParam CreateCustomerRequest, leaderId string, ldapUs
 }
 
 func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) ([]entity.CustomerManage, int64) {
+	log.Infof("current user id:%s", currentUserId)
 	var roleManage entity.RoleManage
 	if err := data.DB.Table(entity.RoleManageTable).Where("user_id=?", currentUserId).Scan(&roleManage).Error; err != nil {
 		log.Errorf("[pageCustomer] query role manage from db error")
@@ -119,8 +120,6 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	}*/
 	var customerList []entity.CustomerManage
 	var count int64
-	data.DB.Model(&entity.CustomerManage{}).Select("DISTINCT customer_manage.*").Joins("LEFT JOIN permissions_manage ON permissions_manage.customer_id = customer_manage.id").
-		Where("customer_manage.delete_state = 0")
 
 	where := map[string]interface{}{}
 	db := data.DB.Table("customer_manage").Distinct()
@@ -137,9 +136,12 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	if err := db.Joins("LEFT JOIN permissions_manage ON permissions_manage.customer_id = customer_manage.id").
 		Where(where).
 		Order("update_time DESC").
-		Limit(customerPageParam.PageSize).
-		Offset((customerPageParam.Current - 1) * customerPageParam.PageSize).
+		Limit(customerPageParam.Size).
+		Offset((customerPageParam.Current - 1) * customerPageParam.Size).
 		Find(&customerList).
+		Select("count(DISTINCT customer_manage.id)").
+		Limit(-1).
+		Offset(-1).
 		Count(&count).Error; err != nil {
 		log.Errorf("[pageCustomer] query db error")
 		return nil, 0

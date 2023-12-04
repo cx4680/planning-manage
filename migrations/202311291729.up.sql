@@ -197,7 +197,6 @@ CREATE TABLE `cloud_product_baseline`
     `id`                bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
     `version_id`        bigint(20) DEFAULT NULL COMMENT '软件版本id',
     `product_type`      varchar(100) DEFAULT NULL COMMENT '产品类型',
-    `product_type_code` varchar(100) DEFAULT NULL COMMENT '产品分类code',
     `product_name`      varchar(255) DEFAULT NULL COMMENT '产品名称',
     `product_code`      varchar(100) DEFAULT NULL COMMENT '产品code',
     `sell_specs`        varchar(255) DEFAULT NULL COMMENT '售卖规格',
@@ -348,3 +347,15 @@ CREATE TABLE `ip_demand_device_role_rel` (
                                              `ip_demand_id` bigint(20) DEFAULT NULL COMMENT 'IP需求规划id',
                                              `device_role_id` bigint(20) DEFAULT NULL COMMENT '网络设备角色id'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IP需求规划与网络设备角色关联表';
+
+CREATE TABLE `cloud_product_depend_rel` (
+                                            `product_id` bigint(20) DEFAULT NULL COMMENT '云产品id',
+                                            `depend_product_id` bigint(20) DEFAULT NULL COMMENT '依赖的云产品id'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品依赖关系表';
+
+CREATE TABLE `cloud_product_node_role_rel` (
+                                               `product_id` bigint(20) DEFAULT NULL COMMENT '云产品id',
+                                               `node_role_id` bigint(20) DEFAULT NULL COMMENT '节点角色id',
+                                               `node_role_type` tinyint(4) DEFAULT NULL COMMENT '节点角色类型，1：管控资源节点角色，0：资源节点角色'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品与节点角色关联表';
+

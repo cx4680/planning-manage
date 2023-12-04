@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gorm.io/gorm/logger"
 	"os"
 	"strings"
 	"time"
@@ -42,6 +43,7 @@ func InitDatabase(setting *settings.Setting) {
 	log.Infof("database config: %s", connString)
 	db, err := gorm.Open(mysql.Open(connString), &gorm.Config{
 		QueryFields: true,
+		Logger:      logger.Default.LogMode(logger.Info),
 	})
 
 	if connString == "" || err != nil {
