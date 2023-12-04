@@ -20,7 +20,7 @@ type CreateCustomerRequest struct {
 
 type PageCustomerRequest struct {
 	Current      int    `json:"current"`
-	PageSize     int    `json:"pageSize"`
+	Size         int    `json:"size"`
 	CustomerName string `json:"customerName"`
 	LeaderName   string `json:"leaderName"`
 	CustomerId   int64  `json:"customerId"`
@@ -136,10 +136,12 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	if err := db.Joins("LEFT JOIN permissions_manage ON permissions_manage.customer_id = customer_manage.id").
 		Where(where).
 		Order("update_time DESC").
-		Limit(customerPageParam.PageSize).
-		Offset((customerPageParam.Current - 1) * customerPageParam.PageSize).
+		Limit(customerPageParam.Size).
+		Offset((customerPageParam.Current - 1) * customerPageParam.Size).
 		Find(&customerList).
 		Select("count(DISTINCT customer_manage.id)").
+		Limit(-1).
+		Offset(-1).
 		Count(&count).Error; err != nil {
 		log.Errorf("[pageCustomer] query db error")
 		return nil, 0
