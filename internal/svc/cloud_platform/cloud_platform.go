@@ -83,13 +83,14 @@ func Update(c *gin.Context) {
 }
 
 func checkRequest(request *Request, isCreate bool) error {
-	if request.CustomerId == 0 {
-		return errors.New("customerId参数为空")
-	}
 	if util.IsBlank(request.Name) {
 		return errors.New("name参数为空")
 	}
-	if !isCreate {
+	if isCreate {
+		if request.CustomerId == 0 {
+			return errors.New("customerId参数为空")
+		}
+	} else {
 		if request.Id == 0 {
 			return errors.New("id参数为空")
 		}

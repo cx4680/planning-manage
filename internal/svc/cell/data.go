@@ -128,7 +128,7 @@ func DeleteCell(request *Request) error {
 
 func checkBusiness(request *Request, isCreate bool) error {
 	if !isCreate {
-		//校验azId
+		//校验cellId
 		var cellCount int64
 		if err := data.DB.Model(&entity.CellManage{}).Where("id = ? AND delete_state = ?", request.Id, 0).Count(&cellCount).Error; err != nil {
 			return err
@@ -137,7 +137,17 @@ func checkBusiness(request *Request, isCreate bool) error {
 			return errors.New("az不存在")
 		}
 	}
-	//校验azId
+	//校验azId，去重
+	azMap := make(map[int64]bool)
+	var newAzList []int64
+	for _, v := range request.AzIdList {
+		_, ok := azMap[v]
+		if !ok {
+			newAzList = append(newAzList, v)
+			azMap[v] = true
+		}
+	}
+	request.AzIdList = newAzList
 	var azCount int64
 	if err := data.DB.Model(&entity.AzManage{}).Where("id IN (?) AND delete_state = ?", request.AzIdList, 0).Count(&azCount).Error; err != nil {
 		return err

@@ -33,7 +33,7 @@ func Page(c *gin.Context) {
 		return
 	}
 	if request.ProjectId == 0 {
-		result.Failure(c, "customerId参数为空", http.StatusBadRequest)
+		result.Failure(c, "projectId参数为空", http.StatusBadRequest)
 		return
 	}
 	list, count, err := PagePlan(request)
@@ -104,6 +104,9 @@ func Delete(c *gin.Context) {
 
 func checkRequest(request *Request, isCreate bool) error {
 	if isCreate {
+		if request.ProjectId == 0 {
+			return errors.New("projectId参数为空")
+		}
 		if util.IsBlank(request.Name) {
 			return errors.New("name参数为空")
 		}

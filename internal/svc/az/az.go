@@ -105,16 +105,17 @@ func Delete(c *gin.Context) {
 }
 
 func checkRequest(request *Request, isCreate bool) error {
-	if request.RegionId == 0 {
-		return errors.New("regionId参数为空")
-	}
 	if util.IsBlank(request.Name) {
 		return errors.New("name参数为空")
 	}
 	if util.IsBlank(request.Code) {
 		return errors.New("code参数为空")
 	}
-	if !isCreate {
+	if isCreate {
+		if request.RegionId == 0 {
+			return errors.New("regionId参数为空")
+		}
+	} else {
 		if request.Id == 0 {
 			return errors.New("id参数为空")
 		}

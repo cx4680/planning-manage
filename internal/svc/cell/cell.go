@@ -107,6 +107,9 @@ func checkRequest(request *Request, isCreate bool) error {
 	if util.IsBlank(request.Code) {
 		return errors.New("code参数为空")
 	}
+	if len(request.AzIdList) == 0 {
+		return errors.New("azIdList参数为空")
+	}
 	if !isCreate {
 		if request.Id == 0 {
 			return errors.New("id参数为空")

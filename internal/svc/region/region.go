@@ -101,9 +101,6 @@ func Delete(c *gin.Context) {
 }
 
 func checkRequest(request *Request, isCreate bool) error {
-	if request.CloudPlatformId == 0 {
-		return errors.New("cloudPlatformId参数为空")
-	}
 	if util.IsBlank(request.Name) {
 		return errors.New("name参数为空")
 	}
@@ -113,7 +110,11 @@ func checkRequest(request *Request, isCreate bool) error {
 	if util.IsBlank(request.Type) {
 		return errors.New("type参数为空")
 	}
-	if !isCreate {
+	if isCreate {
+		if request.CloudPlatformId == 0 {
+			return errors.New("cloudPlatformId参数为空")
+		}
+	} else {
 		if request.Id == 0 {
 			return errors.New("id参数为空")
 		}

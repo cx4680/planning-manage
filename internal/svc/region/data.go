@@ -36,14 +36,15 @@ func CreateRegion(request *Request) error {
 	}
 	now := datetime.GetNow()
 	regionEntity := &entity.RegionManage{
-		Name:         request.Name,
-		Code:         request.Code,
-		Type:         request.Type,
-		CreateUserId: request.UserId,
-		CreateTime:   now,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
-		DeleteState:  0,
+		Name:            request.Name,
+		Code:            request.Code,
+		Type:            request.Type,
+		CloudPlatformId: request.CloudPlatformId,
+		CreateUserId:    request.UserId,
+		CreateTime:      now,
+		UpdateUserId:    request.UserId,
+		UpdateTime:      now,
+		DeleteState:     0,
 	}
 	if err := data.DB.Create(regionEntity).Error; err != nil {
 		return err
@@ -57,13 +58,12 @@ func UpdateRegion(request *Request) error {
 	}
 	now := datetime.GetNow()
 	regionEntity := &entity.RegionManage{
-		Id:              request.Id,
-		Name:            request.Name,
-		Code:            request.Code,
-		Type:            request.Type,
-		CloudPlatformId: request.CloudPlatformId,
-		UpdateUserId:    request.UserId,
-		UpdateTime:      now,
+		Id:           request.Id,
+		Name:         request.Name,
+		Code:         request.Code,
+		Type:         request.Type,
+		UpdateUserId: request.UserId,
+		UpdateTime:   now,
 	}
 	if err := data.DB.Updates(regionEntity).Error; err != nil {
 		return err
@@ -94,14 +94,23 @@ func DeleteRegion(request *Request) error {
 }
 
 func checkBusiness(request *Request, isCreate bool) error {
-	if !isCreate {
+	if isCreate {
+		//校验cloudPlatformId
+		var cloudPlatformCount int64
+		if err := data.DB.Model(&entity.CloudPlatformManage{}).Where("id = ? AND delete_state = ?", request.CloudPlatformId, 0).Count(&cloudPlatformCount).Error; err != nil {
+			return err
+		}
+		if cloudPlatformCount == 0 {
+			return errors.New("cloudPlatformId参数错误")
+		}
+	} else {
 		//校验regionId
 		var regionCount int64
 		if err := data.DB.Model(&entity.RegionManage{}).Where("id = ? AND delete_state = ?", request.Id, 0).Count(&regionCount).Error; err != nil {
 			return err
 		}
 		if regionCount == 0 {
-			return errors.New("az不存在")
+			return errors.New("region不存在")
 		}
 	}
 	//校验regionCode
@@ -111,14 +120,6 @@ func checkBusiness(request *Request, isCreate bool) error {
 	}
 	if regionCodeCount != 0 {
 		return errors.New("RegionID重复")
-	}
-	//校验cloudPlatformId
-	var cloudPlatformCount int64
-	if err := data.DB.Model(&entity.CloudPlatformManage{}).Where("id = ? AND delete_state = ?", request.CloudPlatformId, 0).Count(&cloudPlatformCount).Error; err != nil {
-		return err
-	}
-	if cloudPlatformCount == 0 {
-		return errors.New("cloudPlatformId参数错误")
 	}
 	//regionType
 	var regionTypeCount int64

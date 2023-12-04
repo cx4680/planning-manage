@@ -66,7 +66,6 @@ func UpdateAz(request *Request) error {
 		Id:              request.Id,
 		Name:            request.Name,
 		Code:            request.Code,
-		RegionId:        request.RegionId,
 		MachineRoomName: request.MachineRoomName,
 		MachineRoomCode: request.MachineRoomCode,
 		Province:        request.Province,
@@ -104,7 +103,16 @@ func DeleteAz(request *Request) error {
 }
 
 func checkBusiness(request *Request, isCreate bool) error {
-	if !isCreate {
+	if isCreate {
+		//校验regionId
+		var regionCount int64
+		if err := data.DB.Model(&entity.RegionManage{}).Where("id = ? AND delete_state = ?", request.RegionId, 0).Count(&regionCount).Error; err != nil {
+			return err
+		}
+		if regionCount == 0 {
+			return errors.New("region不存在")
+		}
+	} else {
 		//校验azId
 		var azCount int64
 		if err := data.DB.Model(&entity.AzManage{}).Where("id = ? AND delete_state = ?", request.Id, 0).Count(&azCount).Error; err != nil {
@@ -113,14 +121,6 @@ func checkBusiness(request *Request, isCreate bool) error {
 		if azCount == 0 {
 			return errors.New("az不存在")
 		}
-	}
-	//校验regionId
-	var regionCount int64
-	if err := data.DB.Model(&entity.RegionManage{}).Where("id = ? AND delete_state = ?", request.RegionId, 0).Count(&regionCount).Error; err != nil {
-		return err
-	}
-	if regionCount == 0 {
-		return errors.New("region不存在")
 	}
 	return nil
 }
