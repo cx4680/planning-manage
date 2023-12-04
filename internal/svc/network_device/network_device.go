@@ -145,12 +145,20 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
+	//TODO 根据方案id查询版本id 云产品规划表和云产品基线表
+	var versionId int64
 	//TODO 根据方案id查询服务器规划
 
 	//TODO 根据服务器基线id查询服务器基线表获取网络接口
-	var networkInterface string
+	var serviceBaselineId int64
+	serverBaseline, err := baseline.QueryServiceBaselineById(serviceBaselineId)
+	if err != nil {
+		log.Errorf("[QueryServiceBaselineById] search baseline by id error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	networkInterface := serverBaseline.NetworkInterface
 	// 根据版本号查询出网络设备角色基线数据
-	var versionId int64
 	deviceRoleBaseline, err := searchDeviceRoleBaselineByVersionId(versionId)
 	if err != nil {
 		log.Errorf("[searchDeviceRoleBaselineByVersionId] search device role baseline error, %v", err)
@@ -219,7 +227,7 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 	var response []NetworkDevices
 	networkModel := request.NetworkModel
 	if len(roleBaseLine) == 0 {
-		return response, nil
+		return nil, nil
 	}
 	/**
 	1.循环该数据匹配组网模型， 取出相应的字段 获取到节点角色 无则continue
@@ -230,45 +238,73 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 	6.查询网络设备基线数据 根据版本号、网络设备角色、网络版本、厂商
 	7.构建网络设备清单列表 两层循环 外层是单元数循环、内层是单元设备数量循环
 	*/
+	model := constant.YES
+	var aswNum map[int64]int
+	var nodeRoleServerNumMap map[int64]int
 	for _, deviceRole := range roleBaseLine {
 		if strings.EqualFold(constant.SEPARATION_OF_TWO_NETWORKS, networkModel) {
 			// 两网分离
-			twoNetworkIso := deviceRole.TwoNetworkIso
-			networkDevices, err := dealNetworkModel(versionId, networkInterface, request, twoNetworkIso, deviceRole)
-			if err != nil {
-				return nil, err
-			}
-			if networkDevices != nil && len(networkDevices) > 0 {
-				response = append(response, networkDevices...)
-			}
+			model = deviceRole.TwoNetworkIso
 		} else if strings.EqualFold(constant.TRIPLE_NETWORK_SEPARATION, networkModel) {
 			// 三网分离
+			model = deviceRole.ThreeNetworkIso
 		} else {
 			// 三网合一
+			model = deviceRole.TriplePlay
 		}
-
+		networkDevices, err := dealNetworkModel(versionId, networkInterface, request, model, deviceRole, nodeRoleServerNumMap, aswNum)
+		if err != nil {
+			return nil, err
+		}
+		if networkDevices != nil && len(networkDevices) > 0 {
+			response = append(response, networkDevices...)
+		}
 	}
-
 	return response, nil
 }
 
 // 根据网络设备角色基线计算数据
-func dealNetworkModel(versionId int64, networkInterface string, request Request, networkModel string, roleBaseLine entity.NetworkDeviceRoleBaseline) ([]NetworkDevices, error) {
+func dealNetworkModel(versionId int64, networkInterface string, request Request, networkModel string, roleBaseLine entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int, aswNum map[int64]int) ([]NetworkDevices, error) {
 	funcCompoName := roleBaseLine.FuncCompoName
 	id := roleBaseLine.Id
 	brand := request.Brand
+	awsServerNum := request.AwsServerNum
 	var response []NetworkDevices
 	deviceModels, _ := getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId, networkInterface, id, brand)
 	if len(deviceModels) == 0 {
 		return nil, nil
 	}
 	deviceType := deviceModels[0].DeviceType
-
+	var serverNum = 0
 	switch funcCompoName {
-	case constant.MASW, constant.VASW, constant.StorSASW, constant.StoreCASW, constant.BMSASW, constant.ISW:
-
-	case constant.OASW:
-
+	case constant.MASW, constant.VASW, constant.StorSASW, constant.StoreCASW, constant.BMSASW, constant.ISW, constant.OASW:
+		if constant.NO != networkModel && len(networkModel) > 0 {
+			nodeRoles := strings.Split(networkModel, ",")
+			for _, nodeRole := range nodeRoles {
+				var num = 0
+				nodeRoleId, _ := strconv.ParseInt(nodeRole, 10, 64)
+				if !strings.EqualFold(constant.OASW, funcCompoName) {
+					num = nodeRoleServerNumMap[nodeRoleId]
+				} else {
+					num = aswNum[nodeRoleId]
+				}
+				serverNum += num
+			}
+		}
+		if !strings.EqualFold(constant.OASW, funcCompoName) {
+			aswNum[id] = serverNum
+		}
+		var minimumNumUnit = 1
+		if serverNum > awsServerNum {
+			discuss := serverNum / awsServerNum
+			remainder := serverNum % awsServerNum
+			if remainder == 0 {
+				minimumNumUnit = discuss
+			} else {
+				minimumNumUnit += discuss
+			}
+		}
+		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response)
 	default:
 		//固定数量计算
 		if strings.EqualFold(constant.YES, networkModel) {
