@@ -1,8 +1,8 @@
 package baseline
 
 import (
-	"code.cestc.cn/zhangzhi/planning-manage/internal/data"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 )
 
 // func InsertSoftwareVersion(softwareVersion entity.SoftwareVersion) (int64, error) {

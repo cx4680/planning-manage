@@ -1,4 +1,4 @@
-module code.cestc.cn/zhangzhi/planning-manage
+module code.cestc.cn/ccos/common/planning-manage
 
 go 1.20
 

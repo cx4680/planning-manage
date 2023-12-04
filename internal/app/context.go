@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 
-	"code.cestc.cn/zhangzhi/planning-manage/internal/api/constant"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/pkg/dataid"
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/dataid"
 )
 
 func buildContext(context *gin.Context) {

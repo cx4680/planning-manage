@@ -12,9 +12,9 @@ import (
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"github.com/xuri/excelize/v2"
 
-	"code.cestc.cn/zhangzhi/planning-manage/internal/api/errorcodes"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/pkg/excel"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 )
 
 func Import(context *gin.Context) {

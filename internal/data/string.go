@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	"code.cestc.cn/zhangzhi/planning-manage/internal/api/constant"
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 )
 
 func SplitCommaString(str string) []string {

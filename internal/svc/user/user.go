@@ -1,9 +1,9 @@
 package user
 
 import (
-	"code.cestc.cn/zhangzhi/planning-manage/internal/api/errorcodes"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/entity"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"

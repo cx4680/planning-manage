@@ -10,7 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"code.cestc.cn/zhangzhi/planning-manage/internal/app/settings"
+	"code.cestc.cn/ccos/common/planning-manage/internal/app/settings"
 )
 
 const (

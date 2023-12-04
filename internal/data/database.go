@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"code.cestc.cn/zhangzhi/planning-manage/internal/api/constant"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/app/settings"
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
+	"code.cestc.cn/ccos/common/planning-manage/internal/app/settings"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
@@ -30,7 +30,7 @@ const (
 
 var (
 	// DB 数据库链接单例。
-	DB   *gorm.DB
+	DB *gorm.DB
 )
 
 func InitDatabase(setting *settings.Setting) {
@@ -39,7 +39,7 @@ func InitDatabase(setting *settings.Setting) {
 	if !setting.MySQLInsecure {
 		connString = mySQLConnString(setting)
 	}
-	log.Info(connString)
+	log.Infof("database config: %s", connString)
 	db, err := gorm.Open(mysql.Open(connString), &gorm.Config{
 		QueryFields: true,
 	})
@@ -115,6 +115,7 @@ func migrateData(dsn string) error {
 	}
 	return nil
 }
+
 type migrateLog struct {
 }
 

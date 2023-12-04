@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
-	"code.cestc.cn/zhangzhi/planning-manage/internal/data"
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 )
 
 const (

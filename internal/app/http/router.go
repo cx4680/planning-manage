@@ -3,20 +3,20 @@ package http
 import (
 	"os"
 
-	"code.cestc.cn/zhangzhi/planning-manage/internal/svc/az"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/svc/cell"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/svc/cloud_platform"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/svc/customer"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/svc/network_device"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/svc/plan"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/svc/project"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/svc/region"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/svc/user"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/az"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cell"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_platform"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/customer"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/network_device"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/project"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/region"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/user"
 
-	"code.cestc.cn/zhangzhi/planning-manage/internal/svc/baseline"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
 	"github.com/gin-gonic/gin"
 
-	"code.cestc.cn/zhangzhi/planning-manage/internal/api/constant"
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 
 	"code.cestc.cn/ccos/cnm/ops-base/opshttp/middleware"
 )

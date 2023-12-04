@@ -1,8 +1,8 @@
 package user
 
 import (
-	"code.cestc.cn/zhangzhi/planning-manage/internal/data"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"fmt"
 	ldap "github.com/go-ldap/ldap/v3"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"

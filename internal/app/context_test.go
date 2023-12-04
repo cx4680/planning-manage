@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"code.cestc.cn/zhangzhi/planning-manage/internal/api/constant"
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 )
 
 func Test_buildContext(t *testing.T) {

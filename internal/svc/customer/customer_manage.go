@@ -1,9 +1,9 @@
 package customer
 
 import (
-	"code.cestc.cn/zhangzhi/planning-manage/internal/api/errorcodes"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/pkg/result"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/svc/user"
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/user"
 	"encoding/json"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"

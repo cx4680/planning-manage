@@ -8,8 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"code.cestc.cn/zhangzhi/planning-manage/internal/api/constant"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/app/settings"
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
+	"code.cestc.cn/ccos/common/planning-manage/internal/app/settings"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 )

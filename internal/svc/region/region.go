@@ -1,10 +1,10 @@
 package region
 
 import (
-	"code.cestc.cn/zhangzhi/planning-manage/internal/api/errorcodes"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/pkg/result"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/pkg/user"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/pkg/util"
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"

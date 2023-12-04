@@ -1,9 +1,9 @@
 package cell
 
 import (
-	"code.cestc.cn/zhangzhi/planning-manage/internal/data"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/entity"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/pkg/datetime"
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"errors"
 	"gorm.io/gorm"
 )

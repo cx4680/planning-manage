@@ -1,8 +1,8 @@
 package main
 
 import (
-	"code.cestc.cn/zhangzhi/planning-manage/internal/app"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/app/http"
+	"code.cestc.cn/ccos/common/planning-manage/internal/app"
+	"code.cestc.cn/ccos/common/planning-manage/internal/app/http"
 )
 
 func main() {

@@ -1,8 +1,8 @@
 package network_device
 
 import (
-	"code.cestc.cn/zhangzhi/planning-manage/internal/data"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"time"
 )

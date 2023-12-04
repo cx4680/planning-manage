@@ -1,10 +1,10 @@
 package plan
 
 import (
-	"code.cestc.cn/zhangzhi/planning-manage/internal/data"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/entity"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/pkg/datetime"
-	"code.cestc.cn/zhangzhi/planning-manage/internal/pkg/util"
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
 )
 
