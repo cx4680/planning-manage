@@ -115,3 +115,24 @@ const (
 	LogFull = "1"
 	LogNo   = "-1"
 )
+
+const (
+	SEPARATION_OF_TWO_NETWORKS = "2" // 两网分离
+	TRIPLE_NETWORK_SEPARATION  = "3" // 三网分离
+	TRIPLE_PLAY                = "1" // 三网合一
+)
+
+const (
+	MASW      = "MASW"      // 管理接入交换机
+	VASW      = "VASW"      // 业务内网接入交换机
+	StorSASW  = "StorSASW"  // 存储业务接入交换机
+	StoreCASW = "StoreCASW" //存储集群接入交换机
+	BMSASW    = "BMSASW"    //裸金属接入交换机
+	ISW       = "ISW"       //业务外网出口交换机
+	OASW      = "OASW"      //服务器带外接入交换机
+)
+
+const (
+	YES = "1"
+	NO  = "0"
+)

@@ -29,6 +29,15 @@ func searchDeviceListByPlanId(planId int64) ([]entity.NetworkDevicePlanning, err
 	return deviceList, nil
 }
 
+func searchDeviceRoleBaselineByVersionId(versionId int64) ([]entity.NetworkDeviceRoleBaseline, error) {
+	var deviceRoleBaselineList []entity.NetworkDeviceRoleBaseline
+	if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Where("version_id=?", versionId).Scan(&deviceRoleBaselineList).Error; err != nil {
+		log.Errorf("[searchDeviceRoleBaselineByVersionId] query device role baseline list error, %v", err)
+		return nil, err
+	}
+	return deviceRoleBaselineList, nil
+}
+
 func createDevicePlan(request Request) error {
 	networkPlan := entity.NetworkDevicePlanning{
 		PlanId:                request.PlanId,
@@ -52,16 +61,21 @@ func createDevicePlan(request Request) error {
 }
 
 func getBrandsByVersionIdAndNetworkVersion(versionId int64, networkVersion string) ([]string, error) {
-	var deviceBaseline []entity.NetworkDeviceBaseline
-	if err := data.DB.Table(entity.NetworkDeviceBaselineTable).Where("version_id=? and network_model = ?", versionId, networkVersion).Scan(&deviceBaseline).Error; err != nil {
+	var brands []string
+	if err := data.DB.Raw("select distinct manufacturer from network_device_baseline where version_id=? and network_model = ?", versionId, networkVersion).Scan(&brands).Error; err != nil {
 		log.Errorf("[getBrandsByVersionIdAndNetworkVersion] query device brands error, %v", err)
 		return nil, err
 	}
-	if len(deviceBaseline) == 0 {
-		return nil, nil
-	}
-	var brands []string
 	return brands, nil
+}
+
+func getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId int64, networkInterface string, id int64, brand string) ([]NetworkDeviceModel, error) {
+	var deviceModel []NetworkDeviceModel
+	if err := data.DB.Raw("select a.device_type as DeviceType,a.conf_overview as ConfOverview from network_device_baseline a left join network_device_role_rel b on a.id = b.device_id where a.version_id = ? and b.device_role_id = ? and a.network_model = ? and a.manufacturer = ?", versionId, id, networkInterface, brand).Scan(&deviceModel).Error; err != nil {
+		log.Errorf("[getModelsByVersionIdAndRoleAndBrandAndNetworkConfig] query device model error, %v", err)
+		return nil, err
+	}
+	return deviceModel, nil
 }
 
 func updateDevicePlan(request Request, devicePlanning entity.NetworkDevicePlanning) error {

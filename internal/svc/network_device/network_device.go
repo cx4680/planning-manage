@@ -1,14 +1,18 @@
 package network_device
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type Request struct {
@@ -34,8 +38,8 @@ type NetworkDevices struct {
 }
 
 type NetworkDeviceModel struct {
-	ConfigurationOverview string `form:"configurationOverview"`
-	DeviceModel           string `form:"deviceModel"`
+	ConfOverview string `form:"configurationOverview"`
+	DeviceType   string `form:"deviceModel"`
 }
 
 //const (
@@ -84,16 +88,27 @@ func GetDevicePlanByPlanId(c *gin.Context) {
 }
 
 func GetBrandsByPlanId(c *gin.Context) {
-	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
+	// planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	//TODO 根据方案id查询版本id
-	//var versionId string
+	var versionId int64
 	//TODO 根据方案id查询云产品规划信息  取其中一条拿服务器基线表ID
-
-	//TODO 根据服务器基线ID查询服务器基线表 获取网络版本
-	//var networkVersion string
-	//TODO 根据服务版本id和网络版本查询网络设备基线表查厂商  去重
-
-	result.Success(c, planId)
+	var serverBaselineId int64
+	// 根据服务器基线ID查询服务器基线表 获取网络版本
+	serverBaseline, err := baseline.QueryServiceBaselineById(serverBaselineId)
+	if err != nil {
+		log.Errorf("[QueryServiceBaselineById] search baseline by id error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	networkVersion := serverBaseline.NetworkInterface
+	// 根据服务版本id和网络版本查询网络设备基线表查厂商  去重
+	brands, err := getBrandsByVersionIdAndNetworkVersion(versionId, networkVersion)
+	if err != nil {
+		log.Errorf("[getBrandsByPlanId] search brands by planId error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, brands)
 	return
 }
 
@@ -111,9 +126,6 @@ func ListNetworkDevices(c *gin.Context) {
 	var response []NetworkDevices
 	//根据方案ID查询网络设备规划表 没有则保存，有则更新
 	planId := request.PlanId
-	//awsServerNum := request.AwsServerNum
-	//brand := request.Brand
-	//networkModel := request.NetworkModel
 	devicePlan, err := searchDevicePlanByPlanId(planId)
 	if err != nil {
 		log.Errorf("[searchDevicePlanByPlanId] search device plan by planId error, %v", err)
@@ -135,16 +147,22 @@ func ListNetworkDevices(c *gin.Context) {
 	}
 	//TODO 根据方案id查询服务器规划
 
-	//TODO 根据版本号查询出网络设备角色基线数据
-	/**
-	1.循环该数据 swich case匹配组网模型， 取出相应的字段 获取到节点角色 无则continue
-	2.服务器规划数据满足节点角色的数据  数量累加 得到服务器数量
-	3.服务器数量小于asw下连服务器 则直接逻辑分组为最小单元数
-	4.服务器数量大于asw下连服务器数量，相除整除直接取商、有余数则商+1为单元数
-	5.设备数量= 单元数*单元设备数量
-	6.查询网络设备基线数据 根据版本号、网络设备角色、网络版本、厂商
-	7.构建网络设备清单列表 两层循环 外层是单元数循环、内层是单元设备数量循环
-	*/
+	//TODO 根据服务器基线id查询服务器基线表获取网络接口
+	var networkInterface string
+	// 根据版本号查询出网络设备角色基线数据
+	var versionId int64
+	deviceRoleBaseline, err := searchDeviceRoleBaselineByVersionId(versionId)
+	if err != nil {
+		log.Errorf("[searchDeviceRoleBaselineByVersionId] search device role baseline error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	response, err = transformNetworkDeviceList(versionId, networkInterface, request, deviceRoleBaseline)
+	if err != nil {
+		log.Errorf("[transformNetworkDeviceList] error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
 	result.Success(c, response)
 	return
 }
@@ -194,4 +212,88 @@ func checkRequest(request Request) error {
 		return errors.New("厂商参数为空")
 	}
 	return nil
+}
+
+// 匹配组网模型处理网络设备清单数据
+func transformNetworkDeviceList(versionId int64, networkInterface string, request Request, roleBaseLine []entity.NetworkDeviceRoleBaseline) ([]NetworkDevices, error) {
+	var response []NetworkDevices
+	networkModel := request.NetworkModel
+	if len(roleBaseLine) == 0 {
+		return response, nil
+	}
+	/**
+	1.循环该数据匹配组网模型， 取出相应的字段 获取到节点角色 无则continue
+	2.服务器规划数据满足节点角色的数据  数量累加 得到服务器数量
+	3.服务器数量小于asw下连服务器 则直接逻辑分组为最小单元数
+	4.服务器数量大于asw下连服务器数量，相除整除直接取商、有余数则商+1为单元数
+	5.设备数量= 单元数*单元设备数量
+	6.查询网络设备基线数据 根据版本号、网络设备角色、网络版本、厂商
+	7.构建网络设备清单列表 两层循环 外层是单元数循环、内层是单元设备数量循环
+	*/
+	for _, deviceRole := range roleBaseLine {
+		if strings.EqualFold(constant.SEPARATION_OF_TWO_NETWORKS, networkModel) {
+			// 两网分离
+			twoNetworkIso := deviceRole.TwoNetworkIso
+			networkDevices, err := dealNetworkModel(versionId, networkInterface, request, twoNetworkIso, deviceRole)
+			if err != nil {
+				return nil, err
+			}
+			if networkDevices != nil && len(networkDevices) > 0 {
+				response = append(response, networkDevices...)
+			}
+		} else if strings.EqualFold(constant.TRIPLE_NETWORK_SEPARATION, networkModel) {
+			// 三网分离
+		} else {
+			// 三网合一
+		}
+
+	}
+
+	return response, nil
+}
+
+// 根据网络设备角色基线计算数据
+func dealNetworkModel(versionId int64, networkInterface string, request Request, networkModel string, roleBaseLine entity.NetworkDeviceRoleBaseline) ([]NetworkDevices, error) {
+	funcCompoName := roleBaseLine.FuncCompoName
+	id := roleBaseLine.Id
+	brand := request.Brand
+	var response []NetworkDevices
+	deviceModels, _ := getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId, networkInterface, id, brand)
+	if len(deviceModels) == 0 {
+		return nil, nil
+	}
+	deviceType := deviceModels[0].DeviceType
+
+	switch funcCompoName {
+	case constant.MASW, constant.VASW, constant.StorSASW, constant.StoreCASW, constant.BMSASW, constant.ISW:
+
+	case constant.OASW:
+
+	default:
+		//固定数量计算
+		if strings.EqualFold(constant.YES, networkModel) {
+			response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response)
+		}
+	}
+	return response, nil
+}
+
+// 组装设备清单
+func buildDto(groupNum int, deviceNum int, funcCompoName string, brand string, deviceType string, deviceModels []NetworkDeviceModel, response []NetworkDevices) ([]NetworkDevices, error) {
+	for i := 1; i <= groupNum; i++ {
+		logicalGrouping := funcCompoName + "-" + strconv.Itoa(i)
+		for j := 1; j <= deviceNum; j++ {
+			deviceId := logicalGrouping + "." + strconv.Itoa(j)
+			networkDevice := NetworkDevices{
+				NetworkDeviceRole: funcCompoName,
+				LogicalGrouping:   logicalGrouping,
+				DeviceId:          deviceId,
+				Brand:             brand,
+				DeviceModel:       deviceType,
+				DeviceModels:      deviceModels,
+			}
+			response = append(response, networkDevice)
+		}
+	}
+	return response, nil
 }
