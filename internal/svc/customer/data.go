@@ -97,6 +97,7 @@ func createCustomer(customerParam CreateCustomerRequest, leaderId string, ldapUs
 }
 
 func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) ([]entity.CustomerManage, int64) {
+	log.Infof("current user id:%s", currentUserId)
 	var roleManage entity.RoleManage
 	if err := data.DB.Table(entity.RoleManageTable).Where("user_id=?", currentUserId).Scan(&roleManage).Error; err != nil {
 		log.Errorf("[pageCustomer] query role manage from db error")
@@ -119,8 +120,6 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	}*/
 	var customerList []entity.CustomerManage
 	var count int64
-	data.DB.Model(&entity.CustomerManage{}).Select("DISTINCT customer_manage.*").Joins("LEFT JOIN permissions_manage ON permissions_manage.customer_id = customer_manage.id").
-		Where("customer_manage.delete_state = 0")
 
 	where := map[string]interface{}{}
 	db := data.DB.Table("customer_manage").Distinct()
@@ -140,6 +139,7 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 		Limit(customerPageParam.PageSize).
 		Offset((customerPageParam.Current - 1) * customerPageParam.PageSize).
 		Find(&customerList).
+		Select("count(DISTINCT customer_manage.id)").
 		Count(&count).Error; err != nil {
 		log.Errorf("[pageCustomer] query db error")
 		return nil, 0
