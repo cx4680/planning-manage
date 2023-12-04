@@ -125,10 +125,10 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	db := data.DB.Table("customer_manage").Distinct()
 	db.Where("customer_manage.delete_state=0")
 	if len(customerPageParam.CustomerName) > 0 {
-		db.Where("customer_manage.customer_name like concat('%?%')", customerPageParam.CustomerName)
+		db.Where("customer_manage.customer_name like ?", `%`+customerPageParam.CustomerName+`%`)
 	}
 	if len(customerPageParam.LeaderName) > 0 {
-		db.Where("customer_manage.leader_name like concat('%?%')", customerPageParam.LeaderName)
+		db.Where("customer_manage.leader_name like ?", `%`+customerPageParam.LeaderName+`%`)
 	}
 	if roleManage.Role != "admin" {
 		db.Where("(customer_manage.leader_id = ? OR permissions_manage.user_id = ?)", currentUserId, currentUserId)

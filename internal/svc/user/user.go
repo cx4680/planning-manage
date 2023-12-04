@@ -106,7 +106,7 @@ func ListByName(context *gin.Context) {
 		department, officeName := Dn2Department(item.DN)
 		userManage := entity.UserManage{
 			ID:               item.GetAttributeValue("uid"),
-			Username:         fmt.Sprintf("%s(%s)", item.GetAttributeValue("displayName"), item.GetAttributeValue("uid")),
+			Username:         item.GetAttributeValue("displayName"),
 			EmployeeNumber:   item.GetAttributeValue("employeeNumber"),
 			TelephoneNumber:  item.GetAttributeValue("telephoneNumber"),
 			Department:       department,
