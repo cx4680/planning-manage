@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,7 +13,10 @@ import (
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"github.com/xuri/excelize/v2"
 
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 )
@@ -28,14 +32,46 @@ func Import(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	var importBaselineRequest ImportBaselineRequest
-	importBaselineRequest.CloudPlatformType = context.PostForm("cloudPlatformType")
-	importBaselineRequest.BaselineVersion = context.PostForm("baselineVersion")
-	importBaselineRequest.BaselineType = context.PostForm("baselineType")
-	importBaselineRequest.ReleaseTime = context.PostForm("releaseTime")
-	if importBaselineRequest.CloudPlatformType == "" || importBaselineRequest.BaselineVersion == "" || importBaselineRequest.BaselineType == "" {
+	cloudPlatformType := context.PostForm("cloudPlatformType")
+	baselineVersion := context.PostForm("baselineVersion")
+	baselineType := context.PostForm("baselineType")
+	releaseTime := context.PostForm("releaseTime")
+	if cloudPlatformType == "" || baselineVersion == "" || baselineType == "" || releaseTime == "" {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
+	}
+	cloudPlatform, err := strconv.Atoi(cloudPlatformType)
+	if err != nil {
+		log.Error(err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	softwareVersion, err := QuerySoftwareVersionByVersion(baselineVersion, cloudPlatform)
+	if err != nil {
+		log.Error(err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+
+	now := datetime.GetNow()
+	if softwareVersion.Id > 0 {
+		// 编辑软件版本
+		if err := UpdateSoftwareVersion(softwareVersion); err != nil {
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return
+		}
+	} else {
+		softwareVersion = entity.SoftwareVersion{
+			SoftwareVersion:   baselineVersion,
+			CloudPlatformType: cloudPlatform,
+			ReleaseTime:       datetime.StrToTime(releaseTime, datetime.FullTimeFmt),
+			CreateTime:        now,
+		}
+		// 新增软件版本
+		if err := CreateSoftwareVersion(softwareVersion); err != nil {
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return
+		}
 	}
 	filePath := fmt.Sprintf("%s/%s-%d-%d.xlsx", "exampledir", "baseline", time.Now().Unix(), rand.Uint32())
 	if err := context.SaveUploadedFile(file, filePath); err != nil {
@@ -57,7 +93,7 @@ func Import(context *gin.Context) {
 			log.Error(err)
 		}
 	}()
-	switch importBaselineRequest.BaselineType {
+	switch baselineType {
 	case CloudProductBaselineType:
 		// 先查询节点角色表，导入的版本是否已有数据，如没有，提示先导入节点角色基线
 		var cloudProductBaselineExcelList []CloudProductBaselineExcel
@@ -67,14 +103,14 @@ func Import(context *gin.Context) {
 			return
 		}
 		if len(cloudProductBaselineExcelList) > 0 {
-			for _, cloudProductBaselineExcel := range cloudProductBaselineExcelList {
-				controlResNodeRole := cloudProductBaselineExcel.ControlResNodeRole
+			for i := range cloudProductBaselineExcelList {
+				controlResNodeRole := cloudProductBaselineExcelList[i].ControlResNodeRole
 				if controlResNodeRole != "" {
-					cloudProductBaselineExcel.ControlResNodeRoles = strings.Split(controlResNodeRole, "\n")
+					cloudProductBaselineExcelList[i].ControlResNodeRoles = strings.Split(controlResNodeRole, constant.SplitLineBreak)
 				}
-				resNodeRole := cloudProductBaselineExcel.ResNodeRole
+				resNodeRole := cloudProductBaselineExcelList[i].ResNodeRole
 				if resNodeRole != "" {
-					cloudProductBaselineExcel.ResNodeRoles = strings.Split(resNodeRole, "\n")
+					cloudProductBaselineExcelList[i].ResNodeRoles = strings.Split(resNodeRole, constant.SplitLineBreak)
 				}
 			}
 		}
@@ -89,6 +125,41 @@ func Import(context *gin.Context) {
 			log.Error(err)
 			result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 			return
+		}
+		if len(nodeRoleBaselineExcelList) > 0 {
+			var nodeRoleBaselineList []entity.NodeRoleBaseline
+			for i := range nodeRoleBaselineExcelList {
+				mixedDeploy := nodeRoleBaselineExcelList[i].MixedDeploy
+				if nodeRoleBaselineExcelList[i].MixedDeploy != "" {
+					nodeRoleBaselineExcelList[i].MixedDeploys = strings.Split(mixedDeploy, constant.SplitLineBreak)
+				}
+				nodeRoleBaselineList = append(nodeRoleBaselineList, entity.NodeRoleBaseline{
+					VersionId:    softwareVersion.Id,
+					NodeRoleCode: nodeRoleBaselineExcelList[i].NodeRoleCode,
+					RoleName:     nodeRoleBaselineExcelList[i].RoleName,
+					MinimumNum:   nodeRoleBaselineExcelList[i].MinimumCount,
+					DeployMethod: nodeRoleBaselineExcelList[i].DeployMethod,
+					Annotation:   nodeRoleBaselineExcelList[i].Annotation,
+					BusinessType: nodeRoleBaselineExcelList[i].BusinessType,
+				})
+			}
+			nodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
+			if err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return
+			}
+			if len(nodeRoleBaselines) > 0 {
+				// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
+
+			} else {
+				if err := BatchCreateNodeRoleBaseline(nodeRoleBaselineList); err != nil {
+					log.Error(err)
+					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+					return
+				}
+
+			}
 		}
 		break
 	default:

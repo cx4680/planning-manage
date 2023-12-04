@@ -115,3 +115,7 @@ const (
 	LogFull = "1"
 	LogNo   = "-1"
 )
+
+const (
+	SplitLineBreak = "\n"
+)
