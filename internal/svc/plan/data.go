@@ -6,6 +6,9 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
+	"time"
 )
 
 func PagePlan(request *Request) ([]*entity.PlanManage, int64, error) {
@@ -70,6 +73,14 @@ func UpdatePlan(request *Request) error {
 		UpdateTime:   now,
 	}
 	if err := data.DB.Updates(&planEntity).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func UpdatePlanStage(tx *gorm.DB, planId int64, stage string, userId string) error {
+	if err := tx.Model(entity.PlanManage{}).Where("id = ?", planId).Update("stage", stage).Update("update_user_id", userId).Update("update_time", time.Now().Unix()).Error; err != nil {
+		log.Errorf("[UpdatePlanStage] update plan stage error, %v", err)
 		return err
 	}
 	return nil

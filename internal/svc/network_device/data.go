@@ -4,6 +4,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
 	"time"
 )
 
@@ -27,6 +28,19 @@ func searchDeviceListByPlanId(planId int64) ([]entity.NetworkDevicePlanning, err
 		return nil, err
 	}
 	return deviceList, nil
+}
+
+func SaveBatch(networkDeviceList []*entity.NetworkDeviceList) error {
+	err := data.DB.CreateInBatches(networkDeviceList, len(networkDeviceList)).Error
+	return err
+}
+
+func expireDeviceListByPlanId(tx *gorm.DB, planId int64) error {
+	if err := tx.Model(entity.NetworkDeviceList{}).Where("plan_id = ?", planId).Update("delete_state", 1).Update("update_time", time.Now().Unix()).Error; err != nil {
+		log.Errorf("[expireDeviceListByPlanId] expire device list error, %v", err)
+		return err
+	}
+	return nil
 }
 
 func searchDeviceRoleBaselineByVersionId(versionId int64) ([]entity.NetworkDeviceRoleBaseline, error) {

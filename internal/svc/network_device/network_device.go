@@ -3,13 +3,18 @@ package network_device
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 	"strings"
@@ -177,6 +182,7 @@ func ListNetworkDevices(c *gin.Context) {
 
 func SaveDeviceList(c *gin.Context) {
 	var request []NetworkDevices
+	var networkDeviceList []*entity.NetworkDeviceList
 	if err := c.ShouldBindQuery(&request); err != nil {
 		log.Errorf("save network devices bind param error: ", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
@@ -193,12 +199,47 @@ func SaveDeviceList(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	if len(deviceList) > 0 {
-		//TODO 删除库里保存的
+	userId := user.GetUserId(c)
+	now := datetime.GetNow()
+	err = data.DB.Transaction(func(tx *gorm.DB) error {
+		if len(deviceList) > 0 {
+			//失效库里保存的
+			err = expireDeviceListByPlanId(tx, planId)
+			if err != nil {
+				return err
+			}
+		}
+		// 更新方案表的状态
+		err = plan.UpdatePlanStage(tx, planId, constant.BUSINESS_END_STAGE, userId)
+		if err != nil {
+			return err
+		}
+		// 批量保存网络设备清单
+		for _, networkDevice := range request {
+			device := new(entity.NetworkDeviceList)
+			device.PlanId = planId
+			device.NetworkDeviceRole = networkDevice.NetworkDeviceRole
+			device.LogicalGrouping = networkDevice.LogicalGrouping
+			device.DeviceId = networkDevice.DeviceId
+			device.Brand = networkDevice.Brand
+			device.DeviceModel = networkDevice.DeviceModel
+			device.CreateTime = now
+			device.UpdateTime = now
+			device.DeleteState = 0
+			networkDeviceList = append(networkDeviceList, device)
+		}
+		err = SaveBatch(networkDeviceList)
+		if err != nil {
+			return err
+		}
+		//TODO ip需求表保存
+		return err
+	})
+	if err != nil {
+		log.Errorf("[SaveDeviceList] save device list error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
 	}
-	//TODO 更新方案表的状态
-	//TODO 批量保存网络设备清单
-	//TODO ip需求表保存
 	result.Success(c, nil)
 	return
 }

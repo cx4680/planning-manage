@@ -136,3 +136,11 @@ const (
 	YES = "1"
 	NO  = "0"
 )
+
+const (
+	BUSINESS_WAIT_STAGE                        = "0" // 业务规划待开始阶段
+	BUSINESS_CLOUD_PRODUCT_CONFIGURATION_STAGE = "1" // 云产品配置阶段
+	BUSINESS_SERVER_PLANNING_STAGE             = "2" // 服务器规划阶段
+	BUSINESS_NETWORK_EQUIPMENT_STAGE           = "3" //网络设备规划阶段
+	BUSINESS_END_STAGE                         = "4" //业务规划结束
+)
