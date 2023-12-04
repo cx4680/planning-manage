@@ -9,7 +9,7 @@ import (
 )
 
 func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
-	screenSql, screenParams, orderSql := " delete_state = ? AND id customer_id = ? ", []interface{}{0, request.CustomerId}, " update_time "
+	screenSql, screenParams, orderSql := " delete_state = ? AND customer_id = ? ", []interface{}{0, request.CustomerId}, " update_time "
 	switch request.SortField {
 	case "createTime":
 		orderSql = " create_time "

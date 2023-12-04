@@ -9,7 +9,7 @@ import (
 )
 
 func PagePlan(request *Request) ([]*entity.PlanManage, int64, error) {
-	screenSql, screenParams, orderSql := " delete_state = ? AND id project_id = ? ", []interface{}{0, request.ProjectId}, " update_time "
+	screenSql, screenParams, orderSql := " delete_state = ? AND project_id = ? ", []interface{}{0, request.ProjectId}, " update_time "
 	switch request.SortField {
 	case "createTime":
 		orderSql = " create_time "

@@ -16,7 +16,7 @@ type Request struct {
 	Id        int64
 	UserId    string
 	Name      string `form:"name"`
-	ProjectId int64  `form:"ProjectId"`
+	ProjectId int64  `form:"projectId"`
 	Type      string `form:"type"`
 	Stage     string `form:"stage"`
 	SortField string `form:"sortField"`
