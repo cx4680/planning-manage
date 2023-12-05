@@ -1,6 +1,7 @@
 package http
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
 	"os"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/az"
@@ -120,6 +121,17 @@ func Router(engine *gin.Engine) {
 			projectGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改项目", "updateProject", middleware.UPDATE, middleware.INFO)), project.Update)
 			// 删除项目
 			projectGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除项目", "deleteProject", middleware.DELETE, middleware.INFO)), project.Delete)
+		}
+
+		//服务器规划
+		serverGroup := v1.Group("/server")
+		{
+			// 查询服务器列表
+			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryProjectByPage", middleware.LIST, middleware.INFO)), server.List)
+			// 创建服务器
+			serverGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "queryProjectByPage", middleware.LIST, middleware.INFO)), server.Create)
+			// 修改服务器
+			serverGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改服务器", "queryProjectByPage", middleware.LIST, middleware.INFO)), server.Update)
 		}
 
 		// plan

@@ -6,6 +6,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
+	"gorm.io/gorm"
 )
 
 func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
@@ -41,20 +42,33 @@ func CreateProject(request *Request) error {
 	}
 	now := datetime.GetNow()
 	projectEntity := &entity.ProjectManage{
-		Name:         request.Name,
-		RegionId:     request.RegionId,
-		AzId:         request.AzId,
-		CellId:       request.CellId,
-		CustomerId:   request.CustomerId,
-		Type:         request.Type,
-		Stage:        "planning",
-		DeleteState:  0,
-		CreateUserId: request.UserId,
-		CreateTime:   now,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
+		Name:            request.Name,
+		CloudPlatformId: request.CloudPlatformId,
+		RegionId:        request.RegionId,
+		AzId:            request.AzId,
+		CellId:          request.CellId,
+		CustomerId:      request.CustomerId,
+		Type:            request.Type,
+		Stage:           "planning",
+		DeleteState:     0,
+		CreateUserId:    request.UserId,
+		CreateTime:      now,
+		UpdateUserId:    request.UserId,
+		UpdateTime:      now,
 	}
-	if err := data.DB.Create(&projectEntity).Error; err != nil {
+	CloudPlatformEntity := &entity.CloudPlatformManage{
+		Id:   request.CloudPlatformId,
+		Type: request.CloudPlatformType,
+	}
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&projectEntity).Error; err != nil {
+			return err
+		}
+		if err := tx.Updates(&CloudPlatformEntity).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
 	return nil
