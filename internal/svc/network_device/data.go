@@ -30,9 +30,12 @@ func searchDeviceListByPlanId(planId int64) ([]entity.NetworkDevicePlanning, err
 	return deviceList, nil
 }
 
-func SaveBatch(networkDeviceList []*entity.NetworkDeviceList) error {
-	err := data.DB.CreateInBatches(networkDeviceList, len(networkDeviceList)).Error
-	return err
+func SaveBatch(tx *gorm.DB, networkDeviceList []*entity.NetworkDeviceList) error {
+	if err := tx.Table(entity.NetworkDeviceListTable).Create(&networkDeviceList).Scan(&networkDeviceList).Error; err != nil {
+		log.Errorf("batch insert networkDeviceList error: ", err)
+		return err
+	}
+	return nil
 }
 
 func expireDeviceListByPlanId(tx *gorm.DB, planId int64) error {

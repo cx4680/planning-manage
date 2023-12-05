@@ -119,19 +119,20 @@ CREATE TABLE `az_cell_rel`
 
 CREATE TABLE `project_manage`
 (
-    `id`             bigint(20) NOT NULL AUTO_INCREMENT COMMENT '项目id',
-    `name`           varchar(255) DEFAULT NULL COMMENT '项目名称',
-    `region_id`      bigint(20) NULL DEFAULT NULL COMMENT 'regionId',
-    `az_id`          bigint(20) NULL DEFAULT NULL COMMENT 'azId',
-    `cell_id`        bigint(20) NULL DEFAULT NULL COMMENT 'cell Id',
-    `customer_id`    bigint(20) NULL DEFAULT NULL COMMENT '客户id',
-    `type`           varchar(50) DEFAULT NULL COMMENT '项目类型',
-    `stage`          varchar(50) DEFAULT NULL COMMENT '项目阶段',
-    `create_user_id` varchar(255) DEFAULT NULL COMMENT '创建人id',
-    `create_time`    datetime NULL DEFAULT NULL COMMENT '创建时间',
-    `update_user_id` varchar(255) DEFAULT NULL COMMENT '更新人id',
-    `update_time`    datetime NULL DEFAULT NULL COMMENT '更新时间',
-    `delete_state`   tinyint(1) NULL DEFAULT NULL COMMENT '作废状态：1，作废；0，正常',
+    `id`                bigint(20) NOT NULL AUTO_INCREMENT COMMENT '项目id',
+    `name`              varchar(255) DEFAULT NULL COMMENT '项目名称',
+    `cloud_platform_id` bigint(20) NULL DEFAULT NULL COMMENT '云平台id',
+    `region_id`         bigint(20) NULL DEFAULT NULL COMMENT 'regionId',
+    `az_id`             bigint(20) NULL DEFAULT NULL COMMENT 'azId',
+    `cell_id`           bigint(20) NULL DEFAULT NULL COMMENT 'cell Id',
+    `customer_id`       bigint(20) NULL DEFAULT NULL COMMENT '客户id',
+    `type`              varchar(50)  DEFAULT NULL COMMENT '项目类型',
+    `stage`             varchar(50)  DEFAULT NULL COMMENT '项目阶段',
+    `create_user_id`    varchar(255) DEFAULT NULL COMMENT '创建人id',
+    `create_time`       datetime NULL DEFAULT NULL COMMENT '创建时间',
+    `update_user_id`    varchar(255) DEFAULT NULL COMMENT '更新人id',
+    `update_time`       datetime NULL DEFAULT NULL COMMENT '更新时间',
+    `delete_state`      tinyint(1) NULL DEFAULT NULL COMMENT '作废状态：1，作废；0，正常',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '项目管理表' ROW_FORMAT = Dynamic;
 
@@ -371,7 +372,7 @@ CREATE TABLE if NOT EXISTS `ip_demand_planning` (
   `address_planning` VARCHAR(255) DEFAULT NULL COMMENT 'IP地址规划建议',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-	UNIQUE KEY `IDX_U_PLAN_ID` (`plan_id`),
+	KEY `IDX_PLAN_ID` (`plan_id`),
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='Ip需求规划表';
 

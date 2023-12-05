@@ -107,3 +107,12 @@ func BatchCreateCloudProductNodeRoleRel(cloudProductNodeRoleRels []entity.CloudP
 	}
 	return nil
 }
+
+func GetVersionIdByPlanId(planId int64) (int64, error) {
+	var versionId int64
+	if err := data.DB.Raw("SELECT version_id FROM cloud_product_baseline WHERE id = ( SELECT product_id FROM cloud_product_planning WHERE plan_id = ? LIMIT 1 )", planId).Scan(&versionId).Error; err != nil {
+		log.Errorf("[GetVersionIdByPlanId] error, %v", err)
+		return 0, err
+	}
+	return versionId, nil
+}
