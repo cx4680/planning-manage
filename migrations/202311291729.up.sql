@@ -372,7 +372,7 @@ CREATE TABLE if NOT EXISTS `ip_demand_planning` (
   `address_planning` VARCHAR(255) DEFAULT NULL COMMENT 'IP地址规划建议',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-	UNIQUE KEY `IDX_U_PLAN_ID` (`plan_id`),
+	KEY `IDX_PLAN_ID` (`plan_id`),
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='Ip需求规划表';
 

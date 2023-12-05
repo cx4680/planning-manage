@@ -52,6 +52,14 @@ func UpdateServer(request *Request) error {
 	return nil
 }
 
+func QueryServerPlanningListByPlanId(planId int64) ([]entity.ServerPlanningManage, error) {
+	var serverPlanningList []entity.ServerPlanningManage
+	if err := data.DB.Table(entity.ServerPlanningTable).Where("plan_id = ? and delete_state = 0", planId).Find(&serverPlanningList).Error; err != nil {
+		return serverPlanningList, err
+	}
+	return serverPlanningList, nil
+}
+
 func checkBusiness(request *Request, isCreate bool) error {
 	return nil
 }

@@ -10,7 +10,9 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/ip_demand"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
@@ -93,11 +95,26 @@ func GetDevicePlanByPlanId(c *gin.Context) {
 }
 
 func GetBrandsByPlanId(c *gin.Context) {
-	// planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
-	//TODO 根据方案id查询版本id
-	var versionId int64
-	//TODO 根据方案id查询云产品规划信息  取其中一条拿服务器基线表ID
-	var serverBaselineId int64
+	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
+	// 根据方案id查询版本id
+	versionId, err := baseline.GetVersionIdByPlanId(planId)
+	if err != nil {
+		log.Errorf("[GetVersionIdByPlanId] error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	// 根据方案id查询云产品规划信息  取其中一条拿服务器基线表ID
+	serverPlanningList, err := server.QueryServerPlanningListByPlanId(planId)
+	if err != nil {
+		log.Errorf("[QueryServerPlanningListByPlanId] error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if len(serverPlanningList) == 0 {
+		result.Failure(c, "服务器规划列表不能为空", http.StatusInternalServerError)
+		return
+	}
+	serverBaselineId := serverPlanningList[0].ServerBaselineId
 	// 根据服务器基线ID查询服务器基线表 获取网络版本
 	serverBaseline, err := baseline.QueryServiceBaselineById(serverBaselineId)
 	if err != nil {
@@ -199,6 +216,19 @@ func SaveDeviceList(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
+	ipDemands, err := ip_demand.SearchIpDemandPlanningByPlanId(planId)
+	if err != nil {
+		log.Errorf("[SearchIpDemandPlanningByPlanId] error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	//根据方案ID查询版本ID
+	versionId, err := baseline.GetVersionIdByPlanId(planId)
+	if err != nil {
+		log.Errorf("[GetVersionIdByPlanId] error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
 	userId := user.GetUserId(c)
 	now := datetime.GetNow()
 	err = data.DB.Transaction(func(tx *gorm.DB) error {
@@ -228,11 +258,18 @@ func SaveDeviceList(c *gin.Context) {
 			device.DeleteState = 0
 			networkDeviceList = append(networkDeviceList, device)
 		}
-		err = SaveBatch(networkDeviceList)
+		err = SaveBatch(tx, networkDeviceList)
 		if err != nil {
 			return err
 		}
 		//TODO ip需求表保存
+		if len(ipDemands) > 0 {
+			err = ip_demand.DeleteIpDemandPlanningByPlanId(tx, planId)
+			if err != nil {
+				return err
+			}
+
+		}
 		return err
 	})
 	if err != nil {
