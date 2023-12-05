@@ -32,6 +32,7 @@ type CloudProductBaselineExcel struct {
 	DependProductCode   string   `excel:"name:依赖服务编码;" json:"dependProductCode"`    // 依赖产品Code
 	ControlResNodeRole  string   `excel:"name:管控资源节点角色;" json:"controlResNodeRole"` // 管控资源节点角色
 	ResNodeRole         string   `excel:"name:资源节点角色;" json:"resNodeRole"`          // 资源节点角色
+	DependProductCodes  []string `json:"dependProductCodes"`                        // 依赖产品Code数组
 	ControlResNodeRoles []string `json:"controlResNodeRoles"`                       // 管控资源节点角色数组
 	ResNodeRoles        []string `json:"resNodeRoles"`                              // 资源节点角色数组
 }

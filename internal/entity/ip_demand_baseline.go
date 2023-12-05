@@ -9,7 +9,7 @@ type IPDemandBaseline struct {
 	Explain      string `gorm:"column:explain" json:"explain"`            // 说明
 	Description  string `gorm:"column:description" json:"description"`    // 描述
 	IPSuggestion string `gorm:"column:ip_suggestion" json:"IPSuggestion"` // IP地址规划建议
-	AssignNum    int    `gorm:"column:assign_num" json:"assignNum"`       // 分配数量
+	AssignNum    string `gorm:"column:assign_num" json:"assignNum"`       // 分配数量
 	Remark       string `gorm:"column:remark" json:"remark"`              // 备注
 }
 

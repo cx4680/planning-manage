@@ -75,3 +75,35 @@ func BatchCreateNodeRoleMixedDeploy(nodeRoleMixedDeploys []entity.NodeRoleMixedD
 	}
 	return nil
 }
+
+func BatchCreateCloudProductBaseline(cloudProductBaselines []entity.CloudProductBaseline) error {
+	if err := data.DB.Table(entity.CloudProductBaselineTable).Create(&cloudProductBaselines).Scan(&cloudProductBaselines).Error; err != nil {
+		log.Errorf("batch insert cloudProductBaseline error: ", err)
+		return err
+	}
+	return nil
+}
+
+func QueryCloudProductBaselineByVersionId(versionId int64) ([]entity.CloudProductBaseline, error) {
+	var cloudProductBaselines []entity.CloudProductBaseline
+	if err := data.DB.Table(entity.CloudProductBaselineTable).Where("version_id = ? ", versionId).Find(&cloudProductBaselines).Error; err != nil {
+		return cloudProductBaselines, err
+	}
+	return cloudProductBaselines, nil
+}
+
+func BatchCreateCloudProductDependRel(cloudProductDependRels []entity.CloudProductDependRel) error {
+	if err := data.DB.Table(entity.CloudProductDependRelTable).Create(&cloudProductDependRels).Scan(&cloudProductDependRels).Error; err != nil {
+		log.Errorf("batch insert cloudProductDependRel error: ", err)
+		return err
+	}
+	return nil
+}
+
+func BatchCreateCloudProductNodeRoleRel(cloudProductNodeRoleRels []entity.CloudProductNodeRoleRel) error {
+	if err := data.DB.Table(entity.CloudProductNodeRoleTable).Create(&cloudProductNodeRoleRels).Scan(&cloudProductNodeRoleRels).Error; err != nil {
+		log.Errorf("batch insert cloudProductNodeRoleRel error: ", err)
+		return err
+	}
+	return nil
+}

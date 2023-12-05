@@ -99,33 +99,8 @@ func Import(context *gin.Context) {
 	}()
 	switch baselineType {
 	case CloudProductBaselineType:
-		// 先查询节点角色表，导入的版本是否已有数据，如没有，提示先导入节点角色基线
-		nodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
-		if err != nil {
-			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		if ImportCloudProductBaseline(context, softwareVersion, f) {
 			return
-		}
-		if len(nodeRoleBaselines) == 0 {
-			result.Failure(context, errorcodes.NodeRoleMustImportFirst, http.StatusBadRequest)
-			return
-		}
-		var cloudProductBaselineExcelList []CloudProductBaselineExcel
-		if err := excel.ImportBySheet(f, &cloudProductBaselineExcelList, CloudProductBaselineSheetName, 0, 1); err != nil {
-			log.Error(err)
-			result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
-			return
-		}
-		if len(cloudProductBaselineExcelList) > 0 {
-			for i := range cloudProductBaselineExcelList {
-				controlResNodeRole := cloudProductBaselineExcelList[i].ControlResNodeRole
-				if controlResNodeRole != "" {
-					cloudProductBaselineExcelList[i].ControlResNodeRoles = strings.Split(controlResNodeRole, constant.SplitLineBreak)
-				}
-				resNodeRole := cloudProductBaselineExcelList[i].ResNodeRole
-				if resNodeRole != "" {
-					cloudProductBaselineExcelList[i].ResNodeRoles = strings.Split(resNodeRole, constant.SplitLineBreak)
-				}
-			}
 		}
 		break
 	case ServerBaselineType:
@@ -133,7 +108,9 @@ func Import(context *gin.Context) {
 	case NetworkDeviceBaselineType:
 		break
 	case NodeRoleBaselineType:
-		ImportNodeRoleBaseline(context, f, softwareVersion)
+		if ImportNodeRoleBaseline(context, softwareVersion, f) {
+			return
+		}
 		break
 	default:
 		break
@@ -141,12 +118,148 @@ func Import(context *gin.Context) {
 	result.Success(context, nil)
 }
 
-func ImportNodeRoleBaseline(context *gin.Context, f *excelize.File, softwareVersion entity.SoftwareVersion) {
+func ImportCloudProductBaseline(context *gin.Context, softwareVersion entity.SoftwareVersion, f *excelize.File) bool {
+	// 先查询节点角色表，导入的版本是否已有数据，如没有，提示先导入节点角色基线
+	nodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return true
+	}
+	if len(nodeRoleBaselines) == 0 {
+		result.Failure(context, errorcodes.NodeRoleMustImportFirst, http.StatusBadRequest)
+		return true
+	}
+	var cloudProductBaselineExcelList []CloudProductBaselineExcel
+	if err := excel.ImportBySheet(f, &cloudProductBaselineExcelList, CloudProductBaselineSheetName, 0, 1); err != nil {
+		log.Error(err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return true
+	}
+	if len(cloudProductBaselineExcelList) > 0 {
+		var cloudProductBaselines []entity.CloudProductBaseline
+		for i := range cloudProductBaselineExcelList {
+			dependProductCode := cloudProductBaselineExcelList[i].DependProductCode
+			if dependProductCode != "" {
+				cloudProductBaselineExcelList[i].DependProductCodes = strings.Split(dependProductCode, constant.SplitLineBreak)
+			}
+			controlResNodeRole := cloudProductBaselineExcelList[i].ControlResNodeRole
+			if controlResNodeRole != "" {
+				cloudProductBaselineExcelList[i].ControlResNodeRoles = strings.Split(controlResNodeRole, constant.SplitLineBreak)
+			}
+			resNodeRole := cloudProductBaselineExcelList[i].ResNodeRole
+			if resNodeRole != "" {
+				cloudProductBaselineExcelList[i].ResNodeRoles = strings.Split(resNodeRole, constant.SplitLineBreak)
+			}
+			whetherRequired := cloudProductBaselineExcelList[i].WhetherRequired
+			var whetherRequiredType int
+			if whetherRequired == constant.WhetherRequiredNoChinese {
+				whetherRequiredType = constant.WhetherRequiredNo
+			} else if whetherRequired == constant.WhetherRequiredYesChinese {
+				whetherRequiredType = constant.WhetherRequiredYes
+			} else {
+				result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+				return true
+			}
+			cloudProductBaselines = append(cloudProductBaselines, entity.CloudProductBaseline{
+				VersionId:       softwareVersion.Id,
+				ProductType:     cloudProductBaselineExcelList[i].ProductType,
+				ProductName:     cloudProductBaselineExcelList[i].ProductName,
+				ProductCode:     cloudProductBaselineExcelList[i].ProductCode,
+				SellSpec:        cloudProductBaselineExcelList[i].SellSpecs,
+				AuthorizedUnit:  cloudProductBaselineExcelList[i].AuthorizedUnit,
+				WhetherRequired: whetherRequiredType,
+				Instructions:    cloudProductBaselineExcelList[i].Instructions,
+			})
+		}
+		cloudProductBaselines, err := QueryCloudProductBaselineByVersionId(softwareVersion.Id)
+		if err != nil {
+			log.Error(err)
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return true
+		}
+		if len(cloudProductBaselines) > 0 {
+			// TODO 先查询云产品基线表，看看相同的版本号是否已存在数据，如果已存在，需要先删除已有数据
+		} else {
+			if err := BatchCreateCloudProductBaseline(cloudProductBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			cloudProductBaselines, err = QueryCloudProductBaselineByVersionId(softwareVersion.Id)
+			if err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			cloudProductCodeMap := make(map[string]int64)
+			for _, cloudProductBaseline := range cloudProductBaselines {
+				cloudProductCodeMap[cloudProductBaseline.ProductCode] = cloudProductBaseline.Id
+			}
+			nodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
+			if err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			nodeRoleNameMap := make(map[string]int64)
+			for _, nodeRoleBaseline := range nodeRoleBaselines {
+				nodeRoleNameMap[nodeRoleBaseline.NodeRoleName] = nodeRoleBaseline.Id
+			}
+			for _, cloudProductBaselineExcel := range cloudProductBaselineExcelList {
+				// 处理依赖服务编码
+				dependProductCodes := cloudProductBaselineExcel.DependProductCodes
+				if len(dependProductCodes) > 0 {
+					var cloudProductDependRels []entity.CloudProductDependRel
+					for _, dependProductCode := range dependProductCodes {
+						cloudProductDependRels = append(cloudProductDependRels, entity.CloudProductDependRel{
+							ProductId:       cloudProductCodeMap[cloudProductBaselineExcel.ProductCode],
+							DependProductId: cloudProductCodeMap[dependProductCode],
+						})
+					}
+					if err := BatchCreateCloudProductDependRel(cloudProductDependRels); err != nil {
+						result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+						return true
+					}
+				}
+				// 处理管控资源节点角色和资源节点角色
+				controlResNodeRoles := cloudProductBaselineExcel.ControlResNodeRoles
+				var cloudProductNodeRoleRels []entity.CloudProductNodeRoleRel
+				if len(controlResNodeRoles) > 0 {
+					for _, controlResNodeRole := range controlResNodeRoles {
+						cloudProductNodeRoleRels = append(cloudProductNodeRoleRels, entity.CloudProductNodeRoleRel{
+							ProductId:    cloudProductCodeMap[cloudProductBaselineExcel.ProductCode],
+							NodeRoleId:   nodeRoleNameMap[controlResNodeRole],
+							NodeRoleType: constant.ControlNodeRoleType,
+						})
+					}
+				}
+				resNodeRoles := cloudProductBaselineExcel.ResNodeRoles
+				if len(resNodeRoles) > 0 {
+					for _, resNodeRole := range resNodeRoles {
+						cloudProductNodeRoleRels = append(cloudProductNodeRoleRels, entity.CloudProductNodeRoleRel{
+							ProductId:    cloudProductCodeMap[cloudProductBaselineExcel.ProductCode],
+							NodeRoleId:   nodeRoleNameMap[resNodeRole],
+							NodeRoleType: constant.ResNodeRoleType,
+						})
+					}
+				}
+				if len(cloudProductNodeRoleRels) > 0 {
+					if err := BatchCreateCloudProductNodeRoleRel(cloudProductNodeRoleRels); err != nil {
+						result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
+func ImportNodeRoleBaseline(context *gin.Context, softwareVersion entity.SoftwareVersion, f *excelize.File) bool {
 	var nodeRoleBaselineExcelList []NodeRoleBaselineExcel
 	if err := excel.ImportBySheet(f, &nodeRoleBaselineExcelList, NodeRoleBaselineSheetName, 0, 1); err != nil {
 		log.Error(err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
-		return
+		return true
 	}
 	if len(nodeRoleBaselineExcelList) > 0 {
 		var nodeRoleBaselineList []entity.NodeRoleBaseline
@@ -169,7 +282,7 @@ func ImportNodeRoleBaseline(context *gin.Context, f *excelize.File, softwareVers
 		if err != nil {
 			log.Error(err)
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-			return
+			return true
 		}
 		if len(nodeRoleBaselines) > 0 {
 			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
@@ -178,13 +291,13 @@ func ImportNodeRoleBaseline(context *gin.Context, f *excelize.File, softwareVers
 			if err := BatchCreateNodeRoleBaseline(nodeRoleBaselineList); err != nil {
 				log.Error(err)
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return
+				return true
 			}
 			nodeRoleBaselines, err = QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
 			if err != nil {
 				log.Error(err)
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return
+				return true
 			}
 			nodeRoleMap := make(map[string]int64)
 			for _, nodeRoleBaseline := range nodeRoleBaselines {
@@ -203,10 +316,11 @@ func ImportNodeRoleBaseline(context *gin.Context, f *excelize.File, softwareVers
 					}
 					if err := BatchCreateNodeRoleMixedDeploy(mixedNodeRoles); err != nil {
 						result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-						return
+						return true
 					}
 				}
 			}
 		}
 	}
+	return false
 }

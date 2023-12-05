@@ -339,7 +339,7 @@ CREATE TABLE `ip_demand_baseline` (
                                       `explain` varchar(500) DEFAULT NULL COMMENT '说明',
                                       `description` varchar(500) DEFAULT NULL COMMENT '描述',
                                       `ip_suggestion` varchar(500) DEFAULT NULL COMMENT 'IP地址规划建议',
-                                      `assign_num` int(11) DEFAULT NULL COMMENT '分配数量',
+                                      `assign_num` varchar(100) DEFAULT NULL COMMENT '分配数量',
                                       `remark` varchar(500) DEFAULT NULL COMMENT '备注',
                                       PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='IP需求规划基线表';
