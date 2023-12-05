@@ -4,7 +4,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
@@ -15,7 +14,7 @@ import (
 type Request struct {
 	Id             int64
 	UserId         string
-	PlanId         string    `form:"planId"`
+	PlanId         int64     `form:"planId"`
 	NetworkVersion string    `form:"networkVersion"`
 	CpuType        int64     `form:"cpuType"`
 	serverList     []*server `form:"serverList"`
@@ -36,12 +35,31 @@ func List(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if util.IsBlank(request.PlanId) {
+	if request.PlanId == 0 {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
 	}
 	list, err := ListServer(request)
 	if err != nil {
 		log.Errorf("list server error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, list)
+}
+
+func ArchList(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindQuery(&request); err != nil {
+		log.Errorf("list server arch bind param error: ", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	if request.PlanId == 0 {
+		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+	}
+	list, err := ListServerArch(request)
+	if err != nil {
+		log.Errorf("list server arch error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -89,7 +107,7 @@ func Update(c *gin.Context) {
 }
 
 func checkRequest(request *Request, isCreate bool) error {
-	if util.IsBlank(request.PlanId) {
+	if request.PlanId == 0 {
 		return errors.New("planId参数为空")
 	}
 	if isCreate {

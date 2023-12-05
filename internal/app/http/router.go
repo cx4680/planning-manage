@@ -124,17 +124,6 @@ func Router(engine *gin.Engine) {
 			projectGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除项目", "deleteProject", middleware.DELETE, middleware.INFO)), project.Delete)
 		}
 
-		//服务器规划
-		serverGroup := v1.Group("/server")
-		{
-			// 查询服务器列表
-			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryProjectByPage", middleware.LIST, middleware.INFO)), server.List)
-			// 创建服务器
-			serverGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "queryProjectByPage", middleware.LIST, middleware.INFO)), server.Create)
-			// 修改服务器
-			serverGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改服务器", "queryProjectByPage", middleware.LIST, middleware.INFO)), server.Update)
-		}
-
 		// plan
 		planGroup := v1.Group("/plan")
 		{
@@ -146,6 +135,19 @@ func Router(engine *gin.Engine) {
 			planGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改方案", "determinePlanById", middleware.UPDATE, middleware.INFO)), plan.Update)
 			// 删除方案
 			planGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除方案", "deletePlanById", middleware.DELETE, middleware.INFO)), plan.Delete)
+		}
+
+		//服务器规划
+		serverGroup := v1.Group("/server")
+		{
+			// 查询服务器规划列表
+			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryServerList", middleware.LIST, middleware.INFO)), server.List)
+			// 创建服务器规划
+			serverGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "createServerList", middleware.LIST, middleware.INFO)), server.Create)
+			// 修改服务器规划
+			serverGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改服务器", "updateServerList", middleware.LIST, middleware.INFO)), server.Update)
+			// 查询服务器架构列表
+			serverGroup.GET("/arch/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.ArchList)
 		}
 
 		// baseline
@@ -180,8 +182,8 @@ func Router(engine *gin.Engine) {
 		// cloudProduct
 		cloudProduct := v1.Group("/cloud/product")
 		{
-			cloudProduct.GET("/version/list", middleware.OperatorLog(DefaultEventOpInfo("查询云产品版本列表", "listCloudProductVersion", middleware.LIST, middleware.INFO)), cloud_product.ListVersion)
-			cloudProduct.GET("/baseline/list", middleware.OperatorLog(DefaultEventOpInfo("查询云产品基线列表", "listCloudProductBaseline", middleware.LIST, middleware.INFO)), cloud_product.ListCloudProductBaseline)
+			cloudProduct.GET("/version/list", middleware.OperatorLog(DefaultEventOpInfo("根据项目id查询云产品版本列表", "listCloudProductVersion", middleware.LIST, middleware.INFO)), cloud_product.ListVersion)
+			cloudProduct.GET("/baseline/list", middleware.OperatorLog(DefaultEventOpInfo("根据版本id查询云产品基线列表", "listCloudProductBaseline", middleware.LIST, middleware.INFO)), cloud_product.ListCloudProductBaseline)
 			cloudProduct.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("保存用户选择的云产品", "saveCloudProduct", middleware.CREATE, middleware.INFO)), cloud_product.Save)
 			cloudProduct.GET("/list/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id获取用户选择的云产品清单", "listCloudProduct", middleware.LIST, middleware.INFO)), cloud_product.List)
 		}

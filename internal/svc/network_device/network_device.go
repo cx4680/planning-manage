@@ -1,6 +1,7 @@
 package network_device
 
 import (
+	"code.cestc.cn/ccos/cnm/ops-base/utils"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
@@ -14,6 +15,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
@@ -35,13 +37,14 @@ type Request struct {
 }
 
 type NetworkDevices struct {
-	PlanId            int64                `form:"planId"`
-	NetworkDeviceRole string               `form:"networkDeviceRole"`
-	LogicalGrouping   string               `form:"logicalGrouping"`
-	DeviceId          string               `form:"deviceId"`
-	Brand             string               `form:"brand"`
-	DeviceModel       string               `form:"deviceModel"`
-	DeviceModels      []NetworkDeviceModel `form:"deviceModels"`
+	PlanId              int64                `form:"planId"`
+	NetworkDeviceRoleId int64                `form:"networkDeviceRoleId"`
+	NetworkDeviceRole   string               `form:"networkDeviceRole"`
+	LogicalGrouping     string               `form:"logicalGrouping"`
+	DeviceId            string               `form:"deviceId"`
+	Brand               string               `form:"brand"`
+	DeviceModel         string               `form:"deviceModel"`
+	DeviceModels        []NetworkDeviceModel `form:"deviceModels"`
 }
 
 type NetworkDeviceModel struct {
@@ -211,6 +214,8 @@ func ListNetworkDevices(c *gin.Context) {
 func SaveDeviceList(c *gin.Context) {
 	var request []NetworkDevices
 	var networkDeviceList []*entity.NetworkDeviceList
+	var ipDemandPlannings []*entity.IPDemandPlanning
+	now := datetime.GetNow()
 	if err := c.ShouldBindQuery(&request); err != nil {
 		log.Errorf("save network devices bind param error: ", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
@@ -221,6 +226,21 @@ func SaveDeviceList(c *gin.Context) {
 		return
 	}
 	planId := request[0].PlanId
+	// 组装网络设备清单数据
+	for _, networkDevice := range request {
+		device := new(entity.NetworkDeviceList)
+		device.PlanId = planId
+		device.NetworkDeviceRole = networkDevice.NetworkDeviceRole
+		device.NetworkDeviceRoleId = networkDevice.NetworkDeviceRoleId
+		device.LogicalGrouping = networkDevice.LogicalGrouping
+		device.DeviceId = networkDevice.DeviceId
+		device.Brand = networkDevice.Brand
+		device.DeviceModel = networkDevice.DeviceModel
+		device.CreateTime = now
+		device.UpdateTime = now
+		device.DeleteState = 0
+		networkDeviceList = append(networkDeviceList, device)
+	}
 	deviceList, err := searchDeviceListByPlanId(planId)
 	if err != nil {
 		log.Errorf("[searchDeviceListByPlanId] search device list by planId error, %v", err)
@@ -234,14 +254,58 @@ func SaveDeviceList(c *gin.Context) {
 		return
 	}
 	//根据方案ID查询版本ID
-	//versionId, err := baseline.GetVersionIdByPlanId(planId)
+	versionId, err := baseline.GetVersionIdByPlanId(planId)
 	if err != nil {
 		log.Errorf("[GetVersionIdByPlanId] error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
+	// 根据版本ID查询ip需求基线数据
+	ipDemandBaselines, err := ip_demand.GetIpDemandBaselineByVersionId(versionId)
+	if err != nil {
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	// 转ip基线ID Map
+	ipBaselineIdMap := util.ListToMaps(ipDemandBaselines, "ID")
+	// 根据方案ID查询网络设备清单
+	deviceRoleNum, err := getDeviceRoleGroupNumByPlanId(planId)
+	//转设备角色id和分组数 map
+	deviceRoleIdMap := util.ListToMap(deviceRoleNum, "DeviceRoleId")
+	for _, value := range ipBaselineIdMap {
+		var num = 0
+		dto := new(ip_demand.IpDemandBaselineDto)
+		var needCount bool
+		//根据IP需求规划表的关联设备组进行 网络设备清单分组累加
+		for i, val := range value {
+			v := val.(*ip_demand.IpDemandBaselineDto)
+			if i == 0 {
+				dto = v
+			}
+			deviceRoleId := v.DeviceRoleId
+			groupNum, ok := deviceRoleIdMap[strconv.FormatInt(deviceRoleId, 10)]
+			if ok {
+				needCount = true
+				deviceGroupNum := groupNum.(*DeviceRoleGroupNum)
+				num += deviceGroupNum.GroupNum
+			}
+		}
+		if needCount {
+			ipDemandPlanning := new(entity.IPDemandPlanning)
+			ipDemandPlanning.PlanId = planId
+			ipDemandPlanning.SegmentType = dto.Explain
+			ipDemandPlanning.Vlan = dto.Vlan
+			assignNum, _ := utils.String2Float(dto.AssignNum)
+			cNum := assignNum * float64(num)
+			ipDemandPlanning.Cnum = fmt.Sprintf("%f", cNum)
+			ipDemandPlanning.Describe = dto.Description
+			ipDemandPlanning.AddressPlanning = dto.IpSuggestion
+			ipDemandPlanning.CreateTime = now
+			ipDemandPlanning.UpdateTime = now
+			ipDemandPlannings = append(ipDemandPlannings, ipDemandPlanning)
+		}
+	}
 	userId := user.GetUserId(c)
-	now := datetime.GetNow()
 	err = data.DB.Transaction(func(tx *gorm.DB) error {
 		if len(deviceList) > 0 {
 			//失效库里保存的
@@ -251,36 +315,23 @@ func SaveDeviceList(c *gin.Context) {
 			}
 		}
 		// 更新方案表的状态
-		err = plan.UpdatePlanStage(tx, planId, constant.BUSINESS_END_STAGE, userId)
+		err = plan.UpdatePlanStage(tx, planId, constant.PLANNED, userId)
 		if err != nil {
 			return err
 		}
 		// 批量保存网络设备清单
-		for _, networkDevice := range request {
-			device := new(entity.NetworkDeviceList)
-			device.PlanId = planId
-			device.NetworkDeviceRole = networkDevice.NetworkDeviceRole
-			device.LogicalGrouping = networkDevice.LogicalGrouping
-			device.DeviceId = networkDevice.DeviceId
-			device.Brand = networkDevice.Brand
-			device.DeviceModel = networkDevice.DeviceModel
-			device.CreateTime = now
-			device.UpdateTime = now
-			device.DeleteState = 0
-			networkDeviceList = append(networkDeviceList, device)
-		}
 		err = SaveBatch(tx, networkDeviceList)
 		if err != nil {
 			return err
 		}
-		//TODO ip需求表保存
+		// ip需求表保存
 		if len(ipDemands) > 0 {
 			err = ip_demand.DeleteIpDemandPlanningByPlanId(tx, planId)
 			if err != nil {
 				return err
 			}
 		}
-
+		err = ip_demand.SaveBatch(tx, ipDemandPlannings)
 		return err
 	})
 	if err != nil {
@@ -393,29 +444,30 @@ func dealNetworkModel(versionId int64, networkInterface string, request Request,
 				minimumNumUnit += discuss
 			}
 		}
-		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response)
+		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response, id)
 	default:
 		//固定数量计算
 		if strings.EqualFold(constant.YES, networkModel) {
-			response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response)
+			response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response, id)
 		}
 	}
 	return response, nil
 }
 
 // 组装设备清单
-func buildDto(groupNum int, deviceNum int, funcCompoName string, brand string, deviceType string, deviceModels []NetworkDeviceModel, response []NetworkDevices) ([]NetworkDevices, error) {
+func buildDto(groupNum int, deviceNum int, funcCompoName string, brand string, deviceType string, deviceModels []NetworkDeviceModel, response []NetworkDevices, deviceRoleId int64) ([]NetworkDevices, error) {
 	for i := 1; i <= groupNum; i++ {
 		logicalGrouping := funcCompoName + "-" + strconv.Itoa(i)
 		for j := 1; j <= deviceNum; j++ {
 			deviceId := logicalGrouping + "." + strconv.Itoa(j)
 			networkDevice := NetworkDevices{
-				NetworkDeviceRole: funcCompoName,
-				LogicalGrouping:   logicalGrouping,
-				DeviceId:          deviceId,
-				Brand:             brand,
-				DeviceModel:       deviceType,
-				DeviceModels:      deviceModels,
+				NetworkDeviceRole:   funcCompoName,
+				NetworkDeviceRoleId: deviceRoleId,
+				LogicalGrouping:     logicalGrouping,
+				DeviceId:            deviceId,
+				Brand:               brand,
+				DeviceModel:         deviceType,
+				DeviceModels:        deviceModels,
 			}
 			response = append(response, networkDevice)
 		}

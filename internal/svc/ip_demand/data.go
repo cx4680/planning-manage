@@ -23,3 +23,20 @@ func DeleteIpDemandPlanningByPlanId(tx *gorm.DB, planId int64) error {
 	}
 	return nil
 }
+
+func GetIpDemandBaselineByVersionId(versionId int64) ([]IpDemandBaselineDto, error) {
+	var demandBaseline []IpDemandBaselineDto
+	if err := data.DB.Raw("select a.id,a.version_id,a.vlan,a.explain,a.description,a.ip_suggestion,a.assign_num,a.remark,b.device_role_id from ip_demand_baseline a left join ip_demand_device_role_rel b on a.id = b.ip_demand_id where a.version_id = ?", versionId).Scan(&demandBaseline).Error; err != nil {
+		log.Errorf("[GetIpDemandBaselineByVersionId] error, %v", err)
+		return nil, err
+	}
+	return demandBaseline, nil
+}
+
+func SaveBatch(tx *gorm.DB, demandPlannings []*entity.IPDemandPlanning) error {
+	if err := tx.Table(entity.IPDemandPlanningTable).Create(&demandPlannings).Scan(&demandPlannings).Error; err != nil {
+		log.Errorf("batch insert demandPlannings error: ", err)
+		return err
+	}
+	return nil
+}

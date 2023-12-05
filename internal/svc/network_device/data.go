@@ -12,6 +12,11 @@ type BoxTotalResponse struct {
 	Count int64 `json:"count"`
 }
 
+type DeviceRoleGroupNum struct {
+	DeviceRoleId int64 `form:"deviceRoleId"`
+	GroupNum     int   `form:"groupNum"`
+}
+
 func searchDevicePlanByPlanId(planId int64) (*entity.NetworkDevicePlanning, error) {
 	var devicePlan entity.NetworkDevicePlanning
 	if err := data.DB.Table(entity.NetworkDevicePlanningTable).Where("plan_id=?", planId).Scan(&devicePlan).Error; err != nil {
@@ -84,6 +89,15 @@ func getBrandsByVersionIdAndNetworkVersion(versionId int64, networkVersion strin
 		return nil, err
 	}
 	return brands, nil
+}
+
+func getDeviceRoleGroupNumByPlanId(planId int64) ([]DeviceRoleGroupNum, error) {
+	var roleNum []DeviceRoleGroupNum
+	if err := data.DB.Raw("SELECT count(DISTINCT logical_grouping),network_device_role_id FROM network_device_list where plan_id=? GROUP BY network_device_role_id", planId).Scan(&roleNum).Error; err != nil {
+		log.Errorf("[getDeviceRoleGroupNumByPlanId] error, %v", err)
+		return nil, err
+	}
+	return roleNum, nil
 }
 
 func getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId int64, networkInterface string, id int64, brand string) ([]NetworkDeviceModel, error) {
