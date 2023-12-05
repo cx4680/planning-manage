@@ -10,43 +10,6 @@ import (
 	"time"
 )
 
-type CreateCustomerRequest struct {
-	CustomerName string   `json:"customerName"`
-	LeaderId     string   `json:"leaderId"`
-	LeaderName   string   `json:"leaderName"`
-	MembersId    []string `json:"membersId"`
-	MembersName  []string `json:"membersName"`
-}
-
-type PageCustomerRequest struct {
-	Current      int    `json:"current"`
-	Size         int    `json:"size"`
-	CustomerName string `json:"customerName"`
-	LeaderName   string `json:"leaderName"`
-	CustomerId   int64  `json:"customerId"`
-}
-
-type CustomerResponse struct {
-	ID           int64  `json:"id"`
-	CustomerName string `json:"customerName"`
-	LeaderId     string `json:"leaderId"`
-	LeaderName   string `json:"leaderName"`
-	//MembersId    []string `json:"membersId"`
-	MembersName []string  `json:"membersName"`
-	CreateTime  time.Time `json:"createTime"`
-	UpdateTime  time.Time `json:"updateTime"`
-	Editable    bool      `json:"editable"`
-}
-
-type UpdateCustomerRequest struct {
-	ID           int64    `json:"id"`
-	CustomerName string   `json:"customerName"`
-	LeaderId     string   `json:"leaderId"`
-	LeaderName   string   `json:"leaderName"`
-	MembersId    []string `json:"membersId"`
-	MembersName  []string `json:"membersName"`
-}
-
 func createCustomer(customerParam CreateCustomerRequest, leaderId string, ldapUser *ldap.Entry, currentUserId string) (*entity.CustomerManage, error) {
 	customerManage := entity.CustomerManage{
 		CustomerName: customerParam.CustomerName,
@@ -103,26 +66,10 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 		log.Errorf("[pageCustomer] query role manage from db error")
 		return nil, 0
 	}
-	/*db := data.Paginate(customerPageParam.Current, customerPageParam.PageSize)
-
-	if roleManage.Role != "admin" {
-		data.DBColumnEqualFunc(db, "leader_id", currentUserId)
-	}
-	data.DBColumnLikeFunc(db, "customer_name", customerPageParam.CustomerName)
-	data.DBColumnLikeFunc(db, "leader_name", customerPageParam.LeaderName)
-	data.DBColumnEqualFunc(db, "delete_state", 0)
-
-	var customerList []entity.CustomerManage
-	var count int64
-	if err := db.Table(entity.CustomerManageTable).Order("update_time DESC").Find(&customerList).Offset(-1).Count(&count).Error; err != nil {
-		log.Errorf("[pageCustomer] query db error")
-		return nil, 0
-	}*/
 	var customerList []entity.CustomerManage
 	var count int64
 
-	where := map[string]interface{}{}
-	db := data.DB.Table("customer_manage").Distinct()
+	db := data.DB.Table("customer_manage").Select("DISTINCT customer_manage.*")
 	db.Where("customer_manage.delete_state=0")
 	if len(customerPageParam.CustomerName) > 0 {
 		db.Where("customer_manage.customer_name like ?", `%`+customerPageParam.CustomerName+`%`)
@@ -134,7 +81,6 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 		db.Where("(customer_manage.leader_id = ? OR permissions_manage.user_id = ?)", currentUserId, currentUserId)
 	}
 	if err := db.Joins("LEFT JOIN permissions_manage ON permissions_manage.customer_id = customer_manage.id").
-		Where(where).
 		Order("update_time DESC").
 		Limit(customerPageParam.Size).
 		Offset((customerPageParam.Current - 1) * customerPageParam.Size).

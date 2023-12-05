@@ -1,6 +1,7 @@
 package http
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
 	"os"
 
@@ -40,7 +41,7 @@ func Router(engine *gin.Engine) {
 			// 新增操作
 			userGroup.GET("/logout", middleware.OperatorLog(DefaultEventOpInfo("登出", "logout", middleware.OPERATE, middleware.INFO)), user.Logout)
 			// 根据名称查询ldap用户
-			userGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("登出", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByName)
+			userGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("根据关键字查询用户", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByName)
 		}
 
 		customerGroup := v1.Group("/customer")
@@ -174,6 +175,15 @@ func Router(engine *gin.Engine) {
 		{
 			// 下载IP需求表
 			ipDemandGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载IP需求表", "ipDemandListDownload", middleware.EXPORT, middleware.INFO)), ip_demand.IpDemandListDownload)
+		}
+
+		// cloudProduct
+		cloudProduct := v1.Group("/cloud/product")
+		{
+			cloudProduct.GET("/version/list", middleware.OperatorLog(DefaultEventOpInfo("查询云产品版本列表", "listCloudProductVersion", middleware.LIST, middleware.INFO)), cloud_product.ListVersion)
+			cloudProduct.GET("/baseline/list", middleware.OperatorLog(DefaultEventOpInfo("查询云产品基线列表", "listCloudProductBaseline", middleware.LIST, middleware.INFO)), cloud_product.ListCloudProductBaseline)
+			cloudProduct.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("保存用户选择的云产品", "saveCloudProduct", middleware.CREATE, middleware.INFO)), cloud_product.Save)
+			cloudProduct.GET("/list/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id获取用户选择的云产品清单", "listCloudProduct", middleware.LIST, middleware.INFO)), cloud_product.List)
 		}
 	}
 }
