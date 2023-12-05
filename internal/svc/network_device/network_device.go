@@ -154,9 +154,6 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	//err = data.DB.Transaction(func(tx *gorm.DB) error {
-	//	return err
-	//})
 	if devicePlan.Id == 0 {
 		err = createDevicePlan(request)
 	} else {
@@ -167,12 +164,26 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	//TODO 根据方案id查询版本id 云产品规划表和云产品基线表
-	var versionId int64
-	//TODO 根据方案id查询服务器规划
-
-	//TODO 根据服务器基线id查询服务器基线表获取网络接口
-	var serviceBaselineId int64
+	// 根据方案id查询版本id 云产品规划表和云产品基线表
+	versionId, err := baseline.GetVersionIdByPlanId(planId)
+	if err != nil {
+		log.Errorf("[GetVersionIdByPlanId] error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	// 根据方案id查询服务器规划
+	serverPlanningList, err := server.QueryServerPlanningListByPlanId(planId)
+	if err != nil {
+		log.Errorf("[QueryServerPlanningListByPlanId] error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if len(serverPlanningList) == 0 {
+		result.Failure(c, "服务器规划列表不能为空", http.StatusInternalServerError)
+		return
+	}
+	// 根据服务器基线id查询服务器基线表获取网络接口
+	serviceBaselineId := serverPlanningList[0].ServerBaselineId
 	serverBaseline, err := baseline.QueryServiceBaselineById(serviceBaselineId)
 	if err != nil {
 		log.Errorf("[QueryServiceBaselineById] search baseline by id error, %v", err)
@@ -223,7 +234,7 @@ func SaveDeviceList(c *gin.Context) {
 		return
 	}
 	//根据方案ID查询版本ID
-	versionId, err := baseline.GetVersionIdByPlanId(planId)
+	//versionId, err := baseline.GetVersionIdByPlanId(planId)
 	if err != nil {
 		log.Errorf("[GetVersionIdByPlanId] error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -268,8 +279,8 @@ func SaveDeviceList(c *gin.Context) {
 			if err != nil {
 				return err
 			}
-
 		}
+
 		return err
 	})
 	if err != nil {
