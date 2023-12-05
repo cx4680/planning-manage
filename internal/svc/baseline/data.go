@@ -7,7 +7,19 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 )
 
-func QuerySoftwareVersionByVersion(version string, cloudPlatformType int) (entity.SoftwareVersion, error) {
+func QueryCloudPlatformType() ([]string, error) {
+	var cloudPlatformTypes []string
+	var configItem entity.ConfigItem
+	if err := data.DB.Table(entity.ConfigItemTable).Where("code = ?", "cloudPlatformType").Find(&configItem).Error; err != nil {
+		return cloudPlatformTypes, err
+	}
+	if err := data.DB.Table(entity.ConfigItemTable).Where("p_id = ?", configItem.Id).Pluck("code", &cloudPlatformTypes).Error; err != nil {
+		return cloudPlatformTypes, err
+	}
+	return cloudPlatformTypes, nil
+}
+
+func QuerySoftwareVersionByVersion(version string, cloudPlatformType string) (entity.SoftwareVersion, error) {
 	var softwareVersion entity.SoftwareVersion
 	if err := data.DB.Table(entity.SoftwareVersionTable).Where("software_version = ? AND cloud_platform_type = ?", version, cloudPlatformType).First(&softwareVersion).Error; err != nil {
 		return softwareVersion, err
@@ -17,7 +29,7 @@ func QuerySoftwareVersionByVersion(version string, cloudPlatformType int) (entit
 
 func CreateSoftwareVersion(softwareVersion entity.SoftwareVersion) error {
 	if err := data.DB.Table(entity.SoftwareVersionTable).Create(&softwareVersion).Scan(&softwareVersion).Error; err != nil {
-		log.Errorf("insert software error: ", err)
+		log.Errorf("insert software version error: ", err)
 		return err
 	}
 	return nil
