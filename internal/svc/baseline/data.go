@@ -5,7 +5,6 @@ import (
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 )
 
 func QuerySoftwareVersionByVersion(version string, cloudPlatformType int) (entity.SoftwareVersion, error) {
@@ -55,4 +54,12 @@ func QueryServiceBaselineById(id int64) (*entity.ServerBaseline, error) {
 		return nil, err
 	}
 	return &serverBaseline, nil
+}
+
+func BatchCreateNodeRoleMixedDeploy(nodeRoleMixedDeploys []entity.NodeRoleMixedDeploy) error {
+	if err := data.DB.Table(entity.NodeRoleMixedDeployTable).Create(&nodeRoleMixedDeploys).Scan(&nodeRoleMixedDeploys).Error; err != nil {
+		log.Errorf("batch insert nodeRoleMixedDeploy error: ", err)
+		return err
+	}
+	return nil
 }

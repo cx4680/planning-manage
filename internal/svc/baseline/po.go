@@ -38,7 +38,7 @@ type CloudProductBaselineExcel struct {
 
 type NodeRoleBaselineExcel struct {
 	NodeRoleCode string   `excel:"name:角色code;" json:"nodeRoleCode"`   // 角色code
-	RoleName     string   `excel:"name:角色名称;" json:"roleName"`         // 角色名称
+	NodeRoleName string   `excel:"name:角色名称;" json:"nodeRoleName"`     // 角色名称
 	MinimumCount int      `excel:"name:单独部署最小数量;" json:"minimumCount"` // 单独部署最小数量
 	DeployMethod string   `excel:"name:部署方式;" json:"deployMethod"`     // 部署方式
 	MixedDeploy  string   `excel:"name:节点混部;" json:"mixedDeploy"`      // 节点混部

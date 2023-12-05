@@ -223,7 +223,7 @@ CREATE TABLE `node_role_baseline`
     `id`             bigint(20) NOT NULL COMMENT '主键id',
     `version_id`     bigint(20) DEFAULT NULL COMMENT '软件版本id',
     `node_role_code` varchar(255) DEFAULT NULL COMMENT '节点角色编码',
-    `role_name`      varchar(255) DEFAULT NULL COMMENT '节点角色名称',
+    `node_role_name`      varchar(255) DEFAULT NULL COMMENT '节点角色名称',
     `minimum_num`    int(11) DEFAULT NULL COMMENT '单独部署最小数量',
     `deploy_method`  varchar(255) DEFAULT NULL COMMENT '部署方式',
     `annotation`     varchar(500) DEFAULT NULL COMMENT '节点说明',

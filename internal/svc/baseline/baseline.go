@@ -136,7 +136,7 @@ func Import(context *gin.Context) {
 				nodeRoleBaselineList = append(nodeRoleBaselineList, entity.NodeRoleBaseline{
 					VersionId:    softwareVersion.Id,
 					NodeRoleCode: nodeRoleBaselineExcelList[i].NodeRoleCode,
-					RoleName:     nodeRoleBaselineExcelList[i].RoleName,
+					NodeRoleName: nodeRoleBaselineExcelList[i].NodeRoleName,
 					MinimumNum:   nodeRoleBaselineExcelList[i].MinimumCount,
 					DeployMethod: nodeRoleBaselineExcelList[i].DeployMethod,
 					Annotation:   nodeRoleBaselineExcelList[i].Annotation,
@@ -158,7 +158,33 @@ func Import(context *gin.Context) {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return
 				}
-
+				nodeRoleBaselines, err = QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
+				if err != nil {
+					log.Error(err)
+					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+					return
+				}
+				nodeRoleMap := make(map[string]int64)
+				for _, nodeRoleBaseline := range nodeRoleBaselines {
+					nodeRoleMap[nodeRoleBaseline.NodeRoleName] = nodeRoleBaseline.Id
+				}
+				for _, nodeRoleBaselineExcel := range nodeRoleBaselineExcelList {
+					nodeRoleName := nodeRoleBaselineExcel.NodeRoleName
+					mixedDeploys := nodeRoleBaselineExcel.MixedDeploys
+					if len(mixedDeploys) > 0 {
+						var mixedNodeRoles []entity.NodeRoleMixedDeploy
+						for _, mixedDeploy := range mixedDeploys {
+							mixedNodeRoles = append(mixedNodeRoles, entity.NodeRoleMixedDeploy{
+								NodeRoleId:      nodeRoleMap[nodeRoleName],
+								MixedNodeRoleId: nodeRoleMap[mixedDeploy],
+							})
+						}
+						if err := BatchCreateNodeRoleMixedDeploy(mixedNodeRoles); err != nil {
+							result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+							return
+						}
+					}
+				}
 			}
 		}
 		break
