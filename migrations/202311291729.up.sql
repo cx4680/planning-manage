@@ -305,12 +305,13 @@ CREATE TABLE `network_device_role_baseline` (
                                                 `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
                                                 `version_id` bigint(20) DEFAULT NULL COMMENT '版本id',
                                                 `device_type` varchar(255) DEFAULT NULL COMMENT '设备类型',
+                                                `func_type` varchar(255) DEFAULT NULL COMMENT '类型',
                                                 `func_compo` varchar(255) DEFAULT NULL COMMENT '功能组件',
                                                 `func_compo_name` varchar(255) DEFAULT NULL COMMENT '功能组件名称',
                                                 `description` varchar(500) DEFAULT NULL COMMENT '描述',
-                                                `two_network_iso` varchar(255) DEFAULT NULL COMMENT '两网分离',
-                                                `three_network_iso` varchar(255) DEFAULT NULL COMMENT '三网分离',
-                                                `triple_play` varchar(255) DEFAULT NULL COMMENT '三网合一',
+                                                `two_network_iso` tinyint(4) DEFAULT NULL COMMENT '两网分离，0：否，1：是，2：需要查询网络模式与节点角色或者网络设备角色关联表',
+                                                `three_network_iso` tinyint(4) DEFAULT NULL COMMENT '三网分离，0：否，1：是，2：需要查询网络模式与节点角色或者网络设备角色关联表',
+                                                `triple_play` tinyint(4) DEFAULT NULL COMMENT '三网合一，0：否，1：是，2：需要查询网络模式与节点角色或者网络设备角色关联表',
                                                 `minimum_num_unit` int(11) DEFAULT NULL COMMENT '最小单元数',
                                                 `unit_device_num` int(11) DEFAULT NULL COMMENT '单元设备数量',
                                                 `design_spec` varchar(500) DEFAULT NULL COMMENT '设计规格',
@@ -389,3 +390,11 @@ CREATE TABLE if NOT EXISTS `ip_demand_planning` (
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='Ip需求规划表';
 
+
+CREATE TABLE `network_model_role_rel` (
+                                          `network_device_role_id` bigint(20) DEFAULT NULL COMMENT '网络设备角色id',
+                                          `network_model` tinyint(4) DEFAULT NULL COMMENT '网络组网模式，1：三网合一，2：两网分离，3：三网分离',
+                                          `associated_type` tinyint(4) DEFAULT NULL COMMENT '关联类型，0：节点角色，1：网络设备角色',
+                                          `role_id` bigint(20) DEFAULT NULL COMMENT '关联的节点角色id或者网络设备角色id',
+                                          `role_num` int(11) DEFAULT NULL COMMENT '关联相同角色数量'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='网络组网模式与节点角色或者网络设备角色关联表';

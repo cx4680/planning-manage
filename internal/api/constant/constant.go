@@ -133,8 +133,10 @@ const (
 )
 
 const (
-	YES = "1"
-	NO  = "0"
+	YES        = "1"
+	NO         = "0"
+	YesChinese = "是"
+	NoChinese  = "否"
 )
 
 const (
@@ -146,7 +148,8 @@ const (
 )
 
 const (
-	SplitLineBreak = "\n"
+	SplitLineBreak    = "\n"
+	SplitLineAsterisk = "*"
 )
 
 const (
@@ -159,4 +162,17 @@ const (
 const (
 	ResNodeRoleType     = 0
 	ControlNodeRoleType = 1
+)
+
+const (
+	NetworkModelNo         = 0
+	NetworkModelYes        = 1
+	NeedQueryOtherTable    = 2
+	NetworkModelNoChinese  = "否"
+	NetworkModelYesChinese = "是"
+)
+
+const (
+	NodeRoleType          = 0
+	NetworkDeviceRoleType = 1
 )

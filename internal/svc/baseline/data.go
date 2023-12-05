@@ -140,3 +140,27 @@ func BatchCreateServerNodeRoleRel(serverNodeRoleRels []entity.ServerNodeRoleRel)
 	}
 	return nil
 }
+
+func QueryNetworkDeviceRoleBaselineByVersionId(versionId int64) ([]entity.NetworkDeviceRoleBaseline, error) {
+	var networkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline
+	if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Where("version_id = ? ", versionId).Find(&networkDeviceRoleBaselines).Error; err != nil {
+		return networkDeviceRoleBaselines, err
+	}
+	return networkDeviceRoleBaselines, nil
+}
+
+func BatchCreateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline) error {
+	if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Create(&networkDeviceRoleBaselines).Scan(&networkDeviceRoleBaselines).Error; err != nil {
+		log.Errorf("batch insert networkDeviceRoleBaseline error: ", err)
+		return err
+	}
+	return nil
+}
+
+func BatchCreateNetworkModelRoleRel(networkModelRoleRels []entity.NetworkModelRoleRel) error {
+	if err := data.DB.Table(entity.NetworkModelRoleRelTable).Create(&networkModelRoleRels).Scan(&networkModelRoleRels).Error; err != nil {
+		log.Errorf("batch insert networkModelRoleRel error: ", err)
+		return err
+	}
+	return nil
+}

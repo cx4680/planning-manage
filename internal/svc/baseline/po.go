@@ -1,17 +1,19 @@
 package baseline
 
 const (
-	CloudProductBaselineSheetName  = "云产品售卖清单"
-	ServerBaselineSheetName        = "服务器基线"
-	NetworkDeviceBaselineSheetName = "网络设备基线"
-	NodeRoleBaselineSheetName      = "节点角色基线"
+	CloudProductBaselineSheetName      = "云产品售卖清单"
+	ServerBaselineSheetName            = "服务器基线"
+	NetworkDeviceBaselineSheetName     = "网络设备基线"
+	NetworkDeviceRoleBaselineSheetName = "网络设备角色基线"
+	NodeRoleBaselineSheetName          = "节点角色基线"
 )
 
 const (
-	CloudProductBaselineType  = "cloudProductListBaseline"
-	ServerBaselineType        = "serverBaseline"
-	NetworkDeviceBaselineType = "networkDeviceBaseline"
-	NodeRoleBaselineType      = "nodeRoleBaseline"
+	CloudProductBaselineType      = "cloudProductListBaseline"
+	ServerBaselineType            = "serverBaseline"
+	NetworkDeviceBaselineType     = "networkDeviceBaseline"
+	NetworkDeviceRoleBaselineType = "networkDeviceRoleBaseline"
+	NodeRoleBaselineType          = "nodeRoleBaseline"
 )
 
 type ImportBaselineRequest struct {
@@ -50,23 +52,40 @@ type NodeRoleBaselineExcel struct {
 }
 
 type ServerBaselineExcel struct {
-	Arch                string   `excel:"name:硬件架构" json:"Arch"`                      // 硬件架构
-	NetworkInterface    string   `excel:"name:网络接口" json:"networkInterface"`          // 网络接口
-	NodeRole            string   `excel:"name:节点角色" json:"nodeRole"`                  // 节点角色
-	ServerModel         string   `excel:"name:机型" json:"serverModel"`                 // 机型
-	ConfigurationInfo   string   `excel:"name:配置概要" json:"configurationInfo"`         // 配置概要
-	Spec                string   `excel:"name:规格" json:"spec"`                        // 规格
-	CpuType             string   `excel:"name:硬件架构" json:"cpuType"`                   // CPU类型
-	Cpu                 int      `excel:"name:vCPU" json:"cpu"`                       // CPU核数
-	Gpu                 string   `excel:"name:GPU" json:"gpu"`                        // GPU
-	Memory              int      `excel:"name:内存" json:"memory"`                      // 内存
-	SystemDiskType      string   `excel:"name:系统盘类型" json:"systemDiskType"`           // 系统盘类型
-	SystemDisk          string   `excel:"name:系统盘" json:"systemDisk"`                 // 系统盘
-	StorageDiskType     string   `excel:"name:存储盘类型" json:"storageDiskType"`          // 存储盘类型
-	StorageDiskNum      int      `excel:"name:存储盘个数" json:"storageDiskNum"`           // 存储盘个数
-	StorageDiskCapacity int      `excel:"name:存储盘单盘容量（G）" json:"storageDiskCapacity"` // 存储盘单盘容量（G）
-	RamDisk             string   `excel:"name:缓存盘" json:"ramDisk"`                    // 缓存盘
-	NetworkCardNum      int      `excel:"name:网卡数量" json:"networkCardNum"`            // 网卡数量
-	Power               int      `excel:"name:功率（W）" json:"power"`                    // 功率
-	NodeRoles           []string `json:"nodeRoles"`                                   // 节点角色数组
+	Arch                string   `excel:"name:硬件架构;" json:"Arch"`                      // 硬件架构
+	NetworkInterface    string   `excel:"name:网络接口;" json:"networkInterface"`          // 网络接口
+	NodeRole            string   `excel:"name:节点角色;" json:"nodeRole"`                  // 节点角色
+	ServerModel         string   `excel:"name:机型;" json:"serverModel"`                 // 机型
+	ConfigurationInfo   string   `excel:"name:配置概要;" json:"configurationInfo"`         // 配置概要
+	Spec                string   `excel:"name:规格;" json:"spec"`                        // 规格
+	CpuType             string   `excel:"name:硬件架构;" json:"cpuType"`                   // CPU类型
+	Cpu                 int      `excel:"name:vCPU;" json:"cpu"`                       // CPU核数
+	Gpu                 string   `excel:"name:GPU;" json:"gpu"`                        // GPU
+	Memory              int      `excel:"name:内存;" json:"memory"`                      // 内存
+	SystemDiskType      string   `excel:"name:系统盘类型;" json:"systemDiskType"`           // 系统盘类型
+	SystemDisk          string   `excel:"name:系统盘;" json:"systemDisk"`                 // 系统盘
+	StorageDiskType     string   `excel:"name:存储盘类型;" json:"storageDiskType"`          // 存储盘类型
+	StorageDiskNum      int      `excel:"name:存储盘个数;" json:"storageDiskNum"`           // 存储盘个数
+	StorageDiskCapacity int      `excel:"name:存储盘单盘容量（G）;" json:"storageDiskCapacity"` // 存储盘单盘容量（G）
+	RamDisk             string   `excel:"name:缓存盘;" json:"ramDisk"`                    // 缓存盘
+	NetworkCardNum      int      `excel:"name:网卡数量;" json:"networkCardNum"`            // 网卡数量
+	Power               int      `excel:"name:功率（W）;" json:"power"`                    // 功率
+	NodeRoles           []string `json:"nodeRoles"`                                    // 节点角色数组
+}
+
+type NetworkDeviceRoleBaselineExcel struct {
+	DeviceType       string   `excel:"name:设备类型;" json:"deviceType"`      // 设备类型
+	FuncType         string   `excel:"name:类型;" json:"funcType"`          // 类型
+	FuncCompo        string   `excel:"name:功能组件;" json:"funcCompo"`       // 功能组件
+	FuncCompoName    string   `excel:"name:功能组件名称;" json:"funcCompoName"` // 功能组件名称
+	Description      string   `excel:"name:描述;" json:"description"`       // 描述
+	TwoNetworkIso    string   `excel:"name:两网分离;" json:"twoNetworkIso"`   // 两网分离
+	ThreeNetworkIso  string   `excel:"name:三网分离;" json:"threeNetworkIso"` // 三网分离
+	TriplePlay       string   `excel:"name:三网合一;" json:"triplePlay"`      // 三网合一
+	MinimumNumUnit   int      `excel:"name:最小单元数;" json:"minimumNumUnit"` // 最小单元数
+	UnitDeviceNum    int      `excel:"name:单元设备数量;" json:"unitDeviceNum"` // 单元设备数量
+	DesignSpec       string   `excel:"name:设计规格;" json:"designSpec"`      // 设计规格
+	TwoNetworkIsos   []string `json:"twoNetworkIsos"`                     // 两网分离数组
+	ThreeNetworkIsos []string `json:"threeNetworkIsos"`                   // 三网分离数组
+	TriplePlays      []string `json:"triplePlays"`                        // 三网合一数组
 }
