@@ -361,6 +361,18 @@ CREATE TABLE `cloud_product_node_role_rel` (
                                                `node_role_type` tinyint(4) DEFAULT NULL COMMENT '节点角色类型，1：管控资源节点角色，0：资源节点角色'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品与节点角色关联表';
 
+
+CREATE TABLE `cloud_product_planning` (
+                                          `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '配置id',
+                                          `plan_id` bigint(20) DEFAULT NULL COMMENT '方案id',
+                                          `product_id` bigint(20) DEFAULT NULL COMMENT '云产品id',
+                                          `sell_spec` varchar(60) DEFAULT NULL COMMENT '售卖规格',
+                                          `service_year` int(1) DEFAULT NULL COMMENT '维保年限',
+                                          `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+                                          `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+                                          PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品配置表';
+
 CREATE TABLE if NOT EXISTS `ip_demand_planning` (
   `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
   `plan_id` bigint(20) NOT NULL COMMENT '方案ID',
