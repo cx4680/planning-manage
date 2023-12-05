@@ -124,17 +124,6 @@ func Router(engine *gin.Engine) {
 			projectGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除项目", "deleteProject", middleware.DELETE, middleware.INFO)), project.Delete)
 		}
 
-		//服务器规划
-		serverGroup := v1.Group("/server")
-		{
-			// 查询服务器列表
-			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryProjectByPage", middleware.LIST, middleware.INFO)), server.List)
-			// 创建服务器
-			serverGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "queryProjectByPage", middleware.LIST, middleware.INFO)), server.Create)
-			// 修改服务器
-			serverGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改服务器", "queryProjectByPage", middleware.LIST, middleware.INFO)), server.Update)
-		}
-
 		// plan
 		planGroup := v1.Group("/plan")
 		{
@@ -146,6 +135,19 @@ func Router(engine *gin.Engine) {
 			planGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改方案", "determinePlanById", middleware.UPDATE, middleware.INFO)), plan.Update)
 			// 删除方案
 			planGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除方案", "deletePlanById", middleware.DELETE, middleware.INFO)), plan.Delete)
+		}
+
+		//服务器规划
+		serverGroup := v1.Group("/server")
+		{
+			// 查询服务器规划列表
+			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryServerList", middleware.LIST, middleware.INFO)), server.List)
+			// 创建服务器规划
+			serverGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "createServerList", middleware.LIST, middleware.INFO)), server.Create)
+			// 修改服务器规划
+			serverGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改服务器", "updateServerList", middleware.LIST, middleware.INFO)), server.Update)
+			// 查询服务器架构列表
+			serverGroup.GET("/arch/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.ArchList)
 		}
 
 		// baseline
