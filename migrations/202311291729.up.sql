@@ -227,6 +227,7 @@ CREATE TABLE `node_role_baseline`
     `node_role_name`      varchar(255) DEFAULT NULL COMMENT '节点角色名称',
     `minimum_num`    int(11) DEFAULT NULL COMMENT '单独部署最小数量',
     `deploy_method`  varchar(255) DEFAULT NULL COMMENT '部署方式',
+    `classify`  varchar(255) DEFAULT NULL COMMENT '分类',
     `annotation`     varchar(500) DEFAULT NULL COMMENT '节点说明',
     `business_type`  varchar(255) DEFAULT NULL COMMENT '业务类型',
     PRIMARY KEY (`id`)
@@ -280,22 +281,22 @@ CREATE TABLE `server_baseline` (
                                    `server_mode` varchar(255) DEFAULT NULL COMMENT '机型',
                                    `configuration_info` varchar(500) DEFAULT NULL COMMENT '配置概要',
                                    `spec` varchar(255) DEFAULT NULL COMMENT '规格',
+                                   `cpu_type` varchar(50) DEFAULT NULL COMMENT 'CPU类型',
                                    `cpu` int(11) DEFAULT NULL COMMENT 'CPU核数',
                                    `gpu` varchar(255) DEFAULT NULL COMMENT 'GPU',
                                    `memory` int(11) DEFAULT NULL COMMENT '内存',
+                                   `system_disk_type` varchar(20) DEFAULT NULL COMMENT '系统盘类型',
                                    `system_disk` varchar(255) DEFAULT NULL COMMENT '系统盘',
-                                   `storage_disk` varchar(255) DEFAULT NULL COMMENT '存储盘',
+                                   `storage_disk_type` varchar(50) DEFAULT NULL COMMENT '存储盘类型',
+                                   `storage_disk_num` int(11) DEFAULT NULL COMMENT '存储盘数量',
+                                   `storage_disk_capacity` int(11) DEFAULT NULL COMMENT '存储盘单盘容量（G）',
                                    `ram_disk` varchar(255) DEFAULT NULL COMMENT '缓存盘',
                                    `network_card_num` int(11) DEFAULT NULL COMMENT '网卡数量',
-                                   `network_card_interface` varchar(255) DEFAULT NULL COMMENT '网卡接口',
                                    `power` int(11) DEFAULT NULL COMMENT '功率',
-                                   `system_disk_type` varchar(20) DEFAULT NULL COMMENT '系统盘类型',
-                                   `cpu_type` varchar(50) DEFAULT NULL COMMENT 'CPU类型',
-                                   `storage_disk_type` varchar(50) DEFAULT NULL COMMENT '存储盘类型',
                                    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务器基线表';
 
-CREATE TABLE `server_role_rel` (
+CREATE TABLE `server_node_role_rel` (
                                    `server_id` bigint(20) DEFAULT NULL COMMENT '服务器id',
                                    `node_role_id` bigint(20) DEFAULT NULL COMMENT '节点角色id'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务器与节点角色关联表';

@@ -116,3 +116,27 @@ func GetVersionIdByPlanId(planId int64) (int64, error) {
 	}
 	return versionId, nil
 }
+
+func QueryServerBaselineByVersionId(versionId int64) ([]entity.ServerBaseline, error) {
+	var serverBaselines []entity.ServerBaseline
+	if err := data.DB.Table(entity.ServerBaselineTable).Where("version_id = ? ", versionId).Find(&serverBaselines).Error; err != nil {
+		return serverBaselines, err
+	}
+	return serverBaselines, nil
+}
+
+func BatchCreateServerBaseline(serverBaselines []entity.ServerBaseline) error {
+	if err := data.DB.Table(entity.ServerBaselineTable).Create(&serverBaselines).Scan(&serverBaselines).Error; err != nil {
+		log.Errorf("batch insert serverBaseline error: ", err)
+		return err
+	}
+	return nil
+}
+
+func BatchCreateServerNodeRoleRel(serverNodeRoleRels []entity.ServerNodeRoleRel) error {
+	if err := data.DB.Table(entity.ServerNodeRoleRelTable).Create(&serverNodeRoleRels).Scan(&serverNodeRoleRels).Error; err != nil {
+		log.Errorf("batch insert serverNodeRoleRel error: ", err)
+		return err
+	}
+	return nil
+}
