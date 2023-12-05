@@ -180,8 +180,8 @@ func Router(engine *gin.Engine) {
 		// cloudProduct
 		cloudProduct := v1.Group("/cloud/product")
 		{
-			cloudProduct.GET("/version/list", middleware.OperatorLog(DefaultEventOpInfo("查询云产品版本列表", "listCloudProductVersion", middleware.LIST, middleware.INFO)), cloud_product.ListVersion)
-			cloudProduct.GET("/baseline/list", middleware.OperatorLog(DefaultEventOpInfo("查询云产品基线列表", "listCloudProductBaseline", middleware.LIST, middleware.INFO)), cloud_product.ListCloudProductBaseline)
+			cloudProduct.GET("/version/list", middleware.OperatorLog(DefaultEventOpInfo("根据项目id查询云产品版本列表", "listCloudProductVersion", middleware.LIST, middleware.INFO)), cloud_product.ListVersion)
+			cloudProduct.GET("/baseline/list", middleware.OperatorLog(DefaultEventOpInfo("根据版本id查询云产品基线列表", "listCloudProductBaseline", middleware.LIST, middleware.INFO)), cloud_product.ListCloudProductBaseline)
 			cloudProduct.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("保存用户选择的云产品", "saveCloudProduct", middleware.CREATE, middleware.INFO)), cloud_product.Save)
 			cloudProduct.GET("/list/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id获取用户选择的云产品清单", "listCloudProduct", middleware.LIST, middleware.INFO)), cloud_product.List)
 		}

@@ -51,12 +51,12 @@ func Save(context *gin.Context) {
 	var request CloudProductPlanningRequest
 	err := context.BindJSON(&request)
 	if err != nil {
-		log.Errorf("[save] invalid param error, %v", err)
+		log.Errorf("[Save] invalid param error, %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
 	if request.PlanId == 0 || len(request.ProductList) < 1 {
-		log.Errorf("[save] invalid param error, request:%v, %v", request, err)
+		log.Errorf("[Save] invalid param error, request:%v, %v", request, err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
@@ -64,7 +64,7 @@ func Save(context *gin.Context) {
 	currentUserId := session.Get("userId").(string)
 	err = saveCloudProductPlanning(request, currentUserId)
 	if err != nil {
-		log.Errorf("[save] cloudProductPlanning error, %v", err)
+		log.Errorf("[Save] cloudProductPlanning error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -80,5 +80,12 @@ func List(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	listCloudProductPlanningByPlanId(planId)
+	cloudProductPlannings, err := listCloudProductPlanningByPlanId(planId)
+	if err != nil {
+		log.Errorf("[List] cloudProductPlanning error, %v", err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	result.Success(context, cloudProductPlannings)
+	return
 }

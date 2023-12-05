@@ -53,7 +53,7 @@ func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId
 			return err
 		}
 		// 更新方案业务规划阶段
-		if err := tx.Model(entity.PlanManage{}).Where("id = ?", request.PlanId).
+		if err := tx.Table(entity.PlanManageTable).Where("id = ?", request.PlanId).
 			Update("business_plan_stage", 1).
 			Update("update_user_id", currentUserId).
 			Update("update_time", time.Now()).Error; err != nil {
