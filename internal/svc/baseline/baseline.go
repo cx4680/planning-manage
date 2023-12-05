@@ -104,6 +104,9 @@ func Import(context *gin.Context) {
 		}
 		break
 	case ServerBaselineType:
+		if ImportServerBaseline(context, softwareVersion, f) {
+			return
+		}
 		break
 	case NetworkDeviceBaselineType:
 		break
@@ -274,6 +277,7 @@ func ImportNodeRoleBaseline(context *gin.Context, softwareVersion entity.Softwar
 				NodeRoleName: nodeRoleBaselineExcelList[i].NodeRoleName,
 				MinimumNum:   nodeRoleBaselineExcelList[i].MinimumCount,
 				DeployMethod: nodeRoleBaselineExcelList[i].DeployMethod,
+				Classify:     nodeRoleBaselineExcelList[i].Classify,
 				Annotation:   nodeRoleBaselineExcelList[i].Annotation,
 				BusinessType: nodeRoleBaselineExcelList[i].BusinessType,
 			})
@@ -315,6 +319,106 @@ func ImportNodeRoleBaseline(context *gin.Context, softwareVersion entity.Softwar
 						})
 					}
 					if err := BatchCreateNodeRoleMixedDeploy(mixedNodeRoles); err != nil {
+						result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
+func ImportServerBaseline(context *gin.Context, softwareVersion entity.SoftwareVersion, f *excelize.File) bool {
+	// 先查询节点角色表，导入的版本是否已有数据，如没有，提示先导入节点角色基线
+	nodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return true
+	}
+	if len(nodeRoleBaselines) == 0 {
+		result.Failure(context, errorcodes.NodeRoleMustImportFirst, http.StatusBadRequest)
+		return true
+	}
+	var serverBaselineExcelList []ServerBaselineExcel
+	if err := excel.ImportBySheet(f, &serverBaselineExcelList, ServerBaselineSheetName, 0, 1); err != nil {
+		log.Error(err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return true
+	}
+	if len(serverBaselineExcelList) > 0 {
+		var serverBaselines []entity.ServerBaseline
+		for i := range serverBaselineExcelList {
+			nodeRole := serverBaselineExcelList[i].NodeRole
+			if nodeRole != "" {
+				serverBaselineExcelList[i].NodeRoles = strings.Split(nodeRole, constant.SplitLineBreak)
+			}
+			serverBaselines = append(serverBaselines, entity.ServerBaseline{
+				VersionId:           softwareVersion.Id,
+				Arch:                serverBaselineExcelList[i].Arch,
+				NetworkInterface:    serverBaselineExcelList[i].NetworkInterface,
+				ServerModel:         serverBaselineExcelList[i].ServerModel,
+				ConfigurationInfo:   serverBaselineExcelList[i].ConfigurationInfo,
+				Spec:                serverBaselineExcelList[i].Spec,
+				CpuType:             serverBaselineExcelList[i].CpuType,
+				Cpu:                 serverBaselineExcelList[i].Cpu,
+				Gpu:                 serverBaselineExcelList[i].Gpu,
+				Memory:              serverBaselineExcelList[i].Memory,
+				SystemDiskType:      serverBaselineExcelList[i].SystemDiskType,
+				SystemDisk:          serverBaselineExcelList[i].SystemDisk,
+				StorageDiskType:     serverBaselineExcelList[i].StorageDiskType,
+				StorageDiskNum:      serverBaselineExcelList[i].StorageDiskNum,
+				StorageDiskCapacity: serverBaselineExcelList[i].StorageDiskCapacity,
+				RamDisk:             serverBaselineExcelList[i].RamDisk,
+				NetworkCardNum:      serverBaselineExcelList[i].NetworkCardNum,
+				Power:               serverBaselineExcelList[i].Power,
+			})
+		}
+		serverBaselines, err := QueryServerBaselineByVersionId(softwareVersion.Id)
+		if err != nil {
+			log.Error(err)
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return true
+		}
+		if len(serverBaselines) > 0 {
+			// TODO 先查询服务器基线表，看看相同的版本号是否已存在数据，如果已存在，需要先删除已有数据
+		} else {
+			if err := BatchCreateServerBaseline(serverBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			serverBaselines, err = QueryServerBaselineByVersionId(softwareVersion.Id)
+			if err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			serverModelMap := make(map[string]int64)
+			for _, serverBaseline := range serverBaselines {
+				serverModelMap[serverBaseline.ServerModel] = serverBaseline.Id
+			}
+			nodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
+			if err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			nodeRoleNameMap := make(map[string]int64)
+			for _, nodeRoleBaseline := range nodeRoleBaselines {
+				nodeRoleNameMap[nodeRoleBaseline.NodeRoleName] = nodeRoleBaseline.Id
+			}
+			for _, serverBaselineExcel := range serverBaselineExcelList {
+				// 处理节点角色
+				nodeRoles := serverBaselineExcel.NodeRoles
+				if len(nodeRoles) > 0 {
+					var serverNodeRoleRels []entity.ServerNodeRoleRel
+					for _, nodeRole := range nodeRoles {
+						serverNodeRoleRels = append(serverNodeRoleRels, entity.ServerNodeRoleRel{
+							ServerId:   serverModelMap[serverBaselineExcel.ServerModel],
+							NodeRoleId: nodeRoleNameMap[nodeRole],
+						})
+					}
+					if err := BatchCreateServerNodeRoleRel(serverNodeRoleRels); err != nil {
 						result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 						return true
 					}

@@ -4,7 +4,7 @@ const (
 	CloudProductBaselineSheetName  = "云产品售卖清单"
 	ServerBaselineSheetName        = "服务器基线"
 	NetworkDeviceBaselineSheetName = "网络设备基线"
-	NodeRoleBaselineSheetName      = "node_role_config"
+	NodeRoleBaselineSheetName      = "节点角色基线"
 )
 
 const (
@@ -42,8 +42,31 @@ type NodeRoleBaselineExcel struct {
 	NodeRoleName string   `excel:"name:角色名称;" json:"nodeRoleName"`     // 角色名称
 	MinimumCount int      `excel:"name:单独部署最小数量;" json:"minimumCount"` // 单独部署最小数量
 	DeployMethod string   `excel:"name:部署方式;" json:"deployMethod"`     // 部署方式
+	Classify     string   `gorm:"name:分类;" json:"classify"`            // 分类
 	MixedDeploy  string   `excel:"name:节点混部;" json:"mixedDeploy"`      // 节点混部
 	Annotation   string   `excel:"name:节点说明;" json:"annotation"`       // 节点说明
 	BusinessType string   `excel:"name:业务类型;" json:"businessType"`     // 业务类型
 	MixedDeploys []string `json:"mixedDeploys"`                        // 节点混部数组
+}
+
+type ServerBaselineExcel struct {
+	Arch                string   `excel:"name:硬件架构" json:"Arch"`                      // 硬件架构
+	NetworkInterface    string   `excel:"name:网络接口" json:"networkInterface"`          // 网络接口
+	NodeRole            string   `excel:"name:节点角色" json:"nodeRole"`                  // 节点角色
+	ServerModel         string   `excel:"name:机型" json:"serverModel"`                 // 机型
+	ConfigurationInfo   string   `excel:"name:配置概要" json:"configurationInfo"`         // 配置概要
+	Spec                string   `excel:"name:规格" json:"spec"`                        // 规格
+	CpuType             string   `excel:"name:硬件架构" json:"cpuType"`                   // CPU类型
+	Cpu                 int      `excel:"name:vCPU" json:"cpu"`                       // CPU核数
+	Gpu                 string   `excel:"name:GPU" json:"gpu"`                        // GPU
+	Memory              int      `excel:"name:内存" json:"memory"`                      // 内存
+	SystemDiskType      string   `excel:"name:系统盘类型" json:"systemDiskType"`           // 系统盘类型
+	SystemDisk          string   `excel:"name:系统盘" json:"systemDisk"`                 // 系统盘
+	StorageDiskType     string   `excel:"name:存储盘类型" json:"storageDiskType"`          // 存储盘类型
+	StorageDiskNum      int      `excel:"name:存储盘个数" json:"storageDiskNum"`           // 存储盘个数
+	StorageDiskCapacity int      `excel:"name:存储盘单盘容量（G）" json:"storageDiskCapacity"` // 存储盘单盘容量（G）
+	RamDisk             string   `excel:"name:缓存盘" json:"ramDisk"`                    // 缓存盘
+	NetworkCardNum      int      `excel:"name:网卡数量" json:"networkCardNum"`            // 网卡数量
+	Power               int      `excel:"name:功率（W）" json:"power"`                    // 功率
+	NodeRoles           []string `json:"nodeRoles"`                                   // 节点角色数组
 }

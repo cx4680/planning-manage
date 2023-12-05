@@ -9,6 +9,7 @@ type NodeRoleBaseline struct {
 	NodeRoleName string `gorm:"column:role_name" json:"roleName"`          // 角色
 	MinimumNum   int    `gorm:"column:minimum_num" json:"minimumNum"`      // 单独部署最小数量
 	DeployMethod string `gorm:"column:deploy_method" json:"deployMethod"`  // 部署方式
+	Classify     string `gorm:"column:classify" json:"classify"`           // 分类
 	Annotation   string `gorm:"column:annotation" json:"annotation"`       // 节点说明
 	BusinessType string `gorm:"column:business_type" json:"businessType"`  // 业务类型
 }
