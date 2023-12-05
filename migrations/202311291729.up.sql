@@ -244,6 +244,7 @@ CREATE TABLE if not EXISTS `network_device_list` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `plan_id` bigint(20) NOT NULL COMMENT '方案ID',
   `network_device_role` varchar(45) DEFAULT NULL COMMENT '设备类型->网络设备角色名称',
+	`network_device_role_id` BIGINT(20) DEFAULT NULL COMMENT '设备角色ID',
   `logical_grouping` varchar(255) DEFAULT NULL COMMENT '逻辑分组',
   `device_id` varchar(255) DEFAULT NULL COMMENT '设备ID',
   `brand` varchar(45) DEFAULT NULL COMMENT '厂商',
