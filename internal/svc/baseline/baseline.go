@@ -120,7 +120,10 @@ func Import(context *gin.Context) {
 		}
 		break
 	case NetworkDeviceBaselineType:
-
+		if ImportNetworkDeviceBaseline(context, softwareVersion, f) {
+			return
+		}
+		break
 	default:
 		break
 	}
@@ -536,12 +539,12 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 				twoNetworkIsos := networkDeviceRoleBaselineExcel.TwoNetworkIsos
 				threeNetworkIsos := networkDeviceRoleBaselineExcel.ThreeNetworkIsos
 				triplePlays := networkDeviceRoleBaselineExcel.TriplePlays
-				handleNetworkModelRoleRels(twoNetworkIsos, nodeRoleMap, networkDeviceRoleCodeMap, networkModelRoleRels, networkDeviceRoleBaselineExcel, 2)
-				handleNetworkModelRoleRels(threeNetworkIsos, nodeRoleMap, networkDeviceRoleCodeMap, networkModelRoleRels, networkDeviceRoleBaselineExcel, 3)
-				handleNetworkModelRoleRels(triplePlays, nodeRoleMap, networkDeviceRoleCodeMap, networkModelRoleRels, networkDeviceRoleBaselineExcel, 1)
+				HandleNetworkModelRoleRels(twoNetworkIsos, nodeRoleMap, networkDeviceRoleCodeMap, networkModelRoleRels, networkDeviceRoleBaselineExcel, 2)
+				HandleNetworkModelRoleRels(threeNetworkIsos, nodeRoleMap, networkDeviceRoleCodeMap, networkModelRoleRels, networkDeviceRoleBaselineExcel, 3)
+				HandleNetworkModelRoleRels(triplePlays, nodeRoleMap, networkDeviceRoleCodeMap, networkModelRoleRels, networkDeviceRoleBaselineExcel, 1)
 			}
 			if len(networkModelRoleRels) > 0 {
-				if err := BatchCreateNetworkModelRoleRel; err != nil {
+				if err := BatchCreateNetworkModelRoleRel(networkModelRoleRels); err != nil {
 					log.Error(err)
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
@@ -552,11 +555,11 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 	return false
 }
 
-func handleNetworkModelRoleRels(networkModelRoles []string, nodeRoleMap map[string]int64, networkDeviceRoleCodeMap map[string]int64, networkModelRoleRels []entity.NetworkModelRoleRel, networkDeviceRoleBaselineExcel NetworkDeviceRoleBaselineExcel, networkModel int) {
+func HandleNetworkModelRoleRels(networkModelRoles []string, nodeRoleMap map[string]int64, networkDeviceRoleCodeMap map[string]int64, networkModelRoleRels []entity.NetworkModelRoleRel, networkDeviceRoleBaselineExcel NetworkDeviceRoleBaselineExcel, networkModel int) {
 	for _, networkModelRole := range networkModelRoles {
 		var associatedType int
 		var roleId int64
-		roleNum, roleName := getRoleNameAndNum(networkModelRole)
+		roleNum, roleName := GetRoleNameAndNum(networkModelRole)
 		roleId = nodeRoleMap[roleName]
 		if roleId == 0 {
 			roleId = networkDeviceRoleCodeMap[roleName]
@@ -576,7 +579,7 @@ func handleNetworkModelRoleRels(networkModelRoles []string, nodeRoleMap map[stri
 	}
 }
 
-func getRoleNameAndNum(role string) (int, string) {
+func GetRoleNameAndNum(role string) (int, string) {
 	if role != "" {
 		if strings.Contains(role, constant.SplitLineAsterisk) {
 			roles := strings.Split(role, constant.SplitLineAsterisk)
@@ -591,4 +594,93 @@ func getRoleNameAndNum(role string) (int, string) {
 		}
 	}
 	return 0, role
+}
+
+func ImportNetworkDeviceBaseline(context *gin.Context, softwareVersion entity.SoftwareVersion, f *excelize.File) bool {
+	// 先查询网络设备角色表，导入的版本是否已有数据，如没有，提示先导入网络设备角色基线
+	networkDeviceRoleBaselines, err := QueryNetworkDeviceRoleBaselineByVersionId(softwareVersion.Id)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return true
+	}
+	if len(networkDeviceRoleBaselines) == 0 {
+		result.Failure(context, errorcodes.NetworkDeviceRoleMustImportFirst, http.StatusBadRequest)
+		return true
+	}
+	var networkDeviceBaselineExcelList []NetworkDeviceBaselineExcel
+	if err := excel.ImportBySheet(f, &networkDeviceBaselineExcelList, NetworkDeviceBaselineSheetName, 0, 1); err != nil {
+		log.Error(err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return true
+	}
+	if len(networkDeviceBaselineExcelList) > 0 {
+		var networkDeviceBaselines []entity.NetworkDeviceBaseline
+		for i := range networkDeviceBaselineExcelList {
+			networkDeviceRole := networkDeviceBaselineExcelList[i].NetworkDeviceRole
+			if networkDeviceRole != "" {
+				networkDeviceBaselineExcelList[i].NetworkDeviceRoles = strings.Split(networkDeviceRole, constant.SplitLineBreak)
+			}
+			var deviceType int
+			if networkDeviceBaselineExcelList[i].DeviceType == constant.NetworkDeviceTypeXinchuangCn {
+				deviceType = constant.NetworkDeviceTypeXinchuang
+			} else {
+				deviceType = constant.NetworkDeviceTypeCommercial
+			}
+			networkDeviceBaselines = append(networkDeviceBaselines, entity.NetworkDeviceBaseline{
+				VersionId:    softwareVersion.Id,
+				DeviceModel:  networkDeviceBaselineExcelList[i].DeviceModel,
+				Manufacturer: networkDeviceBaselineExcelList[i].Manufacturer,
+				DeviceType:   deviceType,
+				NetworkModel: networkDeviceBaselineExcelList[i].NetworkModel,
+				ConfOverview: networkDeviceBaselineExcelList[i].ConfOverview,
+				Purpose:      networkDeviceBaselineExcelList[i].Purpose,
+			})
+		}
+		originNetworkDeviceBaselines, err := QueryNetworkDeviceBaselineByVersionId(softwareVersion.Id)
+		if err != nil {
+			log.Error(err)
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return true
+		}
+		if len(originNetworkDeviceBaselines) > 0 {
+			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
+		} else {
+			if err := BatchCreateNetworkDeviceBaseline(networkDeviceBaselines); err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			networkDeviceBaselines, err = QueryNetworkDeviceBaselineByVersionId(softwareVersion.Id)
+			if err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			networkDeviceBaselineMap := make(map[string]int64)
+			for _, networkDeviceBaseline := range networkDeviceBaselines {
+				networkDeviceBaselineMap[networkDeviceBaseline.DeviceModel] = networkDeviceBaseline.Id
+			}
+			networkDeviceRoleCodeMap := make(map[string]int64)
+			for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
+				networkDeviceRoleCodeMap[networkDeviceRoleBaseline.FuncCompoName] = networkDeviceRoleBaseline.Id
+			}
+			var networkDeviceRoleRels []entity.NetworkDeviceRoleRel
+			for _, networkDeviceBaselineExcel := range networkDeviceBaselineExcelList {
+				for _, networkDeviceRole := range networkDeviceBaselineExcel.NetworkDeviceRoles {
+					networkDeviceRoleRels = append(networkDeviceRoleRels, entity.NetworkDeviceRoleRel{
+						DeviceId:     networkDeviceBaselineMap[networkDeviceBaselineExcel.DeviceModel],
+						DeviceRoleId: networkDeviceRoleCodeMap[networkDeviceRole],
+					})
+				}
+			}
+			if len(networkDeviceRoleRels) > 0 {
+				if err := BatchCreateNetworkDeviceRoleRel(networkDeviceRoleRels); err != nil {
+					log.Error(err)
+					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

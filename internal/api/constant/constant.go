@@ -141,8 +141,8 @@ const (
 
 const (
 	PLAN     = "plan"     // 待规划
-	PLANNING = "planning" //规划中
-	PLANNED  = "planned"  //规划完成
+	PLANNING = "planning" // 规划中
+	PLANNED  = "planned"  // 规划完成
 )
 
 const (
@@ -173,4 +173,11 @@ const (
 const (
 	NodeRoleType          = 0
 	NetworkDeviceRoleType = 1
+)
+
+const (
+	NetworkDeviceTypeXinchuangCn  = "信创"
+	NetworkDeviceTypeCommercialCn = "商用"
+	NetworkDeviceTypeXinchuang    = 0
+	NetworkDeviceTypeCommercial   = 1
 )
