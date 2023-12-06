@@ -60,6 +60,15 @@ func searchDeviceRoleBaselineByVersionId(versionId int64) ([]entity.NetworkDevic
 	return deviceRoleBaselineList, nil
 }
 
+func searchModelRoleRelByRoleIdAndNetworkModel(roleId int64, networkModel int) ([]entity.NetworkModelRoleRel, error) {
+	var modelRoleRel []entity.NetworkModelRoleRel
+	if err := data.DB.Table(entity.NetworkModelRoleRelTable).Where("network_device_role_id = ? and network_model=?", roleId, networkModel).Scan(&modelRoleRel).Error; err != nil {
+		log.Errorf("[searchModelRoleRelByRoleIdAndNetworkModel] error, %v", err)
+		return nil, err
+	}
+	return modelRoleRel, nil
+}
+
 func createDevicePlan(request Request) error {
 	networkPlan := entity.NetworkDevicePlanning{
 		PlanId:                request.PlanId,
@@ -72,10 +81,9 @@ func createDevicePlan(request Request) error {
 		UpdateTime:            time.Now(),
 		Ipv6:                  request.Ipv6,
 		NetworkModel:          request.NetworkModel,
-		OpenDpdk:              request.OpenDpdk,
+		DeviceType:            request.DeviceType,
 	}
-	var devicePlan entity.NetworkDevicePlanning
-	if err := data.DB.Table(entity.NetworkDevicePlanningTable).Create(&networkPlan).Scan(&devicePlan).Error; err != nil {
+	if err := data.DB.Table(entity.NetworkDevicePlanningTable).Create(&networkPlan).Error; err != nil {
 		log.Errorf("[createDevicePlan] insert db error", err)
 		return err
 	}
@@ -102,7 +110,7 @@ func getDeviceRoleGroupNumByPlanId(planId int64) ([]DeviceRoleGroupNum, error) {
 
 func getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId int64, networkInterface string, id int64, brand string) ([]NetworkDeviceModel, error) {
 	var deviceModel []NetworkDeviceModel
-	if err := data.DB.Raw("select a.device_type as DeviceType,a.conf_overview as ConfOverview from network_device_baseline a left join network_device_role_rel b on a.id = b.device_id where a.version_id = ? and b.device_role_id = ? and a.network_model = ? and a.manufacturer = ?", versionId, id, networkInterface, brand).Scan(&deviceModel).Error; err != nil {
+	if err := data.DB.Raw("select a.device_model,a.conf_overview from network_device_baseline a left join network_device_role_rel b on a.id = b.device_id where a.version_id = ? and b.device_role_id = ? and a.network_model = ? and a.manufacturer = ?", versionId, id, networkInterface, brand).Scan(&deviceModel).Error; err != nil {
 		log.Errorf("[getModelsByVersionIdAndRoleAndBrandAndNetworkConfig] query device model error, %v", err)
 		return nil, err
 	}
@@ -117,7 +125,6 @@ func updateDevicePlan(request Request, devicePlanning entity.NetworkDevicePlanni
 	devicePlanning.TotalBoxNum = request.TotalBoxNum
 	devicePlanning.Ipv6 = request.Ipv6
 	devicePlanning.NetworkModel = request.NetworkModel
-	devicePlanning.OpenDpdk = request.OpenDpdk
 	if err := data.DB.Table(entity.NetworkDevicePlanningTable).Updates(&devicePlanning).Error; err != nil {
 		log.Errorf("[updateDevicePlan] update device planning error, %v", err)
 		return err

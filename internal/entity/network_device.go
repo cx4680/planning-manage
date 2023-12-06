@@ -18,8 +18,8 @@ type NetworkDevicePlanning struct {
 	CreateTime            time.Time `gorm:"column:create_time" json:"createTime"`                       //创建时间
 	UpdateTime            time.Time `gorm:"column:update_time" json:"updateTime"`                       //更新时间
 	Ipv6                  string    `gorm:"column:ipv6" json:"ipv6"`                                    //是否为ipv4/ipv6双栈交付 0：ipv4交付 1:ipv4/ipv6双栈交付
-	NetworkModel          string    `gorm:"column:network_model" json:"networkModel"`                   //组网模型: 1-三网合一  2-两网分离  3-三网分离
-	OpenDpdk              string    `gorm:"column:open_dpdk" json:"openDpdk"`                           //是否开启DPDK: 0-是  1-否
+	NetworkModel          int       `gorm:"column:network_model" json:"networkModel"`                   //组网模型: 1-三网合一  2-两网分离  3-三网分离
+	DeviceType            int       `gorm:"column:device_type" json:"deviceType"`                       //设备类型，0：信创，1：商用
 }
 
 func (entity *NetworkDevicePlanning) TableName() string {

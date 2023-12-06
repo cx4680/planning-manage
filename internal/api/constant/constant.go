@@ -117,9 +117,9 @@ const (
 )
 
 const (
-	SEPARATION_OF_TWO_NETWORKS = "2" // 两网分离
-	TRIPLE_NETWORK_SEPARATION  = "3" // 三网分离
-	TRIPLE_PLAY                = "1" // 三网合一
+	SEPARATION_OF_TWO_NETWORKS = 2 // 两网分离
+	TRIPLE_NETWORK_SEPARATION  = 3 // 三网分离
+	TRIPLE_PLAY                = 1 // 三网合一
 )
 
 const (

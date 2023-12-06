@@ -287,8 +287,8 @@ CREATE TABLE `network_device_planning`
     `create_time`            datetime                       DEFAULT NULL COMMENT '创建时间',
     `update_time`            datetime                       DEFAULT NULL COMMENT '更新时间',
     `ipv6`                   char(1)                        DEFAULT '0' COMMENT '是否为ipv4/ipv6双栈交付 0：ipv4交付 1:ipv4/ipv6双栈交付',
-    `network_model`          char(1)                        DEFAULT '1' COMMENT '组网模型: 1-三网合一  2-两网分离  3-三网分离',
-    `open_dpdk`              char(1)                        DEFAULT '1' COMMENT '是否开启DPDK: 0-是  1-否',
+    `network_model`           tinyint(4)                       DEFAULT 1 COMMENT '组网模型: 1-三网合一  2-两网分离  3-三网分离',
+	`device_type` tinyint(4) DEFAULT NULL COMMENT '设备类型，0：信创，1：商用',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE KEY `IDX_U_PLAN_ID` (`plan_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='网络设备规划表';

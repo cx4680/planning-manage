@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"code.cestc.cn/ccos/cnm/ops-base/utils"
 	"github.com/gin-gonic/gin"
@@ -34,24 +33,25 @@ type Request struct {
 	AwsBoxNum             int    `form:"awsBoxNum"`
 	TotalBoxNum           int    `form:"totalBoxNum"`
 	Ipv6                  string `form:"ipv6"`
-	NetworkModel          string `form:"networkModel"`
-	OpenDpdk              string `form:"openDpdk"`
+	NetworkModel          int    `form:"networkModel"`
+	DeviceType            int    `form:"deviceType"`
 }
 
 type NetworkDevices struct {
-	PlanId              int64                `form:"planId"`
-	NetworkDeviceRoleId int64                `form:"networkDeviceRoleId"`
-	NetworkDeviceRole   string               `form:"networkDeviceRole"`
-	LogicalGrouping     string               `form:"logicalGrouping"`
-	DeviceId            string               `form:"deviceId"`
-	Brand               string               `form:"brand"`
-	DeviceModel         string               `form:"deviceModel"`
-	DeviceModels        []NetworkDeviceModel `form:"deviceModels"`
+	PlanId                int64                `form:"planId"`
+	NetworkDeviceRoleId   int64                `form:"networkDeviceRoleId"`
+	NetworkDeviceRole     string               `form:"networkDeviceRole"`
+	NetworkDeviceRoleName string               `form:"networkDeviceRoleName"`
+	LogicalGrouping       string               `form:"logicalGrouping"`
+	DeviceId              string               `form:"deviceId"`
+	Brand                 string               `form:"brand"`
+	DeviceModel           string               `form:"deviceModel"`
+	DeviceModels          []NetworkDeviceModel `form:"deviceModels"`
 }
 
 type NetworkDeviceModel struct {
 	ConfOverview string `form:"configurationOverview"`
-	DeviceType   string `form:"deviceModel"`
+	DeviceModel  string `form:"deviceModel"`
 }
 
 // func GetCountBoxNum(c *gin.Context) {
@@ -202,6 +202,10 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
+	if len(deviceRoleBaseline) == 0 {
+		result.Failure(c, "网络设备角色基线数据为空", http.StatusInternalServerError)
+		return
+	}
 	response, err = transformNetworkDeviceList(versionId, networkInterface, request, deviceRoleBaseline, nodeRoleServerNumMap)
 	if err != nil {
 		log.Errorf("[transformNetworkDeviceList] error, %v", err)
@@ -269,43 +273,6 @@ func SaveDeviceList(c *gin.Context) {
 	}
 	// 转ip基线ID Map
 	ipBaselineIdMap := util.ListToMaps(ipDemandBaselines, "ID")
-	// 根据方案ID查询网络设备清单
-	deviceRoleNum, err := getDeviceRoleGroupNumByPlanId(planId)
-	// 转设备角色id和分组数 map
-	deviceRoleIdMap := util.ListToMap(deviceRoleNum, "DeviceRoleId")
-	for _, value := range ipBaselineIdMap {
-		var num = 0
-		dto := new(ip_demand.IpDemandBaselineDto)
-		var needCount bool
-		// 根据IP需求规划表的关联设备组进行 网络设备清单分组累加
-		for i, val := range value {
-			v := val.(*ip_demand.IpDemandBaselineDto)
-			if i == 0 {
-				dto = v
-			}
-			deviceRoleId := v.DeviceRoleId
-			groupNum, ok := deviceRoleIdMap[strconv.FormatInt(deviceRoleId, 10)]
-			if ok {
-				needCount = true
-				deviceGroupNum := groupNum.(*DeviceRoleGroupNum)
-				num += deviceGroupNum.GroupNum
-			}
-		}
-		if needCount {
-			ipDemandPlanning := new(entity.IPDemandPlanning)
-			ipDemandPlanning.PlanId = planId
-			ipDemandPlanning.SegmentType = dto.Explain
-			ipDemandPlanning.Vlan = dto.Vlan
-			assignNum, _ := utils.String2Float(dto.AssignNum)
-			cNum := assignNum * float64(num)
-			ipDemandPlanning.Cnum = fmt.Sprintf("%f", cNum)
-			ipDemandPlanning.Describe = dto.Description
-			ipDemandPlanning.AddressPlanning = dto.IpSuggestion
-			ipDemandPlanning.CreateTime = now
-			ipDemandPlanning.UpdateTime = now
-			ipDemandPlannings = append(ipDemandPlannings, ipDemandPlanning)
-		}
-	}
 	userId := user.GetUserId(c)
 	err = data.DB.Transaction(func(tx *gorm.DB) error {
 		if len(deviceList) > 0 {
@@ -324,6 +291,43 @@ func SaveDeviceList(c *gin.Context) {
 		err = SaveBatch(tx, networkDeviceList)
 		if err != nil {
 			return err
+		}
+		// 根据方案ID查询网络设备清单
+		deviceRoleNum, err := getDeviceRoleGroupNumByPlanId(planId)
+		// 转设备角色id和分组数 map
+		deviceRoleIdMap := util.ListToMap(deviceRoleNum, "DeviceRoleId")
+		for _, value := range ipBaselineIdMap {
+			var num = 0
+			dto := new(ip_demand.IpDemandBaselineDto)
+			var needCount bool
+			// 根据IP需求规划表的关联设备组进行 网络设备清单分组累加
+			for i, val := range value {
+				v := val.(*ip_demand.IpDemandBaselineDto)
+				if i == 0 {
+					dto = v
+				}
+				deviceRoleId := v.DeviceRoleId
+				groupNum, ok := deviceRoleIdMap[strconv.FormatInt(deviceRoleId, 10)]
+				if ok {
+					needCount = true
+					deviceGroupNum := groupNum.(*DeviceRoleGroupNum)
+					num += deviceGroupNum.GroupNum
+				}
+			}
+			if needCount {
+				ipDemandPlanning := new(entity.IPDemandPlanning)
+				ipDemandPlanning.PlanId = planId
+				ipDemandPlanning.SegmentType = dto.Explain
+				ipDemandPlanning.Vlan = dto.Vlan
+				assignNum, _ := utils.String2Float(dto.AssignNum)
+				cNum := assignNum * float64(num)
+				ipDemandPlanning.Cnum = fmt.Sprintf("%f", cNum)
+				ipDemandPlanning.Describe = dto.Description
+				ipDemandPlanning.AddressPlanning = dto.IpSuggestion
+				ipDemandPlanning.CreateTime = now
+				ipDemandPlanning.UpdateTime = now
+				ipDemandPlannings = append(ipDemandPlannings, ipDemandPlanning)
+			}
 		}
 		// ip需求表保存
 		if len(ipDemands) > 0 {
@@ -354,7 +358,7 @@ func checkRequest(request Request) error {
 	if request.AwsBoxNum == 0 {
 		return errors.New("每组ASW个数为空")
 	}
-	if util.IsBlank(request.NetworkModel) {
+	if request.NetworkModel == 0 {
 		return errors.New("组网模型参数为空")
 	}
 	if util.IsBlank(request.Brand) {
@@ -367,9 +371,6 @@ func checkRequest(request Request) error {
 func transformNetworkDeviceList(versionId int64, networkInterface string, request Request, roleBaseLine []entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int) ([]NetworkDevices, error) {
 	var response []NetworkDevices
 	networkModel := request.NetworkModel
-	if len(roleBaseLine) == 0 {
-		return nil, nil
-	}
 	/**
 	1.循环该数据匹配组网模型， 取出相应的字段 获取到节点角色 无则continue
 	2.服务器规划数据满足节点角色的数据  数量累加 得到服务器数量
@@ -383,10 +384,10 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 	var aswNum map[int64]int
 	// TODO roleBaseLine把OASW这条数据移到最后处理
 	for _, deviceRole := range roleBaseLine {
-		if strings.EqualFold(constant.SEPARATION_OF_TWO_NETWORKS, networkModel) {
+		if constant.SEPARATION_OF_TWO_NETWORKS == networkModel {
 			// 两网分离
 			model = deviceRole.TwoNetworkIso
-		} else if strings.EqualFold(constant.TRIPLE_NETWORK_SEPARATION, networkModel) {
+		} else if constant.TRIPLE_NETWORK_SEPARATION == networkModel {
 			// 三网分离
 			model = deviceRole.ThreeNetworkIso
 		} else {
@@ -406,37 +407,58 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 
 // 根据网络设备角色基线计算数据
 func dealNetworkModel(versionId int64, networkInterface string, request Request, networkModel int, roleBaseLine entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int, aswNum map[int64]int) ([]NetworkDevices, error) {
-	funcCompoName := roleBaseLine.FuncCompoCode
+	if constant.NetworkModelNo == networkModel {
+		return nil, nil
+	}
+	funcCompoName := roleBaseLine.FuncCompoName
+	funcCompoCode := roleBaseLine.FuncCompoCode
 	id := roleBaseLine.Id
 	brand := request.Brand
 	awsServerNum := request.AwsServerNum
 	var response []NetworkDevices
 	deviceModels, _ := getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId, networkInterface, id, brand)
 	if len(deviceModels) == 0 {
+		log.Errorf("[getModelsByVersionIdAndRoleAndBrandAndNetworkConfig] 获取网络设备型号为空")
 		return nil, nil
 	}
-	deviceType := deviceModels[0].DeviceType
-	var serverNum = 0
+	deviceModel := deviceModels[0].DeviceModel
+	//TODO 根据设备类型获取唯一型号
+	if len(deviceModels) > 1 {
+
+	}
 	if constant.NeedQueryOtherTable == networkModel {
+		var serverNum = 0
 		var nodeRoles []int64
 		/**
-		1.根据网络设备角色ID和组网找模型查询关联表获取节点角色ID
+		1.根据网络设备角色ID和组网模型查询关联表获取节点角色ID
 		2.为空则return
 		3.取其中一条判断是节点角色还是网络设备角色（这里默认每个网络设备角色的关联类型要么全是节点角色，要么全是网络设备角色）
 		4.循环关联表数据向nodeRoles添加数据 要注意数量
 		*/
-		nodeRoles = append(nodeRoles, 1)
-
-		for _, nodeRoleId := range nodeRoles {
-			var num = 0
-			if !strings.EqualFold(constant.OASW, funcCompoName) {
-				num = nodeRoleServerNumMap[nodeRoleId]
-			} else {
-				num = aswNum[nodeRoleId]
-			}
-			serverNum += num
+		modelRoleRels, err := searchModelRoleRelByRoleIdAndNetworkModel(id, request.NetworkModel)
+		if err != nil {
+			return nil, err
 		}
-		if !strings.EqualFold(constant.OASW, funcCompoName) {
+		if len(modelRoleRels) == 0 {
+			log.Errorf("[searchModelRoleRelByRoleIdAndNetworkModel] 获取节点角色关联表数据为空, %v", err)
+			return nil, nil
+		}
+		associatedType := modelRoleRels[0].AssociatedType
+		for _, roleRel := range modelRoleRels {
+			roleNum := roleRel.RoleNum
+			roleId := roleRel.RoleId
+			for i := 1; i <= roleNum; i++ {
+				nodeRoles = append(nodeRoles, roleId)
+			}
+		}
+		for _, nodeRoleId := range nodeRoles {
+			if constant.NodeRoleType == associatedType {
+				serverNum += nodeRoleServerNumMap[nodeRoleId]
+			} else {
+				serverNum += aswNum[nodeRoleId]
+			}
+		}
+		if constant.NodeRoleType == associatedType {
 			aswNum[id] = serverNum
 		}
 		var minimumNumUnit = 1
@@ -449,28 +471,29 @@ func dealNetworkModel(versionId int64, networkInterface string, request Request,
 				minimumNumUnit += discuss
 			}
 		}
-		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response, id)
+		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id)
 	} else if constant.NetworkModelYes == networkModel {
 		// 固定数量计算
-		response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response, id)
+		response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id)
 	}
 	return response, nil
 }
 
 // 组装设备清单
-func buildDto(groupNum int, deviceNum int, funcCompoName string, brand string, deviceType string, deviceModels []NetworkDeviceModel, response []NetworkDevices, deviceRoleId int64) ([]NetworkDevices, error) {
+func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode string, brand string, deviceModel string, deviceModels []NetworkDeviceModel, response []NetworkDevices, deviceRoleId int64) ([]NetworkDevices, error) {
 	for i := 1; i <= groupNum; i++ {
-		logicalGrouping := funcCompoName + "-" + strconv.Itoa(i)
+		logicalGrouping := funcCompoCode + "-" + strconv.Itoa(i)
 		for j := 1; j <= deviceNum; j++ {
 			deviceId := logicalGrouping + "." + strconv.Itoa(j)
 			networkDevice := NetworkDevices{
-				NetworkDeviceRole:   funcCompoName,
-				NetworkDeviceRoleId: deviceRoleId,
-				LogicalGrouping:     logicalGrouping,
-				DeviceId:            deviceId,
-				Brand:               brand,
-				DeviceModel:         deviceType,
-				DeviceModels:        deviceModels,
+				NetworkDeviceRole:     funcCompoCode,
+				NetworkDeviceRoleName: funcCompoName,
+				NetworkDeviceRoleId:   deviceRoleId,
+				LogicalGrouping:       logicalGrouping,
+				DeviceId:              deviceId,
+				Brand:                 brand,
+				DeviceModel:           deviceModel,
+				DeviceModels:          deviceModels,
 			}
 			response = append(response, networkDevice)
 		}
