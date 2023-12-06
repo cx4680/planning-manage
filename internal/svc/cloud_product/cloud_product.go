@@ -61,6 +61,8 @@ func Save(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
+
+	//TODO 增加依赖校验
 	session := sessions.Default(context)
 	currentUserId := session.Get("userId").(string)
 	err = saveCloudProductPlanning(request, currentUserId)

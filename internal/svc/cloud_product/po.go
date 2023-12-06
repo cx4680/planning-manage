@@ -11,16 +11,24 @@ type CloudProductPlanningRequest struct {
 }
 
 type CloudProductBaselineResponse struct {
-	Id              int64    `json:"id"`
-	VersionId       int64    `json:"versionId"`
-	ProductType     string   `json:"productType"`
-	ProductName     string   `json:"productName"`
-	ProductCode     string   `json:"productCode"`
-	SellSpecs       []string `json:"sellSpecs"`
-	AuthorizedUnit  string   `json:"authorizedUnit"`
-	WhetherRequired int      `json:"whetherRequired"`
-	Instructions    string   `json:"instructions"`
-	DependProductId int64    `json:"dependProductId"`
+	ID                int64    `json:"id"`
+	VersionId         int64    `json:"versionId"`
+	ProductType       string   `json:"productType"`
+	ProductName       string   `json:"productName"`
+	ProductCode       string   `json:"productCode"`
+	SellSpecs         []string `json:"sellSpecs"`
+	AuthorizedUnit    string   `json:"authorizedUnit"`
+	WhetherRequired   int      `json:"whetherRequired"`
+	Instructions      string   `json:"instructions"`
+	DependProductId   int64    `json:"dependProductId"`
+	DependProductName string   `json:"dependProductName"`
+}
+
+type CloudProductBaselineDependResponse struct {
+	ID                int64  `gorm:"column:id" json:"id"`
+	DependId          int64  `gorm:"column:dependId" json:"dependId"`
+	DependProductName string `gorm:"column:dependProductName" json:"dependProductName"`
+	DependProductCode string `gorm:"column:dependProductCode" json:"dependProductCode"`
 }
 
 type CloudProductPlanningExportResponse struct {
