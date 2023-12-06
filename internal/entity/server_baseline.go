@@ -5,7 +5,7 @@ const ServerBaselineTable = "server_baseline"
 type ServerBaseline struct {
 	Id                  int64  `gorm:"column:id" json:"id"`                                     // 主键id
 	VersionId           int64  `gorm:"column:version_id" json:"versionId"`                      // 版本id
-	Arch                string `gorm:"column:arch" json:"Arch"`                                 // 硬件架构
+	Arch                string `gorm:"column:arch" json:"arch"`                                 // 硬件架构
 	NetworkInterface    string `gorm:"column:network_interface" json:"networkInterface"`        // 网络接口
 	BomCode             string `gorm:"column:bom_code" json:"bomCode"`                          // BOM编码
 	ConfigurationInfo   string `gorm:"column:configuration_info" json:"configurationInfo"`      // 配置概要

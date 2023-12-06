@@ -62,6 +62,12 @@ func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 			return nil, 0, err
 		}
 		list[i].AzName = az.Name
+		//查询cell名称
+		var cell = &entity.CellManage{}
+		if err := data.DB.Where("id = ?", v.CellId).First(&cell).Error; err != nil {
+			return nil, 0, err
+		}
+		list[i].CellName = cell.Name
 	}
 	return list, count, nil
 }

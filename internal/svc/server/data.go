@@ -71,6 +71,32 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 			serverBaselineCpuTypeMap[v.CpuType] = v
 		}
 	}
+	//查询部署方式
+	var nodeRoleMixedDeployList []*entity.NodeRoleMixedDeploy
+	if err := data.DB.Where("node_role_id IN (?)", nodeRoleIdList).Find(&nodeRoleMixedDeployList).Error; err != nil {
+		return nil, err
+	}
+	var mixedNodeRoleIdList []int64
+	for _, v := range nodeRoleMixedDeployList {
+		mixedNodeRoleIdList = append(mixedNodeRoleIdList, v.MixedNodeRoleId)
+	}
+	var mixedNodeRoleBaselineList []*entity.NodeRoleBaseline
+	if err := data.DB.Where("id IN (?)", nodeRoleIdList).Find(&mixedNodeRoleBaselineList).Error; err != nil {
+		return nil, err
+	}
+	var nodeRoleBaselineMap = make(map[int64]*entity.NodeRoleBaseline)
+	for _, v := range mixedNodeRoleBaselineList {
+		nodeRoleBaselineMap[v.Id] = v
+	}
+	var mixedNodeRoleMap = make(map[int64][]*entity.MixedNodeRole)
+	for _, v := range nodeRoleMixedDeployList {
+		mixedNodeRoleMap[v.NodeRoleId] = append(mixedNodeRoleMap[v.NodeRoleId], &entity.MixedNodeRole{
+			Id:   nodeRoleBaselineMap[v.MixedNodeRoleId].Id,
+			Name: nodeRoleBaselineMap[v.MixedNodeRoleId].NodeRoleName,
+		})
+	}
+	//查询机型
+
 	//构建返回体
 	var list []*entity.ServerPlanning
 	for _, v := range nodeRoleBaselineList {
@@ -89,6 +115,7 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 		serverPlanning.NodeRoleName = v.NodeRoleName
 		serverPlanning.NodeRoleAnnotation = v.Annotation
 		serverPlanning.SupportDpdk = v.SupportDPDK
+		serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[v.Id]
 		if util.IsNotBlank(request.CpuType) {
 			serverPlanning.ServerBaselineId = serverBaselineCpuTypeMap[request.CpuType].Id
 			serverPlanning.ServerModel = serverBaselineCpuTypeMap[request.CpuType].BomCode

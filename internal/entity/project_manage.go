@@ -23,6 +23,7 @@ type ProjectManage struct {
 	CloudPlatformName string    `gorm:"column:-" json:"cloudPlatformName"`               //云平台名称
 	RegionName        string    `gorm:"column:-" json:"regionName"`                      //region名称
 	AzName            string    `gorm:"column:-" json:"azName"`                          //az名称
+	CellName          string    `gorm:"column:-" json:"cellName"`                        //cell名称
 }
 
 func (entity *ProjectManage) TableName() string {
