@@ -42,13 +42,13 @@ func Page(context *gin.Context) {
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 			return
 		}
-		//var memberIds []string
+		var memberIds []string
 		var memberNames []string
 		for _, member := range members {
-			//memberIds = append(memberIds, member.UserId)
+			memberIds = append(memberIds, member.UserId)
 			memberNames = append(memberNames, member.UserName)
 		}
-		//customer.MembersId = memberIds
+		customer.MembersId = memberIds
 		customer.MembersName = memberNames
 		responseList = append(responseList, customer)
 	}

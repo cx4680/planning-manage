@@ -16,8 +16,8 @@ type Request struct {
 	UserId         string
 	PlanId         int64  `form:"planId"`
 	NetworkVersion string `form:"networkVersion"`
-	Role           string `form:"role"`
-	CpuType        int64  `form:"cpuType"`
+	NodeRoleId     string `form:"nodeRoleId"`
+	CpuType        string `form:"cpuType"`
 	serverList     []*struct {
 		Region   string `form:"region"`
 		Role     string `form:"role"`

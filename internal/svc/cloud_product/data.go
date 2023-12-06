@@ -38,7 +38,7 @@ func getCloudProductBaseListByVersionId(versionId int64) ([]CloudProductBaseline
 	}
 	var responseList []CloudProductBaselineResponse
 	for _, baseline := range baselineList {
-		var sellSpecs []string
+		sellSpecs := make([]string, 1)
 		if strings.Index(baseline.SellSpecs, ",") > 0 {
 			sellSpecs = strings.Split(baseline.SellSpecs, ",")
 		} else {

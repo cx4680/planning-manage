@@ -1,6 +1,7 @@
 package network_device
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"errors"
 	"fmt"
 	"net/http"
@@ -24,35 +25,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
 )
-
-type Request struct {
-	PlanId                int64  `form:"planId"`
-	Brand                 string `form:"brand"`
-	ApplicationDispersion string `form:"applicationDispersion"`
-	AwsServerNum          int    `form:"awsServerNum"`
-	AwsBoxNum             int    `form:"awsBoxNum"`
-	TotalBoxNum           int    `form:"totalBoxNum"`
-	Ipv6                  string `form:"ipv6"`
-	NetworkModel          int    `form:"networkModel"`
-	DeviceType            int    `form:"deviceType"`
-}
-
-type NetworkDevices struct {
-	PlanId                int64                `form:"planId"`
-	NetworkDeviceRoleId   int64                `form:"networkDeviceRoleId"`
-	NetworkDeviceRole     string               `form:"networkDeviceRole"`
-	NetworkDeviceRoleName string               `form:"networkDeviceRoleName"`
-	LogicalGrouping       string               `form:"logicalGrouping"`
-	DeviceId              string               `form:"deviceId"`
-	Brand                 string               `form:"brand"`
-	DeviceModel           string               `form:"deviceModel"`
-	DeviceModels          []NetworkDeviceModel `form:"deviceModels"`
-}
-
-type NetworkDeviceModel struct {
-	ConfOverview string `form:"configurationOverview"`
-	DeviceModel  string `form:"deviceModel"`
-}
 
 // func GetCountBoxNum(c *gin.Context) {
 //	request := &Request{}
@@ -237,6 +209,8 @@ func SaveDeviceList(c *gin.Context) {
 		device.PlanId = planId
 		device.NetworkDeviceRole = networkDevice.NetworkDeviceRole
 		device.NetworkDeviceRoleId = networkDevice.NetworkDeviceRoleId
+		device.NetworkDeviceRoleName = networkDevice.NetworkDeviceRoleName
+		device.ConfOverview = networkDevice.ConfOverview
 		device.LogicalGrouping = networkDevice.LogicalGrouping
 		device.DeviceId = networkDevice.DeviceId
 		device.Brand = networkDevice.Brand
@@ -348,6 +322,24 @@ func SaveDeviceList(c *gin.Context) {
 	return
 }
 
+func NetworkDeviceListDownload(context *gin.Context) {
+	param := context.Param("planId")
+	planId, err := strconv.ParseInt(param, 10, 64)
+	if err != nil {
+		log.Errorf("[IpDemandListDownload] invalid param error, %v", err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	fileName, exportResponseDataList, err := exportNetworkDeviceListByPlanId(planId)
+	if err != nil {
+		log.Errorf("[exportIpDemandPlanningByPlanId] error, %v", err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	_ = excel.NormalDownLoad(fileName, "网络设备清单", "", false, exportResponseDataList, context.Writer)
+	return
+}
+
 func checkRequest(request Request) error {
 	if request.PlanId == 0 {
 		return errors.New("方案ID参数为空")
@@ -422,6 +414,7 @@ func dealNetworkModel(versionId int64, networkInterface string, request Request,
 		return nil, nil
 	}
 	deviceModel := deviceModels[0].DeviceModel
+	confOverview := deviceModels[0].ConfOverview
 	//TODO 根据设备类型获取唯一型号
 	if len(deviceModels) > 1 {
 
@@ -471,16 +464,16 @@ func dealNetworkModel(versionId int64, networkInterface string, request Request,
 				minimumNumUnit += discuss
 			}
 		}
-		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id)
+		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id, confOverview)
 	} else if constant.NetworkModelYes == networkModel {
 		// 固定数量计算
-		response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id)
+		response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id, confOverview)
 	}
 	return response, nil
 }
 
 // 组装设备清单
-func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode string, brand string, deviceModel string, deviceModels []NetworkDeviceModel, response []NetworkDevices, deviceRoleId int64) ([]NetworkDevices, error) {
+func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode string, brand string, deviceModel string, deviceModels []NetworkDeviceModel, response []NetworkDevices, deviceRoleId int64, confOverview string) ([]NetworkDevices, error) {
 	for i := 1; i <= groupNum; i++ {
 		logicalGrouping := funcCompoCode + "-" + strconv.Itoa(i)
 		for j := 1; j <= deviceNum; j++ {
@@ -494,6 +487,7 @@ func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode s
 				Brand:                 brand,
 				DeviceModel:           deviceModel,
 				DeviceModels:          deviceModels,
+				ConfOverview:          confOverview,
 			}
 			response = append(response, networkDevice)
 		}

@@ -3,19 +3,11 @@ package network_device
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"errors"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
 	"time"
 )
-
-type BoxTotalResponse struct {
-	Count int64 `json:"count"`
-}
-
-type DeviceRoleGroupNum struct {
-	DeviceRoleId int64 `form:"deviceRoleId"`
-	GroupNum     int   `form:"groupNum"`
-}
 
 func searchDevicePlanByPlanId(planId int64) (*entity.NetworkDevicePlanning, error) {
 	var devicePlan entity.NetworkDevicePlanning
@@ -101,7 +93,7 @@ func getBrandsByVersionIdAndNetworkVersion(versionId int64, networkVersion strin
 
 func getDeviceRoleGroupNumByPlanId(planId int64) ([]DeviceRoleGroupNum, error) {
 	var roleNum []DeviceRoleGroupNum
-	if err := data.DB.Raw("SELECT count(DISTINCT logical_grouping),network_device_role_id FROM network_device_list where plan_id=? GROUP BY network_device_role_id", planId).Scan(&roleNum).Error; err != nil {
+	if err := data.DB.Raw("SELECT count(DISTINCT logical_grouping) as groupNum,network_device_role_id as deviceRoleId FROM network_device_list where plan_id=? GROUP BY network_device_role_id", planId).Scan(&roleNum).Error; err != nil {
 		log.Errorf("[getDeviceRoleGroupNumByPlanId] error, %v", err)
 		return nil, err
 	}
@@ -130,4 +122,49 @@ func updateDevicePlan(request Request, devicePlanning entity.NetworkDevicePlanni
 		return err
 	}
 	return nil
+}
+
+func exportNetworkDeviceListByPlanId(planId int64) (string, []NetworkDeviceListExportResponse, error) {
+	var planManage entity.PlanManage
+	if err := data.DB.Where("id=?", planId).Scan(planManage).Error; err != nil {
+		log.Errorf("[exportNetworkDeviceListByPlanId] get planManage by id err, %v", err)
+		return "", nil, err
+	}
+	var projectManage entity.ProjectManage
+	if err := data.DB.Where("id=?", planManage.ProjectId).Scan(projectManage).Error; err != nil {
+		log.Errorf("[exportNetworkDeviceListByPlanId] get projectManage by id err, %v", err)
+		return "", nil, err
+	}
+	var roleIdNum []NetworkDeviceRoleIdNum
+	if err := data.DB.Raw("select network_device_role_id,count(*) as num from network_device_list where plan_id = ? and delete_state = 0 group by network_device_role_id", planId).Scan(&roleIdNum).Error; err != nil {
+		log.Errorf("[exportNetworkDeviceListByPlanId] query db error, %v", err)
+		return "", nil, err
+	}
+	if len(roleIdNum) == 0 {
+		return "", nil, errors.New("获取网络设备清单为空")
+	}
+	var response []NetworkDeviceListExportResponse
+	for _, roleNum := range roleIdNum {
+		roleId := roleNum.NetworkDeviceRoleId
+		networkDevice, _ := getNetworkDeviceListByPlanIdAndRoleId(planId, roleId)
+		var exportDto = NetworkDeviceListExportResponse{
+			networkDevice.NetworkDeviceRoleName,
+			networkDevice.NetworkDeviceRole,
+			networkDevice.Brand,
+			networkDevice.DeviceModel,
+			networkDevice.ConfOverview,
+			roleNum.Num,
+		}
+		response = append(response, exportDto)
+	}
+	return projectManage.Name + "-" + planManage.Name + "-" + "网络设备清单", response, nil
+}
+
+func getNetworkDeviceListByPlanIdAndRoleId(planId int64, roleId int64) (entity.NetworkDeviceList, error) {
+	var networkDevice entity.NetworkDeviceList
+	if err := data.DB.Table(entity.NetworkDeviceListTable).Where("plan_id=? and delete_state = 0 and network_device_role_id = ? limit 1", planId, roleId).Scan(&networkDevice).Error; err != nil {
+		log.Errorf("[getNetworkDeviceListByPlanIdAndRoleId] query db error, %v", err)
+		return networkDevice, err
+	}
+	return networkDevice, nil
 }

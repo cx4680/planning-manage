@@ -2,6 +2,7 @@ package http
 
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
 	"os"
 
@@ -174,13 +175,15 @@ func Router(engine *gin.Engine) {
 			networkGroup.POST("/device/list", middleware.OperatorLog(DefaultEventOpInfo("获取网络设备清单", "listNetworkDevices", middleware.LIST, middleware.INFO)), network_device.ListNetworkDevices)
 			// 获取网络设备清单
 			networkGroup.POST("/device/save", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备清单", "saveDeviceList", middleware.CREATE, middleware.INFO)), network_device.SaveDeviceList)
+			// 下载网络设备清单
+			networkGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载网络设备清单", "networkDeviceListDownload", middleware.EXPORT, middleware.INFO)), network_device.NetworkDeviceListDownload)
 		}
 
 		// ipDemand
 		ipDemandGroup := v1.Group("/ipDemand")
 		{
 			// 下载IP需求表
-			ipDemandGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载IP需求表", "ipDemandListDownload", middleware.EXPORT, middleware.INFO)), ip_demand.IpDemandListDownload)
+			ipDemandGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载IP需求清单", "ipDemandListDownload", middleware.EXPORT, middleware.INFO)), ip_demand.IpDemandListDownload)
 		}
 
 		// cloudProduct
@@ -192,6 +195,12 @@ func Router(engine *gin.Engine) {
 			cloudProduct.GET("/list/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id获取用户选择的云产品清单", "listCloudProduct", middleware.LIST, middleware.INFO)), cloud_product.List)
 			cloudProduct.GET("/export/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载云服务规格清单", "exportCloudProduct", middleware.LIST, middleware.INFO)), cloud_product.Export)
 		}
+	}
+
+	// 枚举配置表
+	configGroup := v1.Group("/config")
+	{
+		configGroup.GET("/:code", middleware.OperatorLog(DefaultEventOpInfo("枚举配置表", "queryConfig", middleware.LIST, middleware.INFO)), config_item.List)
 	}
 }
 

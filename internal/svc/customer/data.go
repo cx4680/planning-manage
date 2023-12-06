@@ -70,6 +70,7 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	var count int64
 
 	db := data.DB.Table("customer_manage").Select("DISTINCT customer_manage.*")
+
 	db.Where("customer_manage.delete_state=0")
 	if len(customerPageParam.CustomerName) > 0 {
 		db.Where("customer_manage.customer_name like ?", `%`+customerPageParam.CustomerName+`%`)
@@ -81,7 +82,7 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 		db.Where("(customer_manage.leader_id = ? OR permissions_manage.user_id = ?)", currentUserId, currentUserId)
 	}
 	if err := db.Joins("LEFT JOIN permissions_manage ON permissions_manage.customer_id = customer_manage.id").
-		Order("update_time DESC").
+		Order(customerPageParam.OrderBy).
 		Limit(customerPageParam.Size).
 		Offset((customerPageParam.Current - 1) * customerPageParam.Size).
 		Find(&customerList).

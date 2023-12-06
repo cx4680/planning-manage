@@ -188,9 +188,8 @@ INSERT INTO `config_item` VALUES (6, 0, '方案阶段', 'planStage', NULL, NULL)
 INSERT INTO `config_item` VALUES (601, 6, '待规划', 'plan', NULL, 1);
 INSERT INTO `config_item` VALUES (602, 6, '规划中', 'planning', NULL, 2);
 INSERT INTO `config_item` VALUES (603, 6, '规划完成', 'planned', NULL, 3);
-INSERT INTO `config_item` VALUES (604, 6, '待交付', 'deliver', NULL, 4);
-INSERT INTO `config_item` VALUES (605, 6, '交付中', 'delivering', NULL, 5);
-INSERT INTO `config_item` VALUES (606, 6, '交付完成', 'delivered', NULL, 6);
+INSERT INTO `config_item` VALUES (604, 6, '交付中', 'delivering', NULL, 4);
+INSERT INTO `config_item` VALUES (605, 6, '交付完成', 'delivered', NULL, 5);
 
 
 CREATE TABLE `cloud_product_baseline`
@@ -258,22 +257,23 @@ CREATE TABLE `node_role_mixed_deploy`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='节点角色混部表';
 
 
-CREATE TABLE `network_device_list`
-(
-    `id`                     bigint(20) NOT NULL AUTO_INCREMENT,
-    `plan_id`                bigint(20) NOT NULL COMMENT '方案ID',
-    `network_device_role`    varchar(45)  DEFAULT NULL COMMENT '设备类型->网络设备角色名称',
-    `network_device_role_id` BIGINT(20) DEFAULT NULL COMMENT '设备角色ID',
-    `logical_grouping`       varchar(255) DEFAULT NULL COMMENT '逻辑分组',
-    `device_id`              varchar(255) DEFAULT NULL COMMENT '设备ID',
-    `brand`                  varchar(45)  DEFAULT NULL COMMENT '厂商',
-    `device_model`           varchar(45)  DEFAULT NULL COMMENT '设备型号',
-    `create_time`            datetime     DEFAULT NULL COMMENT '创建时间',
-    `update_time`            datetime     DEFAULT NULL COMMENT '修改时间',
-    `delete_state`           tinyint(4) DEFAULT NULL COMMENT '删除状态0：未删除；1：已删除',
-    PRIMARY KEY (`id`) USING BTREE,
-    KEY                      `IDX_U_PLAN_ID_STATE` (`plan_id`,`delete_state`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='网络设备清单';
+CREATE TABLE `network_device_list` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `plan_id` bigint(20) NOT NULL COMMENT '方案ID',
+  `network_device_role` varchar(45) DEFAULT NULL COMMENT '设备类型->网络设备角色编码',
+	`network_device_role_name` varchar(255) DEFAULT NULL COMMENT '设备类型->网络设备角色名称',
+  `network_device_role_id` bigint(20) DEFAULT NULL COMMENT '设备类型->网络设备角色ID',
+  `logical_grouping` varchar(255) DEFAULT NULL COMMENT '逻辑分组',
+  `device_id` varchar(255) DEFAULT NULL COMMENT '设备ID',
+    `conf_overview` varchar(500) DEFAULT NULL COMMENT '配置概述',
+  `brand` varchar(45) DEFAULT NULL COMMENT '厂商',
+  `device_model` varchar(45) DEFAULT NULL COMMENT '设备型号',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '修改时间',
+  `delete_state` tinyint(4) DEFAULT NULL COMMENT '删除状态0：未删除；1：已删除',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `IDX_U_PLAN_ID_STATE` (`plan_id`,`delete_state`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='网络设备清单';
 
 
 CREATE TABLE `network_device_planning`
