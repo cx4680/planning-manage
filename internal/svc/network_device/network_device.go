@@ -52,12 +52,6 @@ type NetworkDeviceModel struct {
 	DeviceType   string `form:"deviceModel"`
 }
 
-//const (
-//	MASW = "MASW"
-//	VASW = "VASW"
-//	StorSASW = "StorSASW"
-//)
-
 //func GetCountBoxNum(c *gin.Context) {
 //	request := &Request{}
 //	if err := c.ShouldBindQuery(&request); err != nil {
@@ -185,6 +179,11 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, "服务器规划列表不能为空", http.StatusInternalServerError)
 		return
 	}
+	//服务器规划数据转为map
+	var nodeRoleServerNumMap = make(map[int64]int)
+	for _, value := range serverPlanningList {
+		nodeRoleServerNumMap[value.NodeRoleId] = value.Number
+	}
 	// 根据服务器基线id查询服务器基线表获取网络接口
 	serviceBaselineId := serverPlanningList[0].ServerBaselineId
 	serverBaseline, err := baseline.QueryServiceBaselineById(serviceBaselineId)
@@ -201,7 +200,7 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	response, err = transformNetworkDeviceList(versionId, networkInterface, request, deviceRoleBaseline)
+	response, err = transformNetworkDeviceList(versionId, networkInterface, request, deviceRoleBaseline, nodeRoleServerNumMap)
 	if err != nil {
 		log.Errorf("[transformNetworkDeviceList] error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -363,7 +362,7 @@ func checkRequest(request Request) error {
 }
 
 // 匹配组网模型处理网络设备清单数据
-func transformNetworkDeviceList(versionId int64, networkInterface string, request Request, roleBaseLine []entity.NetworkDeviceRoleBaseline) ([]NetworkDevices, error) {
+func transformNetworkDeviceList(versionId int64, networkInterface string, request Request, roleBaseLine []entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int) ([]NetworkDevices, error) {
 	var response []NetworkDevices
 	networkModel := request.NetworkModel
 	if len(roleBaseLine) == 0 {
@@ -378,9 +377,9 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 	6.查询网络设备基线数据 根据版本号、网络设备角色、网络版本、厂商
 	7.构建网络设备清单列表 两层循环 外层是单元数循环、内层是单元设备数量循环
 	*/
-	model := constant.YES
+	model := constant.NetworkModelYes
 	var aswNum map[int64]int
-	var nodeRoleServerNumMap map[int64]int
+	//TODO roleBaseLine把OASW这条数据移到最后处理
 	for _, deviceRole := range roleBaseLine {
 		if strings.EqualFold(constant.SEPARATION_OF_TWO_NETWORKS, networkModel) {
 			// 两网分离
@@ -404,7 +403,7 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 }
 
 // 根据网络设备角色基线计算数据
-func dealNetworkModel(versionId int64, networkInterface string, request Request, networkModel string, roleBaseLine entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int, aswNum map[int64]int) ([]NetworkDevices, error) {
+func dealNetworkModel(versionId int64, networkInterface string, request Request, networkModel int, roleBaseLine entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int, aswNum map[int64]int) ([]NetworkDevices, error) {
 	funcCompoName := roleBaseLine.FuncCompoName
 	id := roleBaseLine.Id
 	brand := request.Brand
@@ -416,20 +415,24 @@ func dealNetworkModel(versionId int64, networkInterface string, request Request,
 	}
 	deviceType := deviceModels[0].DeviceType
 	var serverNum = 0
-	switch funcCompoName {
-	case constant.MASW, constant.VASW, constant.StorSASW, constant.StoreCASW, constant.BMSASW, constant.ISW, constant.OASW:
-		if constant.NO != networkModel && len(networkModel) > 0 {
-			nodeRoles := strings.Split(networkModel, ",")
-			for _, nodeRole := range nodeRoles {
-				var num = 0
-				nodeRoleId, _ := strconv.ParseInt(nodeRole, 10, 64)
-				if !strings.EqualFold(constant.OASW, funcCompoName) {
-					num = nodeRoleServerNumMap[nodeRoleId]
-				} else {
-					num = aswNum[nodeRoleId]
-				}
-				serverNum += num
+	if constant.NeedQueryOtherTable == networkModel {
+		var nodeRoles []int64
+		/**
+		1.根据网络设备角色ID和组网找模型查询关联表获取节点角色ID
+		2.为空则return
+		3.取其中一条判断是节点角色还是网络设备角色（这里默认每个网络设备角色的关联类型要么全是节点角色，要么全是网络设备角色）
+		4.循环关联表数据向nodeRoles添加数据 要注意数量
+		*/
+		nodeRoles = append(nodeRoles, 1)
+
+		for _, nodeRoleId := range nodeRoles {
+			var num = 0
+			if !strings.EqualFold(constant.OASW, funcCompoName) {
+				num = nodeRoleServerNumMap[nodeRoleId]
+			} else {
+				num = aswNum[nodeRoleId]
 			}
+			serverNum += num
 		}
 		if !strings.EqualFold(constant.OASW, funcCompoName) {
 			aswNum[id] = serverNum
@@ -445,11 +448,9 @@ func dealNetworkModel(versionId int64, networkInterface string, request Request,
 			}
 		}
 		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response, id)
-	default:
+	} else if constant.NetworkModelYes == networkModel {
 		//固定数量计算
-		if strings.EqualFold(constant.YES, networkModel) {
-			response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response, id)
-		}
+		response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response, id)
 	}
 	return response, nil
 }
