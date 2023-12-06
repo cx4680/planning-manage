@@ -7,8 +7,26 @@ import (
 	"gorm.io/gorm"
 )
 
+type ResponseCapacity struct {
+	Id              int64  `json:"id"`
+	ProductId       int64  `json:"productId"`
+	ProductName     string `json:"productName"`
+	CapacitySpecs   string `json:"capacitySpecs"`
+	SalesSpecs      string `json:"salesSpecs"`
+	OverbookingRate string `json:"overbookingRate"`
+	Number          string `json:"number"`
+	Unit            string `json:"unit"`
+}
+
+type ResponseModel struct {
+	Id                int64  `json:"id"`
+	Model             string `json:"model"`
+	HardwareVersion   string `json:"hardwareVersion"`
+	ConfigurationInfo string `json:"configurationInfo"`
+}
+
 func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
-	//云产品规划表
+	//查询云产品规划表
 	var cloudProductPlanningList []*entity.CloudProductPlanning
 	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanningList).Error; err != nil {
 		return nil, err
@@ -60,7 +78,7 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 }
 
 func ListServerArch(request *Request) ([]string, error) {
-	//云产品规划表
+	//查询云产品规划表
 	var cloudProductPlanning = &entity.CloudProductPlanning{}
 	if err := data.DB.Where("plan_id = ?", request.PlanId).First(&cloudProductPlanning).Error; err != nil {
 		return nil, err
@@ -75,11 +93,45 @@ func ListServerArch(request *Request) ([]string, error) {
 	if err := data.DB.Where("version_id = ?", cloudProductBaseline.VersionId).Find(&serverBaselineList).Error; err != nil {
 		return nil, err
 	}
-	var CpuType []string
+	var CpuTypeList []string
 	for _, v := range serverBaselineList {
-		CpuType = append(CpuType, v.CpuType)
+		CpuTypeList = append(CpuTypeList, v.CpuType)
 	}
-	return CpuType, nil
+	return CpuTypeList, nil
+}
+
+func ListServerCapacity(request *Request) ([]*ResponseCapacity, error) {
+	//云产品规划表
+	var cloudProductPlanning = &entity.CloudProductPlanning{}
+	if err := data.DB.Where("plan_id = ?", request.PlanId).First(&cloudProductPlanning).Error; err != nil {
+		return nil, err
+	}
+	//查询云产品配置表
+	var cloudProductBaseline = &entity.CloudProductBaseline{}
+	if err := data.DB.Where("id = ?", cloudProductPlanning.ProductId).First(&cloudProductBaseline).Error; err != nil {
+		return nil, err
+	}
+	//todo 缺少产品容量指标
+	var capacityList []*ResponseCapacity
+
+	return capacityList, nil
+}
+
+func ListServerModel(request *Request) ([]*ResponseModel, error) {
+	//云产品规划表
+	var cloudProductPlanning = &entity.CloudProductPlanning{}
+	if err := data.DB.Where("plan_id = ?", request.PlanId).First(&cloudProductPlanning).Error; err != nil {
+		return nil, err
+	}
+	//查询云产品配置表
+	var cloudProductBaseline = &entity.CloudProductBaseline{}
+	if err := data.DB.Where("id = ?", cloudProductPlanning.ProductId).First(&cloudProductBaseline).Error; err != nil {
+		return nil, err
+	}
+	//todo 版本号、产品、角色，查询服务器基线可用机型，服务器基线表缺少角色
+	var modelList []*ResponseModel
+
+	return modelList, nil
 }
 
 func CreateServer(request *Request) error {

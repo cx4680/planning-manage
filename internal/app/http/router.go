@@ -148,6 +148,10 @@ func Router(engine *gin.Engine) {
 			serverGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改服务器", "updateServerList", middleware.LIST, middleware.INFO)), server.Update)
 			// 查询服务器架构列表
 			serverGroup.GET("/arch/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.ArchList)
+			// 查询容量规划列表
+			serverGroup.GET("/capacity/list", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "queryServerCapacityList", middleware.LIST, middleware.INFO)), server.CapacityList)
+			// 查询当前可用机型
+			serverGroup.GET("/model/list", middleware.OperatorLog(DefaultEventOpInfo("查询当前可用机型", "queryServerModelList", middleware.LIST, middleware.INFO)), server.ModelList)
 		}
 
 		// baseline

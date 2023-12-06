@@ -133,13 +133,6 @@ const (
 )
 
 const (
-	YES        = "1"
-	NO         = "0"
-	YesChinese = "是"
-	NoChinese  = "否"
-)
-
-const (
 	PLAN     = "plan"     // 待规划
 	PLANNING = "planning" // 规划中
 	PLANNED  = "planned"  // 规划完成

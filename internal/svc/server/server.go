@@ -14,18 +14,17 @@ import (
 type Request struct {
 	Id             int64
 	UserId         string
-	PlanId         int64     `form:"planId"`
-	NetworkVersion string    `form:"networkVersion"`
-	CpuType        int64     `form:"cpuType"`
-	serverList     []*server `form:"serverList"`
-}
-
-type server struct {
-	Region   string `form:"region"`
-	Role     string `form:"role"`
-	ServerId int64  `form:"serverId"`
-	Number   string `form:"number"`
-	Master   string `form:"master"`
+	PlanId         int64  `form:"planId"`
+	NetworkVersion string `form:"networkVersion"`
+	Role           string `form:"role"`
+	CpuType        int64  `form:"cpuType"`
+	serverList     []*struct {
+		Region   string `form:"region"`
+		Role     string `form:"role"`
+		ServerId int64  `form:"serverId"`
+		Number   string `form:"number"`
+		Master   string `form:"master"`
+	} `form:"serverList"`
 }
 
 func List(c *gin.Context) {
@@ -58,6 +57,44 @@ func ArchList(c *gin.Context) {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
 	}
 	list, err := ListServerArch(request)
+	if err != nil {
+		log.Errorf("list server arch error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, list)
+}
+
+func CapacityList(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindQuery(&request); err != nil {
+		log.Errorf("list server arch bind param error: ", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	if request.PlanId == 0 {
+		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+	}
+	list, err := ListServerCapacity(request)
+	if err != nil {
+		log.Errorf("list server arch error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, list)
+}
+
+func ModelList(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindQuery(&request); err != nil {
+		log.Errorf("list server arch bind param error: ", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	if request.PlanId == 0 {
+		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+	}
+	list, err := ListServerModel(request)
 	if err != nil {
 		log.Errorf("list server arch error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
