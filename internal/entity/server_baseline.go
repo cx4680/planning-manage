@@ -7,7 +7,7 @@ type ServerBaseline struct {
 	VersionId           int64  `gorm:"column:version_id" json:"versionId"`                      // 版本id
 	Arch                string `gorm:"column:arch" json:"Arch"`                                 // 硬件架构
 	NetworkInterface    string `gorm:"column:network_interface" json:"networkInterface"`        // 网络接口
-	ServerModel         string `gorm:"column:server_mode" json:"serverModel"`                   // 机型
+	BomCode             string `gorm:"column:bom_code" json:"bomCode"`                          // BOM编码
 	ConfigurationInfo   string `gorm:"column:configuration_info" json:"configurationInfo"`      // 配置概要
 	Spec                string `gorm:"column:spec" json:"spec"`                                 // 规格
 	CpuType             string `gorm:"column:cpu_type" json:"cpuType"`                          // CPU类型

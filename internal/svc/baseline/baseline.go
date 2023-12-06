@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"github.com/xuri/excelize/v2"
+	"gorm.io/gorm"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
@@ -52,7 +53,7 @@ func Import(context *gin.Context) {
 		return
 	}
 	softwareVersion, err := QuerySoftwareVersionByVersion(baselineVersion, cloudPlatformType)
-	if err != nil {
+	if err != nil && err != gorm.ErrRecordNotFound {
 		log.Error(err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
@@ -69,7 +70,7 @@ func Import(context *gin.Context) {
 		softwareVersion = entity.SoftwareVersion{
 			SoftwareVersion:   baselineVersion,
 			CloudPlatformType: cloudPlatformType,
-			ReleaseTime:       datetime.StrToTime(releaseTime, datetime.FullTimeFmt),
+			ReleaseTime:       datetime.StrToTime(datetime.FullTimeFmt, releaseTime),
 			CreateTime:        now,
 		}
 		// 新增软件版本
@@ -302,7 +303,7 @@ func ImportNodeRoleBaseline(context *gin.Context, softwareVersion entity.Softwar
 			})
 		}
 		originNodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
-		if err != nil {
+		if err != nil && err != gorm.ErrRecordNotFound {
 			log.Error(err)
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 			return true
@@ -352,11 +353,11 @@ func ImportServerBaseline(context *gin.Context, softwareVersion entity.SoftwareV
 	// 先查询节点角色表，导入的版本是否已有数据，如没有，提示先导入节点角色基线
 	nodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
 	if err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return true
-	}
-	if len(nodeRoleBaselines) == 0 {
-		result.Failure(context, errorcodes.NodeRoleMustImportFirst, http.StatusBadRequest)
+		if err == gorm.ErrRecordNotFound {
+			result.Failure(context, errorcodes.NodeRoleMustImportFirst, http.StatusBadRequest)
+		} else {
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		}
 		return true
 	}
 	var serverBaselineExcelList []ServerBaselineExcel
@@ -376,7 +377,7 @@ func ImportServerBaseline(context *gin.Context, softwareVersion entity.SoftwareV
 				VersionId:           softwareVersion.Id,
 				Arch:                serverBaselineExcelList[i].Arch,
 				NetworkInterface:    serverBaselineExcelList[i].NetworkInterface,
-				ServerModel:         serverBaselineExcelList[i].ServerModel,
+				BomCode:             serverBaselineExcelList[i].BomCode,
 				ConfigurationInfo:   serverBaselineExcelList[i].ConfigurationInfo,
 				Spec:                serverBaselineExcelList[i].Spec,
 				CpuType:             serverBaselineExcelList[i].CpuType,
@@ -394,7 +395,7 @@ func ImportServerBaseline(context *gin.Context, softwareVersion entity.SoftwareV
 			})
 		}
 		originServerBaselines, err := QueryServerBaselineByVersionId(softwareVersion.Id)
-		if err != nil {
+		if err != nil && err != gorm.ErrRecordNotFound {
 			log.Error(err)
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 			return true
@@ -414,13 +415,7 @@ func ImportServerBaseline(context *gin.Context, softwareVersion entity.SoftwareV
 			}
 			serverModelMap := make(map[string]int64)
 			for _, serverBaseline := range serverBaselines {
-				serverModelMap[serverBaseline.ServerModel] = serverBaseline.Id
-			}
-			nodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
-			if err != nil {
-				log.Error(err)
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
+				serverModelMap[serverBaseline.BomCode] = serverBaseline.Id
 			}
 			nodeRoleNameMap := make(map[string]int64)
 			for _, nodeRoleBaseline := range nodeRoleBaselines {
@@ -433,7 +428,7 @@ func ImportServerBaseline(context *gin.Context, softwareVersion entity.SoftwareV
 					var serverNodeRoleRels []entity.ServerNodeRoleRel
 					for _, nodeRole := range nodeRoles {
 						serverNodeRoleRels = append(serverNodeRoleRels, entity.ServerNodeRoleRel{
-							ServerId:   serverModelMap[serverBaselineExcel.ServerModel],
+							ServerId:   serverModelMap[serverBaselineExcel.BomCode],
 							NodeRoleId: nodeRoleNameMap[nodeRole],
 						})
 					}
@@ -452,11 +447,11 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 	// 先查询节点角色表，导入的版本是否已有数据，如没有，提示先导入节点角色基线
 	nodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
 	if err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return true
-	}
-	if len(nodeRoleBaselines) == 0 {
-		result.Failure(context, errorcodes.NodeRoleMustImportFirst, http.StatusBadRequest)
+		if err == gorm.ErrRecordNotFound {
+			result.Failure(context, errorcodes.NodeRoleMustImportFirst, http.StatusBadRequest)
+		} else {
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		}
 		return true
 	}
 	var networkDeviceRoleBaselineExcelList []NetworkDeviceRoleBaselineExcel
@@ -517,7 +512,7 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 		}
 
 		originNetworkDeviceRoleBaselines, err := QueryNetworkDeviceRoleBaselineByVersionId(softwareVersion.Id)
-		if err != nil {
+		if err != nil && err != gorm.ErrRecordNotFound {
 			log.Error(err)
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 			return true
@@ -610,11 +605,11 @@ func ImportNetworkDeviceBaseline(context *gin.Context, softwareVersion entity.So
 	// 先查询网络设备角色表，导入的版本是否已有数据，如没有，提示先导入网络设备角色基线
 	networkDeviceRoleBaselines, err := QueryNetworkDeviceRoleBaselineByVersionId(softwareVersion.Id)
 	if err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return true
-	}
-	if len(networkDeviceRoleBaselines) == 0 {
-		result.Failure(context, errorcodes.NetworkDeviceRoleMustImportFirst, http.StatusBadRequest)
+		if err == gorm.ErrRecordNotFound {
+			result.Failure(context, errorcodes.NetworkDeviceRoleMustImportFirst, http.StatusBadRequest)
+		} else {
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		}
 		return true
 	}
 	var networkDeviceBaselineExcelList []NetworkDeviceBaselineExcel
@@ -647,7 +642,7 @@ func ImportNetworkDeviceBaseline(context *gin.Context, softwareVersion entity.So
 			})
 		}
 		originNetworkDeviceBaselines, err := QueryNetworkDeviceBaselineByVersionId(softwareVersion.Id)
-		if err != nil {
+		if err != nil && err != gorm.ErrRecordNotFound {
 			log.Error(err)
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 			return true
@@ -699,11 +694,11 @@ func ImportIPDemandBaseline(context *gin.Context, softwareVersion entity.Softwar
 	// 先查询网络设备角色表，导入的版本是否已有数据，如没有，提示先导入网络设备角色基线
 	networkDeviceRoleBaselines, err := QueryNetworkDeviceRoleBaselineByVersionId(softwareVersion.Id)
 	if err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return true
-	}
-	if len(networkDeviceRoleBaselines) == 0 {
-		result.Failure(context, errorcodes.NetworkDeviceRoleMustImportFirst, http.StatusBadRequest)
+		if err == gorm.ErrRecordNotFound {
+			result.Failure(context, errorcodes.NetworkDeviceRoleMustImportFirst, http.StatusBadRequest)
+		} else {
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		}
 		return true
 	}
 	var ipDemandBaselineExcelList []IPDemandBaselineExcel
@@ -730,7 +725,7 @@ func ImportIPDemandBaseline(context *gin.Context, softwareVersion entity.Softwar
 			})
 		}
 		originIPDemandBaselines, err := QueryIPDemandBaselineByVersionId(softwareVersion.Id)
-		if err != nil {
+		if err != nil && err != gorm.ErrRecordNotFound {
 			log.Error(err)
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 			return true

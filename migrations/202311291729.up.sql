@@ -301,7 +301,7 @@ CREATE TABLE `server_baseline`
     `version_id`            bigint(20) DEFAULT NULL COMMENT '版本id',
     `arch`                  varchar(50)  DEFAULT NULL COMMENT '硬件架构',
     `network_interface`     varchar(50)  DEFAULT NULL COMMENT '网络接口',
-    `server_mode`           varchar(255) DEFAULT NULL COMMENT '机型',
+    `bom_code`              varchar(255) DEFAULT NULL COMMENT 'BOM编码',
     `configuration_info`    varchar(500) DEFAULT NULL COMMENT '配置概要',
     `spec`                  varchar(255) DEFAULT NULL COMMENT '规格',
     `cpu_type`              varchar(50)  DEFAULT NULL COMMENT 'CPU类型',

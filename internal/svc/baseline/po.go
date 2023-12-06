@@ -58,7 +58,7 @@ type ServerBaselineExcel struct {
 	Arch                string   `excel:"name:硬件架构;" json:"Arch"`                      // 硬件架构
 	NetworkInterface    string   `excel:"name:网络接口;" json:"networkInterface"`          // 网络接口
 	NodeRole            string   `excel:"name:节点角色;" json:"nodeRole"`                  // 节点角色
-	ServerModel         string   `excel:"name:机型;" json:"serverModel"`                 // 机型
+	BomCode             string   `excel:"name:BOM编码;" json:"bomCode"`                  // BOM编码
 	ConfigurationInfo   string   `excel:"name:配置概要;" json:"configurationInfo"`         // 配置概要
 	Spec                string   `excel:"name:规格;" json:"spec"`                        // 规格
 	CpuType             string   `excel:"name:硬件架构;" json:"cpuType"`                   // CPU类型
