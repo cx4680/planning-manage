@@ -182,7 +182,7 @@ func ImportCloudProductBaseline(context *gin.Context, softwareVersion entity.Sof
 				ProductType:     cloudProductBaselineExcelList[i].ProductType,
 				ProductName:     cloudProductBaselineExcelList[i].ProductName,
 				ProductCode:     cloudProductBaselineExcelList[i].ProductCode,
-				SellSpec:        cloudProductBaselineExcelList[i].SellSpecs,
+				SellSpecs:       cloudProductBaselineExcelList[i].SellSpecs,
 				AuthorizedUnit:  cloudProductBaselineExcelList[i].AuthorizedUnit,
 				WhetherRequired: whetherRequiredType,
 				Instructions:    cloudProductBaselineExcelList[i].Instructions,

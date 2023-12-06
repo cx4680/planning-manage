@@ -2,6 +2,7 @@ package cloud_product
 
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -37,13 +38,13 @@ func ListCloudProductBaseline(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	baselineList, err := getCloudProductBaseListByVersionId(versionId)
+	baselineResponseList, err := getCloudProductBaseListByVersionId(versionId)
 	if err != nil {
 		log.Errorf("[ListCloudProductBaseline] getCloudProductBaseListByVersionId error", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	result.Success(context, baselineList)
+	result.Success(context, baselineResponseList)
 	return
 }
 
@@ -87,5 +88,23 @@ func List(context *gin.Context) {
 		return
 	}
 	result.Success(context, cloudProductPlannings)
+	return
+}
+
+func Export(context *gin.Context) {
+	param := context.Param("planId")
+	planId, err := strconv.ParseInt(param, 10, 64)
+	if err != nil {
+		log.Errorf("[Export] invalid param error, %v", err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	fileName, exportResponseDataList, err := exportCloudProductPlanningByPlanId(planId)
+	if err != nil {
+		log.Errorf("[Export] cloudProductPlanning error, %v", err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	excel.NormalDownLoad(fileName, "云产品清单", "", false, exportResponseDataList, context.Writer)
 	return
 }
