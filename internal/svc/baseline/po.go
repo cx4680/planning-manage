@@ -6,6 +6,7 @@ const (
 	NetworkDeviceBaselineSheetName     = "网络设备基线"
 	NetworkDeviceRoleBaselineSheetName = "网络设备角色基线"
 	NodeRoleBaselineSheetName          = "节点角色基线"
+	IPDemandBaselineSheetName          = "IP需求规划"
 )
 
 const (
@@ -14,6 +15,7 @@ const (
 	NetworkDeviceBaselineType     = "networkDeviceBaseline"
 	NetworkDeviceRoleBaselineType = "networkDeviceRoleBaseline"
 	NodeRoleBaselineType          = "nodeRoleBaseline"
+	IPDemandBaselineType          = "ipDemandBaseline"
 )
 
 type ImportBaselineRequest struct {
@@ -99,4 +101,15 @@ type NetworkDeviceBaselineExcel struct {
 	Purpose            string   `excel:"name:用途;" json:"purpose"`               // 用途
 	NetworkDeviceRole  string   `excel:"name:网络设备角色;" json:"networkDeviceRole"` // 网络设备角色
 	NetworkDeviceRoles []string `json:"networkDeviceRoles"`                     // 网络设备角色数组
+}
+
+type IPDemandBaselineExcel struct {
+	Vlan               string   `excel:"name:Vlan Id;" json:"vlan"`          // vlan id
+	Explain            string   `excel:"name:说明;" json:"explain"`            // 说明
+	Description        string   `excel:"name:描述;" json:"description"`        // 描述
+	IPSuggestion       string   `excel:"name:IP地址规划建议;" json:"IPSuggestion"` // IP地址规划建议
+	NetworkDeviceRole  string   `excel:"关联设备组;" json:"networkDeviceRole"`    // 关联设备组
+	AssignNum          string   `excel:"name:数量（C）;" json:"assignNum"`       // 分配数量
+	Remark             string   `excel:"name:备注;" json:"remark"`             // 备注
+	NetworkDeviceRoles []string `json:"networkDeviceRoles"`                  // 关联设备组数组
 }

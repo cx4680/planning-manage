@@ -124,6 +124,11 @@ func Import(context *gin.Context) {
 			return
 		}
 		break
+	case IPDemandBaselineType:
+		if ImportIPDemandBaseline(context, softwareVersion, f) {
+			return
+		}
+		break
 	default:
 		break
 	}
@@ -675,6 +680,89 @@ func ImportNetworkDeviceBaseline(context *gin.Context, softwareVersion entity.So
 			}
 			if len(networkDeviceRoleRels) > 0 {
 				if err := BatchCreateNetworkDeviceRoleRel(networkDeviceRoleRels); err != nil {
+					log.Error(err)
+					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func ImportIPDemandBaseline(context *gin.Context, softwareVersion entity.SoftwareVersion, f *excelize.File) bool {
+	// 先查询网络设备角色表，导入的版本是否已有数据，如没有，提示先导入网络设备角色基线
+	networkDeviceRoleBaselines, err := QueryNetworkDeviceRoleBaselineByVersionId(softwareVersion.Id)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return true
+	}
+	if len(networkDeviceRoleBaselines) == 0 {
+		result.Failure(context, errorcodes.NetworkDeviceRoleMustImportFirst, http.StatusBadRequest)
+		return true
+	}
+	var ipDemandBaselineExcelList []IPDemandBaselineExcel
+	if err := excel.ImportBySheet(f, &ipDemandBaselineExcelList, IPDemandBaselineSheetName, 0, 1); err != nil {
+		log.Error(err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return true
+	}
+	if len(ipDemandBaselineExcelList) > 0 {
+		var ipDemandBaselines []entity.IPDemandBaseline
+		for i := range ipDemandBaselineExcelList {
+			networkDeviceRole := ipDemandBaselineExcelList[i].NetworkDeviceRole
+			if networkDeviceRole != "" {
+				ipDemandBaselineExcelList[i].NetworkDeviceRoles = strings.Split(networkDeviceRole, constant.SplitLineBreak)
+			}
+			ipDemandBaselines = append(ipDemandBaselines, entity.IPDemandBaseline{
+				VersionId:    softwareVersion.Id,
+				Vlan:         ipDemandBaselineExcelList[i].Vlan,
+				Explain:      ipDemandBaselineExcelList[i].Explain,
+				Description:  ipDemandBaselineExcelList[i].Description,
+				IPSuggestion: ipDemandBaselineExcelList[i].IPSuggestion,
+				AssignNum:    ipDemandBaselineExcelList[i].AssignNum,
+				Remark:       ipDemandBaselineExcelList[i].Remark,
+			})
+		}
+		originIPDemandBaselines, err := QueryIPDemandBaselineByVersionId(softwareVersion.Id)
+		if err != nil {
+			log.Error(err)
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return true
+		}
+		if len(originIPDemandBaselines) > 0 {
+			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
+		} else {
+			if err := BatchCreateIPDemandBaseline(ipDemandBaselines); err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			ipDemandBaselines, err = QueryIPDemandBaselineByVersionId(softwareVersion.Id)
+			if err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			ipDemandBaselineMap := make(map[string]int64)
+			for _, ipDemandBaseline := range ipDemandBaselines {
+				ipDemandBaselineMap[ipDemandBaseline.Vlan] = ipDemandBaseline.Id
+			}
+			networkDeviceRoleCodeMap := make(map[string]int64)
+			for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
+				networkDeviceRoleCodeMap[networkDeviceRoleBaseline.FuncCompoCode] = networkDeviceRoleBaseline.Id
+			}
+			var ipDemandDeviceRoleRels []entity.IPDemandDeviceRoleRel
+			for _, ipDemandBaselineExcel := range ipDemandBaselineExcelList {
+				for _, networkDeviceRole := range ipDemandBaselineExcel.NetworkDeviceRoles {
+					ipDemandDeviceRoleRels = append(ipDemandDeviceRoleRels, entity.IPDemandDeviceRoleRel{
+						IPDemandId:   ipDemandBaselineMap[ipDemandBaselineExcel.Vlan],
+						DeviceRoleId: networkDeviceRoleCodeMap[networkDeviceRole],
+					})
+				}
+			}
+			if len(ipDemandDeviceRoleRels) > 0 {
+				if err := BatchCreateIPDemandDeviceRoleRel(ipDemandDeviceRoleRels); err != nil {
 					log.Error(err)
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
