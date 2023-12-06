@@ -52,7 +52,7 @@ func QueryNodeRoleBaselineByVersionId(versionId int64) ([]entity.NodeRoleBaselin
 }
 
 func BatchCreateNodeRoleBaseline(nodeRoleBaselines []entity.NodeRoleBaseline) error {
-	if err := data.DB.Table(entity.SoftwareVersionTable).Create(&nodeRoleBaselines).Scan(&nodeRoleBaselines).Error; err != nil {
+	if err := data.DB.Table(entity.NodeRoleBaselineTable).Create(&nodeRoleBaselines).Scan(&nodeRoleBaselines).Error; err != nil {
 		log.Errorf("batch insert nodeRoleBaseline error: ", err)
 		return err
 	}

@@ -237,7 +237,7 @@ CREATE TABLE `software_version`
 
 CREATE TABLE `node_role_baseline`
 (
-    `id`             bigint(20) NOT NULL COMMENT '主键id',
+    `id`             bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
     `version_id`     bigint(20) DEFAULT NULL COMMENT '软件版本id',
     `node_role_code` varchar(255) DEFAULT NULL COMMENT '节点角色编码',
     `node_role_name`      varchar(255) DEFAULT NULL COMMENT '节点角色名称',

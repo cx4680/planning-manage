@@ -24,6 +24,11 @@ type ExcelTag struct {
 	Replace   string // 替换（需要替换的内容_替换后的内容。比如：1_未开始 ==> 表示1替换为未开始）
 }
 
+type Header struct {
+	Name  string // 表头标题
+	Index int    // 表头列下标
+}
+
 // 构造函数，返回一个带有默认值的 ExcelTag 实例
 func NewExcelTag() ExcelTag {
 	return ExcelTag{

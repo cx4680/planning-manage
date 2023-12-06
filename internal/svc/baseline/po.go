@@ -42,16 +42,16 @@ type CloudProductBaselineExcel struct {
 }
 
 type NodeRoleBaselineExcel struct {
-	NodeRoleCode string   `excel:"name:角色code;" json:"nodeRoleCode"`   // 角色code
-	NodeRoleName string   `excel:"name:角色名称;" json:"nodeRoleName"`     // 角色名称
-	MinimumCount int      `excel:"name:单独部署最小数量;" json:"minimumCount"` // 单独部署最小数量
-	DeployMethod string   `excel:"name:部署方式;" json:"deployMethod"`     // 部署方式
-	SupportDPDK  string   `excel:"name:是否支持DPDK;" json:"supportDPDK"`  // 是否支持DPDK，0：否，1：是
-	Classify     string   `gorm:"name:分类;" json:"classify"`            // 分类
-	MixedDeploy  string   `excel:"name:节点混部;" json:"mixedDeploy"`      // 节点混部
-	Annotation   string   `excel:"name:节点说明;" json:"annotation"`       // 节点说明
-	BusinessType string   `excel:"name:业务类型;" json:"businessType"`     // 业务类型
-	MixedDeploys []string `json:"mixedDeploys"`                        // 节点混部数组
+	NodeRoleCode string   `excel:"name:角色code;" json:"nodeRoleCode"`  // 角色code
+	NodeRoleName string   `excel:"name:角色名称;" json:"nodeRoleName"`    // 角色名称
+	MinimumCount int      `excel:"name:最小部署数量;" json:"minimumCount"`  // 单独部署最小数量
+	DeployMethod string   `excel:"name:部署方式;" json:"deployMethod"`    // 部署方式
+	SupportDPDK  string   `excel:"name:是否支持DPDK;" json:"supportDPDK"` // 是否支持DPDK，0：否，1：是
+	Classify     string   `excel:"name:分类;" json:"classify"`          // 分类
+	MixedDeploy  string   `excel:"name:节点混部;" json:"mixedDeploy"`     // 节点混部
+	Annotation   string   `excel:"name:节点说明;" json:"annotation"`      // 节点说明
+	BusinessType string   `excel:"name:业务类型;" json:"businessType"`    // 业务类型
+	MixedDeploys []string `json:"mixedDeploys"`                       // 节点混部数组
 }
 
 type ServerBaselineExcel struct {

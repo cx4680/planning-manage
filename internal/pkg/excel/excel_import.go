@@ -40,13 +40,20 @@ func importData(f *excelize.File, dst interface{}, sheetName string, headIndex, 
 		err = errors.New("Invalid data type")
 	}
 	// 表头
-	var heads []string
+	var headers []Header
 	// 获取导入目标对象的类型信息
 	dataType := dataValue.Elem().Type().Elem()
 	// 遍历行，解析数据并填充到目标对象中
 	for rowIndex, row := range rows {
 		if rowIndex == headIndex {
-			heads = row
+			for i, rowValue := range row {
+				if rowValue != "" {
+					headers = append(headers, Header{
+						Name:  rowValue,
+						Index: i,
+					})
+				}
+			}
 		}
 		// 跳过头行
 		if rowIndex < startRow {
@@ -79,11 +86,12 @@ func importData(f *excelize.File, dst interface{}, sheetName string, headIndex, 
 				}
 				cellValue = row[excelizeIndex] // 获取单元格的值
 			} else { // 否则根据表头名称来拿数据
-				if IsContain(heads, excelTag.Name) { // 当tag里的表头名称和excel表格里面的表头名称相匹配时
-					if i >= len(row) { // 防止下标越界
+				index := HeaderIsContain(headers, excelTag.Name)
+				if index >= 0 { // 当tag里的表头名称和excel表格里面的表头名称相匹配时
+					if index >= len(row) { // 防止下标越界
 						continue
 					}
-					cellValue = row[i] // 获取单元格的值
+					cellValue = row[index] // 获取单元格的值
 				}
 			}
 			// 根据字段类型设置值
@@ -122,4 +130,13 @@ func IsContain(items interface{}, item interface{}) bool {
 		return false
 	}
 	return false
+}
+
+func HeaderIsContain(headers []Header, headerStr string) int {
+	for _, header := range headers {
+		if header.Name == headerStr {
+			return header.Index
+		}
+	}
+	return -1
 }

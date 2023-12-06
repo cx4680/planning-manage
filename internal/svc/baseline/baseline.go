@@ -89,6 +89,12 @@ func Import(context *gin.Context) {
 	if err != nil {
 		log.Error(err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		if err := f.Close(); err != nil {
+			log.Error(err)
+		}
+		if err := os.Remove(filePath); err != nil {
+			log.Error(err)
+		}
 		return
 	}
 	defer func() {
@@ -317,12 +323,6 @@ func ImportNodeRoleBaseline(context *gin.Context, softwareVersion entity.Softwar
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			nodeRoleBaselines, err = QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
-			if err != nil {
-				log.Error(err)
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
-			}
 			nodeRoleMap := make(map[string]int64)
 			for _, nodeRoleBaseline := range nodeRoleBaselines {
 				nodeRoleMap[nodeRoleBaseline.NodeRoleName] = nodeRoleBaseline.Id
@@ -333,9 +333,13 @@ func ImportNodeRoleBaseline(context *gin.Context, softwareVersion entity.Softwar
 				if len(mixedDeploys) > 0 {
 					var mixedNodeRoles []entity.NodeRoleMixedDeploy
 					for _, mixedDeploy := range mixedDeploys {
+						mixDeployNodeRoleId := nodeRoleMap[mixedDeploy]
+						if mixDeployNodeRoleId == 0 {
+							continue
+						}
 						mixedNodeRoles = append(mixedNodeRoles, entity.NodeRoleMixedDeploy{
 							NodeRoleId:      nodeRoleMap[nodeRoleName],
-							MixedNodeRoleId: nodeRoleMap[mixedDeploy],
+							MixedNodeRoleId: mixDeployNodeRoleId,
 						})
 					}
 					if err := BatchCreateNodeRoleMixedDeploy(mixedNodeRoles); err != nil {
@@ -404,12 +408,6 @@ func ImportServerBaseline(context *gin.Context, softwareVersion entity.SoftwareV
 			// TODO 先查询服务器基线表，看看相同的版本号是否已存在数据，如果已存在，需要先删除已有数据
 		} else {
 			if err := BatchCreateServerBaseline(serverBaselines); err != nil {
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
-			}
-			serverBaselines, err = QueryServerBaselineByVersionId(softwareVersion.Id)
-			if err != nil {
-				log.Error(err)
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -521,12 +519,6 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
 		} else {
 			if err := BatchCreateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines); err != nil {
-				log.Error(err)
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
-			}
-			networkDeviceRoleBaselines, err = QueryNetworkDeviceRoleBaselineByVersionId(softwareVersion.Id)
-			if err != nil {
 				log.Error(err)
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
@@ -655,12 +647,6 @@ func ImportNetworkDeviceBaseline(context *gin.Context, softwareVersion entity.So
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			networkDeviceBaselines, err = QueryNetworkDeviceBaselineByVersionId(softwareVersion.Id)
-			if err != nil {
-				log.Error(err)
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
-			}
 			networkDeviceBaselineMap := make(map[string]int64)
 			for _, networkDeviceBaseline := range networkDeviceBaselines {
 				networkDeviceBaselineMap[networkDeviceBaseline.DeviceModel] = networkDeviceBaseline.Id
@@ -734,12 +720,6 @@ func ImportIPDemandBaseline(context *gin.Context, softwareVersion entity.Softwar
 			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
 		} else {
 			if err := BatchCreateIPDemandBaseline(ipDemandBaselines); err != nil {
-				log.Error(err)
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
-			}
-			ipDemandBaselines, err = QueryIPDemandBaselineByVersionId(softwareVersion.Id)
-			if err != nil {
 				log.Error(err)
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
