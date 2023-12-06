@@ -214,6 +214,7 @@ CREATE TABLE `server_planning`
     `node_role_id`       bigint(20) DEFAULT NULL COMMENT '节点角色id',
     `server_baseline_id` bigint(20) DEFAULT NULL COMMENT '服务器基线表id',
     `number`             int          DEFAULT NULL COMMENT '数量',
+    `open_dpdk`          int          DEFAULT NULL COMMENT '是否开启DPDK，1：开启，0：关闭',
     `create_user_id`     varchar(255) DEFAULT NULL COMMENT '创建人id',
     `create_time`        datetime NULL DEFAULT NULL COMMENT '创建时间',
     `update_user_id`     varchar(255) NULL DEFAULT NULL COMMENT '更新人id',

@@ -71,7 +71,7 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 			serverBaselineCpuTypeMap[v.CpuType] = v
 		}
 	}
-
+	//构建返回体
 	var list []*entity.ServerPlanning
 	for _, v := range nodeRoleBaselineList {
 		serverPlanning := &entity.ServerPlanning{}
@@ -79,7 +79,7 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 		if ok {
 			serverPlanning = serverPlanningMap[v.Id]
 			serverPlanning.ServerBaselineId = serverBaselineIdMap[serverPlanning.ServerBaselineId].Id
-			serverPlanning.ServerModel = serverBaselineIdMap[serverPlanning.ServerBaselineId].ServerModel
+			serverPlanning.ServerModel = serverBaselineIdMap[serverPlanning.ServerBaselineId].BomCode
 			serverPlanning.ServerArch = serverBaselineIdMap[serverPlanning.ServerBaselineId].Arch
 		} else {
 			serverPlanning.PlanId = request.PlanId
@@ -88,9 +88,10 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 		}
 		serverPlanning.NodeRoleName = v.NodeRoleName
 		serverPlanning.NodeRoleAnnotation = v.Annotation
+		serverPlanning.SupportDpdk = v.SupportDPDK
 		if util.IsNotBlank(request.CpuType) {
 			serverPlanning.ServerBaselineId = serverBaselineCpuTypeMap[request.CpuType].Id
-			serverPlanning.ServerModel = serverBaselineCpuTypeMap[request.CpuType].ServerModel
+			serverPlanning.ServerModel = serverBaselineCpuTypeMap[request.CpuType].BomCode
 			serverPlanning.ServerArch = serverBaselineCpuTypeMap[request.CpuType].Arch
 		}
 		list = append(list, serverPlanning)
