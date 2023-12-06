@@ -40,3 +40,22 @@ func SaveBatch(tx *gorm.DB, demandPlannings []*entity.IPDemandPlanning) error {
 	}
 	return nil
 }
+
+func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExportResponse, error) {
+	var planManage entity.PlanManage
+	if err := data.DB.Where("id=?", planId).Scan(planManage).Error; err != nil {
+		log.Errorf("[exportIpDemandPlanningByPlanId] get planManage by id err, %v", err)
+		return "", nil, err
+	}
+	var projectManage entity.ProjectManage
+	if err := data.DB.Where("id=?", planManage.ProjectId).Scan(projectManage).Error; err != nil {
+		log.Errorf("[exportIpDemandPlanningByPlanId] get projectManage by id err, %v", err)
+		return "", nil, err
+	}
+	var response []IpDemandPlanningExportResponse
+	if err := data.DB.Raw("select segment_type, `describe`, vlan, c_num, address, address_planning from ip_demand_planning where plan_id = ?", planId).Scan(&response).Error; err != nil {
+		log.Errorf("[exportIpDemandPlanningByPlanId] query db error, %v", err)
+		return "", nil, err
+	}
+	return projectManage.Name + "-" + planManage.Name + "-" + "IP需求清单", response, nil
+}
