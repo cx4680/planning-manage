@@ -37,6 +37,32 @@ func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
+	for i, v := range list {
+		//查询客户名称
+		var customer = &entity.CustomerManage{}
+		if err := data.DB.Where("id = ?", v.CustomerId).First(&customer).Error; err != nil {
+			return nil, 0, err
+		}
+		list[i].CustomerName = customer.CustomerName
+		//查询云平台名称
+		var cloudPlatform = &entity.CloudPlatformManage{}
+		if err := data.DB.Where("id = ?", v.CloudPlatformId).First(&cloudPlatform).Error; err != nil {
+			return nil, 0, err
+		}
+		list[i].CloudPlatformName = cloudPlatform.Name
+		//查询region名称
+		var region = &entity.RegionManage{}
+		if err := data.DB.Where("id = ?", v.RegionId).First(&region).Error; err != nil {
+			return nil, 0, err
+		}
+		list[i].RegionName = region.Name
+		//查询az名称
+		var az = &entity.AzManage{}
+		if err := data.DB.Where("id = ?", v.AzId).First(&az).Error; err != nil {
+			return nil, 0, err
+		}
+		list[i].AzName = az.Name
+	}
 	return list, count, nil
 }
 
