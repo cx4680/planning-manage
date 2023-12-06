@@ -32,8 +32,11 @@ func getCloudProductBaseListByVersionId(versionId int64) ([]CloudProductBaseline
 		return nil, err
 	}
 	// 查询依赖的云产品
-	var cloudProductDependRelList []entity.CloudProductDependRel
-	if err := data.DB.Find(&cloudProductDependRelList).Error; err != nil {
+	var cloudProductDependList []CloudProductBaselineDependResponse
+	if err := data.DB.Table("cloud_product_depend_rel cpdr").
+		Select("cpdr.product_id id, cpb.id dependId, cpb.product_name dependProductName, cpb.product_code dependProductCode").
+		Joins("LEFT JOIN cloud_product_baseline cpb ON cpb.id = cpdr.depend_product_id").
+		Find(&cloudProductDependList).Error; err != nil {
 		return nil, err
 	}
 	var responseList []CloudProductBaselineResponse
@@ -45,22 +48,25 @@ func getCloudProductBaseListByVersionId(versionId int64) ([]CloudProductBaseline
 			sellSpecs[0] = baseline.SellSpecs
 		}
 		var dependProductId int64
-		for _, rel := range cloudProductDependRelList {
-			if rel.ProductId == baseline.Id {
-				dependProductId = rel.DependProductId
+		var dependProductName string
+		for _, depend := range cloudProductDependList {
+			if depend.ID == baseline.Id {
+				dependProductId = depend.DependId
+				dependProductName = depend.DependProductName
 			}
 		}
 		responseData := CloudProductBaselineResponse{
-			Id:              baseline.Id,
-			VersionId:       baseline.VersionId,
-			ProductType:     baseline.ProductType,
-			ProductName:     baseline.ProductName,
-			ProductCode:     baseline.ProductCode,
-			SellSpecs:       sellSpecs,
-			AuthorizedUnit:  baseline.AuthorizedUnit,
-			WhetherRequired: baseline.WhetherRequired,
-			Instructions:    baseline.Instructions,
-			DependProductId: dependProductId,
+			ID:                baseline.Id,
+			VersionId:         baseline.VersionId,
+			ProductType:       baseline.ProductType,
+			ProductName:       baseline.ProductName,
+			ProductCode:       baseline.ProductCode,
+			SellSpecs:         sellSpecs,
+			AuthorizedUnit:    baseline.AuthorizedUnit,
+			WhetherRequired:   baseline.WhetherRequired,
+			Instructions:      baseline.Instructions,
+			DependProductId:   dependProductId,
+			DependProductName: dependProductName,
 		}
 		responseList = append(responseList, responseData)
 	}
@@ -80,6 +86,7 @@ func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId
 		}
 		cloudProductPlanningList = append(cloudProductPlanningList, cloudProductPlanning)
 	}
+
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
 		// 保存云服务规划清单
 		if err := tx.Table(entity.CloudProductPlanningTable).CreateInBatches(&cloudProductPlanningList, len(cloudProductPlanningList)).Error; err != nil {
