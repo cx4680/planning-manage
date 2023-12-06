@@ -174,3 +174,10 @@ const (
 	NetworkDeviceTypeXinchuang    = 0
 	NetworkDeviceTypeCommercial   = 1
 )
+
+const (
+	NodeRoleSupportDPDK      = 1
+	NodeRoleNotSupportDPDK   = 0
+	NodeRoleSupportDPDKCn    = "是"
+	NodeRoleNotSupportDPDKCn = "否"
+)

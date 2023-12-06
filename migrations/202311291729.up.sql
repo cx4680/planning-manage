@@ -243,6 +243,7 @@ CREATE TABLE `node_role_baseline`
     `node_role_name`      varchar(255) DEFAULT NULL COMMENT '节点角色名称',
     `minimum_num`    int(11) DEFAULT NULL COMMENT '单独部署最小数量',
     `deploy_method`  varchar(255) DEFAULT NULL COMMENT '部署方式',
+    `support_dpdk`    tinyint(4) DEFAULT NULL COMMENT '是否支持DPDK，0：否，1：是',
     `classify`  varchar(255) DEFAULT NULL COMMENT '分类',
     `annotation`     varchar(500) DEFAULT NULL COMMENT '节点说明',
     `business_type`  varchar(255) DEFAULT NULL COMMENT '业务类型',

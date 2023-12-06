@@ -285,12 +285,17 @@ func ImportNodeRoleBaseline(context *gin.Context, softwareVersion entity.Softwar
 			if mixedDeploy != "" {
 				nodeRoleBaselineExcelList[i].MixedDeploys = strings.Split(mixedDeploy, constant.SplitLineBreak)
 			}
+			supportDPDK := constant.NodeRoleNotSupportDPDK
+			if nodeRoleBaselineExcelList[i].SupportDPDK == constant.NodeRoleSupportDPDKCn {
+				supportDPDK = constant.NodeRoleSupportDPDK
+			}
 			nodeRoleBaselines = append(nodeRoleBaselines, entity.NodeRoleBaseline{
 				VersionId:    softwareVersion.Id,
 				NodeRoleCode: nodeRoleBaselineExcelList[i].NodeRoleCode,
 				NodeRoleName: nodeRoleBaselineExcelList[i].NodeRoleName,
 				MinimumNum:   nodeRoleBaselineExcelList[i].MinimumCount,
 				DeployMethod: nodeRoleBaselineExcelList[i].DeployMethod,
+				SupportDPDK:  supportDPDK,
 				Classify:     nodeRoleBaselineExcelList[i].Classify,
 				Annotation:   nodeRoleBaselineExcelList[i].Annotation,
 				BusinessType: nodeRoleBaselineExcelList[i].BusinessType,
