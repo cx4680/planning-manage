@@ -494,8 +494,8 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 				VersionId:       softwareVersion.Id,
 				DeviceType:      networkDeviceRoleBaselineExcelList[i].DeviceType,
 				FuncType:        networkDeviceRoleBaselineExcelList[i].FuncType,
-				FuncCompo:       networkDeviceRoleBaselineExcelList[i].FuncCompo,
 				FuncCompoName:   networkDeviceRoleBaselineExcelList[i].FuncCompoName,
+				FuncCompoCode:   networkDeviceRoleBaselineExcelList[i].FuncCompoCode,
 				Description:     networkDeviceRoleBaselineExcelList[i].Description,
 				TwoNetworkIso:   twoNetworkIsoEnum,
 				ThreeNetworkIso: threeNetworkIsoEnum,
@@ -532,7 +532,7 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 			}
 			networkDeviceRoleCodeMap := make(map[string]int64)
 			for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
-				networkDeviceRoleCodeMap[networkDeviceRoleBaseline.FuncCompoName] = networkDeviceRoleBaseline.Id
+				networkDeviceRoleCodeMap[networkDeviceRoleBaseline.FuncCompoCode] = networkDeviceRoleBaseline.Id
 			}
 			var networkModelRoleRels []entity.NetworkModelRoleRel
 			for _, networkDeviceRoleBaselineExcel := range networkDeviceRoleBaselineExcelList {
@@ -570,7 +570,7 @@ func HandleNetworkModelRoleRels(networkModelRoles []string, nodeRoleMap map[stri
 			associatedType = constant.NodeRoleType
 		}
 		networkModelRoleRels = append(networkModelRoleRels, entity.NetworkModelRoleRel{
-			NetworkDeviceRoleId: networkDeviceRoleCodeMap[networkDeviceRoleBaselineExcel.FuncCompoName],
+			NetworkDeviceRoleId: networkDeviceRoleCodeMap[networkDeviceRoleBaselineExcel.FuncCompoCode],
 			NetworkModel:        networkModel,
 			AssociatedType:      associatedType,
 			RoleId:              roleId,
@@ -662,7 +662,7 @@ func ImportNetworkDeviceBaseline(context *gin.Context, softwareVersion entity.So
 			}
 			networkDeviceRoleCodeMap := make(map[string]int64)
 			for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
-				networkDeviceRoleCodeMap[networkDeviceRoleBaseline.FuncCompoName] = networkDeviceRoleBaseline.Id
+				networkDeviceRoleCodeMap[networkDeviceRoleBaseline.FuncCompoCode] = networkDeviceRoleBaseline.Id
 			}
 			var networkDeviceRoleRels []entity.NetworkDeviceRoleRel
 			for _, networkDeviceBaselineExcel := range networkDeviceBaselineExcelList {

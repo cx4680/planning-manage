@@ -1,7 +1,17 @@
 package network_device
 
 import (
+	"errors"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
 	"code.cestc.cn/ccos/cnm/ops-base/utils"
+	"github.com/gin-gonic/gin"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
@@ -14,14 +24,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/ip_demand"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
-	"errors"
-	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"gorm.io/gorm"
-	"net/http"
-	"strconv"
-	"strings"
 )
 
 type Request struct {
@@ -52,7 +54,7 @@ type NetworkDeviceModel struct {
 	DeviceType   string `form:"deviceModel"`
 }
 
-//func GetCountBoxNum(c *gin.Context) {
+// func GetCountBoxNum(c *gin.Context) {
 //	request := &Request{}
 //	if err := c.ShouldBindQuery(&request); err != nil {
 //		log.Errorf("get device plan bind param error: ", err)
@@ -76,11 +78,11 @@ type NetworkDeviceModel struct {
 //	//TODO 计算机柜数量
 //	result.Success(c, boxCount)
 //	return
-//}
+// }
 
 func GetDevicePlanByPlanId(c *gin.Context) {
 	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
-	//根据方案ID查询网络设备规划
+	// 根据方案ID查询网络设备规划
 	devicePlan, err := searchDevicePlanByPlanId(planId)
 	if err != nil {
 		log.Errorf("[searchDevicePlanByPlanId] search device plan by planId error, %v", err)
@@ -143,7 +145,7 @@ func ListNetworkDevices(c *gin.Context) {
 		return
 	}
 	var response []NetworkDevices
-	//根据方案ID查询网络设备规划表 没有则保存，有则更新
+	// 根据方案ID查询网络设备规划表 没有则保存，有则更新
 	planId := request.PlanId
 	devicePlan, err := searchDevicePlanByPlanId(planId)
 	if err != nil {
@@ -179,7 +181,7 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, "服务器规划列表不能为空", http.StatusInternalServerError)
 		return
 	}
-	//服务器规划数据转为map
+	// 服务器规划数据转为map
 	var nodeRoleServerNumMap = make(map[int64]int)
 	for _, value := range serverPlanningList {
 		nodeRoleServerNumMap[value.NodeRoleId] = value.Number
@@ -252,7 +254,7 @@ func SaveDeviceList(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	//根据方案ID查询版本ID
+	// 根据方案ID查询版本ID
 	versionId, err := baseline.GetVersionIdByPlanId(planId)
 	if err != nil {
 		log.Errorf("[GetVersionIdByPlanId] error, %v", err)
@@ -269,13 +271,13 @@ func SaveDeviceList(c *gin.Context) {
 	ipBaselineIdMap := util.ListToMaps(ipDemandBaselines, "ID")
 	// 根据方案ID查询网络设备清单
 	deviceRoleNum, err := getDeviceRoleGroupNumByPlanId(planId)
-	//转设备角色id和分组数 map
+	// 转设备角色id和分组数 map
 	deviceRoleIdMap := util.ListToMap(deviceRoleNum, "DeviceRoleId")
 	for _, value := range ipBaselineIdMap {
 		var num = 0
 		dto := new(ip_demand.IpDemandBaselineDto)
 		var needCount bool
-		//根据IP需求规划表的关联设备组进行 网络设备清单分组累加
+		// 根据IP需求规划表的关联设备组进行 网络设备清单分组累加
 		for i, val := range value {
 			v := val.(*ip_demand.IpDemandBaselineDto)
 			if i == 0 {
@@ -307,7 +309,7 @@ func SaveDeviceList(c *gin.Context) {
 	userId := user.GetUserId(c)
 	err = data.DB.Transaction(func(tx *gorm.DB) error {
 		if len(deviceList) > 0 {
-			//失效库里保存的
+			// 失效库里保存的
 			err = expireDeviceListByPlanId(tx, planId)
 			if err != nil {
 				return err
@@ -379,7 +381,7 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 	*/
 	model := constant.NetworkModelYes
 	var aswNum map[int64]int
-	//TODO roleBaseLine把OASW这条数据移到最后处理
+	// TODO roleBaseLine把OASW这条数据移到最后处理
 	for _, deviceRole := range roleBaseLine {
 		if strings.EqualFold(constant.SEPARATION_OF_TWO_NETWORKS, networkModel) {
 			// 两网分离
@@ -404,7 +406,7 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 
 // 根据网络设备角色基线计算数据
 func dealNetworkModel(versionId int64, networkInterface string, request Request, networkModel int, roleBaseLine entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int, aswNum map[int64]int) ([]NetworkDevices, error) {
-	funcCompoName := roleBaseLine.FuncCompoName
+	funcCompoName := roleBaseLine.FuncCompoCode
 	id := roleBaseLine.Id
 	brand := request.Brand
 	awsServerNum := request.AwsServerNum
@@ -449,7 +451,7 @@ func dealNetworkModel(versionId int64, networkInterface string, request Request,
 		}
 		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response, id)
 	} else if constant.NetworkModelYes == networkModel {
-		//固定数量计算
+		// 固定数量计算
 		response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, brand, deviceType, deviceModels, response, id)
 	}
 	return response, nil

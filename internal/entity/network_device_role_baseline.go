@@ -7,8 +7,8 @@ type NetworkDeviceRoleBaseline struct {
 	VersionId       int64  `gorm:"column:version_id" json:"versionId"`              // 版本id
 	DeviceType      string `gorm:"column:device_type" json:"deviceType"`            // 设备类型
 	FuncType        string `gorm:"column:func_type" json:"funcType"`                // 类型
-	FuncCompo       string `gorm:"column:func_compo" json:"funcCompo"`              // 功能组件
-	FuncCompoName   string `gorm:"column:func_compo_name" json:"funcCompoName"`     // 功能组件名称
+	FuncCompoName   string `gorm:"column:func_compo_name" json:"funcCompoName"`     // 功能组件
+	FuncCompoCode   string `gorm:"column:func_compo_code" json:"funcCompoCode"`     // 功能组件命名
 	Description     string `gorm:"column:description" json:"description"`           // 描述
 	TwoNetworkIso   int    `gorm:"column: two_network_iso" json:"twoNetworkIso"`    // 两网分离
 	ThreeNetworkIso int    `gorm:"column:three_network_iso" json:"threeNetworkIso"` // 三网分离

@@ -76,8 +76,8 @@ type ServerBaselineExcel struct {
 type NetworkDeviceRoleBaselineExcel struct {
 	DeviceType       string   `excel:"name:设备类型;" json:"deviceType"`      // 设备类型
 	FuncType         string   `excel:"name:类型;" json:"funcType"`          // 类型
-	FuncCompo        string   `excel:"name:功能组件;" json:"funcCompo"`       // 功能组件
-	FuncCompoName    string   `excel:"name:功能组件名称;" json:"funcCompoName"` // 功能组件名称
+	FuncCompoName    string   `excel:"name:功能组件;" json:"funcCompoName"`   // 功能组件
+	FuncCompoCode    string   `excel:"name:功能组件命名;" json:"funcCompoCode"` // 功能组件命名
 	Description      string   `excel:"name:描述;" json:"description"`       // 描述
 	TwoNetworkIso    string   `excel:"name:两网分离;" json:"twoNetworkIso"`   // 两网分离
 	ThreeNetworkIso  string   `excel:"name:三网分离;" json:"threeNetworkIso"` // 三网分离
