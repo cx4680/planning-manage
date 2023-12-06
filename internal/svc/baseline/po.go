@@ -89,3 +89,13 @@ type NetworkDeviceRoleBaselineExcel struct {
 	ThreeNetworkIsos []string `json:"threeNetworkIsos"`                   // 三网分离数组
 	TriplePlays      []string `json:"triplePlays"`                        // 三网合一数组
 }
+
+type NetworkDeviceBaselineExcel struct {
+	DeviceModel       string `excel:"name:设备型号;" json:"deviceModel"`         // 设备型号
+	Manufacturer      string `excel:"name:厂商;" json:"manufacturer"`          // 厂商
+	DeviceType        string `excel:"name:信创/商用;" json:"deviceType"`         // 信创/商用
+	NetworkModel      string `excel:"name:网络模型;" json:"networkModel"`        // 网络模型
+	ConfOverview      string `excel:"name:配置概述;" json:"confOverview"`        // 配置概述
+	Purpose           string `excel:"name:用途;" json:"purpose"`               // 用途
+	NetworkDeviceRole string `excel:"name:网络设备角色;" json:"networkDeviceRole"` // 网络设备角色
+}

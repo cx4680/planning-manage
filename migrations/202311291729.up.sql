@@ -322,9 +322,9 @@ CREATE TABLE `network_device_role_baseline` (
 CREATE TABLE `network_device_baseline` (
                                            `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
                                            `version_id` bigint(20) DEFAULT NULL COMMENT '版本id',
-                                           `device_type` varchar(255) DEFAULT NULL COMMENT '设备型号',
+                                           `device_model` varchar(255) DEFAULT NULL COMMENT '设备型号',
                                            `manufacturer` varchar(255) DEFAULT NULL COMMENT '厂商',
-                                           `whether_xinchuang` tinyint(4) DEFAULT NULL COMMENT '是否信创，0：否，1：是',
+                                           `device_type` tinyint(4) DEFAULT NULL COMMENT '信创/商用， 0：信创，1：商用',
                                            `network_model` varchar(255) DEFAULT NULL COMMENT '网络模型',
                                            `conf_overview` varchar(500) DEFAULT NULL COMMENT '配置概述',
                                            `purpose` varchar(500) DEFAULT NULL COMMENT '用途',
