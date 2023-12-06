@@ -12,12 +12,14 @@ import (
 )
 
 func PagePlan(request *Request) ([]*entity.PlanManage, int64, error) {
-	screenSql, screenParams, orderSql := " delete_state = ? AND project_id = ? ", []interface{}{0, request.ProjectId}, " update_time "
+	screenSql, screenParams, orderSql := " delete_state = ? AND project_id = ? ", []interface{}{0, request.ProjectId}, " CASE WHEN type = 'standby' OR type = 'delivery' THEN 0 ELSE 1 END ASC "
 	switch request.SortField {
 	case "createTime":
-		orderSql = " create_time "
+		orderSql += ", create_time "
 	case "updateTime":
-		orderSql = " update_time "
+		orderSql += ", update_time "
+	default:
+		orderSql += ", update_time "
 	}
 	switch request.Sort {
 	case "asc":

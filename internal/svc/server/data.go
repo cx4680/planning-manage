@@ -4,6 +4,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"gorm.io/gorm"
 )
 
@@ -16,13 +17,6 @@ type ResponseCapacity struct {
 	OverbookingRate string `json:"overbookingRate"`
 	Number          string `json:"number"`
 	Unit            string `json:"unit"`
-}
-
-type ResponseModel struct {
-	Id                int64  `json:"id"`
-	Model             string `json:"model"`
-	HardwareVersion   string `json:"hardwareVersion"`
-	ConfigurationInfo string `json:"configurationInfo"`
 }
 
 func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
@@ -58,21 +52,48 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 	for _, v := range serverPlanningList {
 		serverPlanningMap[v.NodeRoleId] = v
 	}
+
+	var serverBaselineIdMap = make(map[int64]*entity.ServerBaseline)
+	var serverBaselineCpuTypeMap = make(map[string]*entity.ServerBaseline)
+	if util.IsNotBlank(request.CpuType) && len(cloudProductPlanningList) > 0 {
+		//查询云产品基线表
+		var cloudProductBaseline = &entity.CloudProductBaseline{}
+		if err := data.DB.Where("id = ?", cloudProductPlanningList[0].ProductId).First(&cloudProductBaseline).Error; err != nil {
+			return nil, err
+		}
+		//查询服务器基线表
+		var serverBaselineList []*entity.ServerBaseline
+		if err := data.DB.Where("version_id = ?", cloudProductBaseline.VersionId).Find(&serverBaselineList).Error; err != nil {
+			return nil, err
+		}
+		for _, v := range serverBaselineList {
+			serverBaselineIdMap[v.Id] = v
+			serverBaselineCpuTypeMap[v.CpuType] = v
+		}
+	}
+
 	var list []*entity.ServerPlanning
 	for _, v := range nodeRoleBaselineList {
+		serverPlanning := &entity.ServerPlanning{}
 		_, ok := serverPlanningMap[v.Id]
 		if ok {
-			serverPlanningMap[v.Id].NodeRoleName = v.NodeRoleName
-			serverPlanningMap[v.Id].NodeRoleAnnotation = v.Annotation
-			list = append(list, serverPlanningMap[v.Id])
+			serverPlanning = serverPlanningMap[v.Id]
+			serverPlanning.ServerBaselineId = serverBaselineIdMap[serverPlanning.ServerBaselineId].Id
+			serverPlanning.ServerModel = serverBaselineIdMap[serverPlanning.ServerBaselineId].ServerModel
+			serverPlanning.ServerArch = serverBaselineIdMap[serverPlanning.ServerBaselineId].Arch
+		} else {
+			serverPlanning.PlanId = request.PlanId
+			serverPlanning.NodeRoleId = v.Id
+			serverPlanning.Number = v.MinimumNum
 		}
-		serverPlanningList = append(serverPlanningList, &entity.ServerPlanning{
-			PlanId:             request.PlanId,
-			NodeRoleId:         v.Id,
-			Number:             v.MinimumNum,
-			NodeRoleName:       v.NodeRoleName,
-			NodeRoleAnnotation: v.Annotation,
-		})
+		serverPlanning.NodeRoleName = v.NodeRoleName
+		serverPlanning.NodeRoleAnnotation = v.Annotation
+		if util.IsNotBlank(request.CpuType) {
+			serverPlanning.ServerBaselineId = serverBaselineCpuTypeMap[request.CpuType].Id
+			serverPlanning.ServerModel = serverBaselineCpuTypeMap[request.CpuType].ServerModel
+			serverPlanning.ServerArch = serverBaselineCpuTypeMap[request.CpuType].Arch
+		}
+		list = append(list, serverPlanning)
 	}
 	return list, nil
 }
@@ -83,12 +104,12 @@ func ListServerArch(request *Request) ([]string, error) {
 	if err := data.DB.Where("plan_id = ?", request.PlanId).First(&cloudProductPlanning).Error; err != nil {
 		return nil, err
 	}
-	//查询云产品配置表
+	//查询云产品基线表
 	var cloudProductBaseline = &entity.CloudProductBaseline{}
 	if err := data.DB.Where("id = ?", cloudProductPlanning.ProductId).First(&cloudProductBaseline).Error; err != nil {
 		return nil, err
 	}
-	//查询服务器配置表
+	//查询服务器基线表
 	var serverBaselineList []*entity.ServerBaseline
 	if err := data.DB.Where("version_id = ?", cloudProductBaseline.VersionId).Find(&serverBaselineList).Error; err != nil {
 		return nil, err
@@ -101,12 +122,12 @@ func ListServerArch(request *Request) ([]string, error) {
 }
 
 func ListServerCapacity(request *Request) ([]*ResponseCapacity, error) {
-	//云产品规划表
+	//查询云产品规划表
 	var cloudProductPlanning = &entity.CloudProductPlanning{}
 	if err := data.DB.Where("plan_id = ?", request.PlanId).First(&cloudProductPlanning).Error; err != nil {
 		return nil, err
 	}
-	//查询云产品配置表
+	//查询云产品基线表
 	var cloudProductBaseline = &entity.CloudProductBaseline{}
 	if err := data.DB.Where("id = ?", cloudProductPlanning.ProductId).First(&cloudProductBaseline).Error; err != nil {
 		return nil, err
@@ -117,21 +138,32 @@ func ListServerCapacity(request *Request) ([]*ResponseCapacity, error) {
 	return capacityList, nil
 }
 
-func ListServerModel(request *Request) ([]*ResponseModel, error) {
-	//云产品规划表
+func ListServerModel(request *Request) ([]*entity.ServerBaseline, error) {
+	//查询云产品规划表
 	var cloudProductPlanning = &entity.CloudProductPlanning{}
 	if err := data.DB.Where("plan_id = ?", request.PlanId).First(&cloudProductPlanning).Error; err != nil {
 		return nil, err
 	}
-	//查询云产品配置表
+	//查询云产品基线表
 	var cloudProductBaseline = &entity.CloudProductBaseline{}
 	if err := data.DB.Where("id = ?", cloudProductPlanning.ProductId).First(&cloudProductBaseline).Error; err != nil {
 		return nil, err
 	}
-	//todo 版本号、产品、角色，查询服务器基线可用机型，服务器基线表缺少角色
-	var modelList []*ResponseModel
-
-	return modelList, nil
+	//查询服务器和角色关联表
+	var serverNodeRoleRelList []*entity.ServerNodeRoleRel
+	if err := data.DB.Where("node_role_id = ?", request.NodeRoleId).Find(&serverNodeRoleRelList).Error; err != nil {
+		return nil, err
+	}
+	var serverIdList []int64
+	for _, v := range serverNodeRoleRelList {
+		serverIdList = append(serverIdList, v.ServerId)
+	}
+	//查询服务器基线表
+	var serverBaselineList []*entity.ServerBaseline
+	if err := data.DB.Where("version_id = ? AND id IN (?)", cloudProductBaseline.VersionId, serverIdList).Find(&serverBaselineList).Error; err != nil {
+		return nil, err
+	}
+	return serverBaselineList, nil
 }
 
 func CreateServer(request *Request) error {

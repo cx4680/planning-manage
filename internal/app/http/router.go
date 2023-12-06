@@ -2,6 +2,7 @@ package http
 
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
 	"os"
 
@@ -192,6 +193,12 @@ func Router(engine *gin.Engine) {
 			cloudProduct.GET("/list/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id获取用户选择的云产品清单", "listCloudProduct", middleware.LIST, middleware.INFO)), cloud_product.List)
 			cloudProduct.GET("/export/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载云服务规格清单", "exportCloudProduct", middleware.LIST, middleware.INFO)), cloud_product.Export)
 		}
+	}
+
+	// 枚举配置表
+	configGroup := v1.Group("/config")
+	{
+		configGroup.GET("/:code", middleware.OperatorLog(DefaultEventOpInfo("枚举配置表", "queryConfig", middleware.LIST, middleware.INFO)), config_item.List)
 	}
 }
 

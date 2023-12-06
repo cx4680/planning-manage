@@ -17,6 +17,8 @@ type ServerPlanning struct {
 	DeleteState        int       `gorm:"column:delete_state" json:"-"`                      // 作废状态：1，作废；0，正常
 	NodeRoleName       string    `gorm:"column:-" json:"nodeRoleName"`                      // 节点角色名称
 	NodeRoleAnnotation string    `gorm:"column:-" json:"nodeRoleAnnotation"`                // 节点说明
+	ServerModel        string    `gorm:"column:-" json:"serverModel"`                       // 机型
+	ServerArch         string    `gorm:"column:-" json:"ServerArch"`                        // 架构
 }
 
 func (entity *ServerPlanning) TableName() string {

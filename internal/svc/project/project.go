@@ -37,10 +37,6 @@ func Page(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if request.CustomerId == 0 {
-		result.Failure(c, "customerId参数为空", http.StatusBadRequest)
-		return
-	}
 	list, count, err := PageProject(request)
 	if err != nil {
 		log.Errorf("list project error: ", err)

@@ -188,9 +188,8 @@ INSERT INTO `config_item` VALUES (6, 0, '方案阶段', 'planStage', NULL, NULL)
 INSERT INTO `config_item` VALUES (601, 6, '待规划', 'plan', NULL, 1);
 INSERT INTO `config_item` VALUES (602, 6, '规划中', 'planning', NULL, 2);
 INSERT INTO `config_item` VALUES (603, 6, '规划完成', 'planned', NULL, 3);
-INSERT INTO `config_item` VALUES (604, 6, '待交付', 'deliver', NULL, 4);
-INSERT INTO `config_item` VALUES (605, 6, '交付中', 'delivering', NULL, 5);
-INSERT INTO `config_item` VALUES (606, 6, '交付完成', 'delivered', NULL, 6);
+INSERT INTO `config_item` VALUES (604, 6, '交付中', 'delivering', NULL, 4);
+INSERT INTO `config_item` VALUES (605, 6, '交付完成', 'delivered', NULL, 5);
 
 
 CREATE TABLE `cloud_product_baseline`
