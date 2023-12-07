@@ -19,11 +19,11 @@ type ProjectManage struct {
 	UpdateUserId      string    `gorm:"column:update_user_id" json:"updateUserId"`       //更新人id
 	UpdateTime        time.Time `gorm:"column:update_time" json:"updateTime"`            //更新时间
 	DeleteState       int       `gorm:"column:delete_state" json:"-"`                    //作废状态：1，作废；0，正常
-	CustomerName      string    `gorm:"column:-" json:"customerName"`                    //客户名称
-	CloudPlatformName string    `gorm:"column:-" json:"cloudPlatformName"`               //云平台名称
-	RegionName        string    `gorm:"column:-" json:"regionName"`                      //region名称
-	AzName            string    `gorm:"column:-" json:"azName"`                          //az名称
-	CellName          string    `gorm:"column:-" json:"cellName"`                        //cell名称
+	CustomerName      string    `gorm:"-" json:"customerName"`                           //客户名称
+	CloudPlatformName string    `gorm:"-" json:"cloudPlatformName"`                      //云平台名称
+	RegionName        string    `gorm:"-" json:"regionName"`                             //region名称
+	AzName            string    `gorm:"-" json:"azName"`                                 //az名称
+	CellName          string    `gorm:"-" json:"cellName"`                               //cell名称
 }
 
 func (entity *ProjectManage) TableName() string {

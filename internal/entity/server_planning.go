@@ -17,13 +17,13 @@ type ServerPlanning struct {
 	UpdateUserId       string           `gorm:"column:update_user_id" json:"updateUserId"`         // 更新人id
 	UpdateTime         time.Time        `gorm:"column:update_time" json:"updateTime"`              // 更新时间
 	DeleteState        int              `gorm:"column:delete_state" json:"-"`                      // 作废状态：1，作废；0，正常
-	NodeRoleName       string           `gorm:"column:-" json:"nodeRoleName"`                      // 节点角色名称
-	NodeRoleAnnotation string           `gorm:"column:-" json:"nodeRoleAnnotation"`                // 节点说明
-	ServerModel        string           `gorm:"column:-" json:"serverModel"`                       // 机型
-	ServerArch         string           `gorm:"column:-" json:"ServerArch"`                        // 架构
-	SupportDpdk        int              `gorm:"column:-" json:"supportDpdk"`                       // 是否支持DPDK, 0:否，1：是
-	MixedNodeRoleList  []*MixedNodeRole `gorm:"column:-" json:"mixedNodeRoleList"`
-	ServerModelList    []*ServerModel   `gorm:"column:-" json:"serverModelList"`
+	NodeRoleName       string           `gorm:"-" json:"nodeRoleName"`                             // 节点角色名称
+	NodeRoleAnnotation string           `gorm:"-" json:"nodeRoleAnnotation"`                       // 节点说明
+	ServerModel        string           `gorm:"-" json:"serverModel"`                              // 机型
+	ServerArch         string           `gorm:"-" json:"ServerArch"`                               // 架构
+	SupportDpdk        int              `gorm:"-" json:"supportDpdk"`                              // 是否支持DPDK, 0:否，1：是
+	MixedNodeRoleList  []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`
+	ServerModelList    []*ServerModel   `gorm:"-" json:"serverModelList"`
 }
 
 func (entity *ServerPlanning) TableName() string {
@@ -31,14 +31,14 @@ func (entity *ServerPlanning) TableName() string {
 }
 
 type MixedNodeRole struct {
-	Id   int64  `gorm:"column:-" json:"id"`   // 混合节点角色id
-	Name string `gorm:"column:-" json:"name"` // 混合节点角色名称
+	Id   int64  `gorm:"-" json:"id"`   // 混合节点角色id
+	Name string `gorm:"-" json:"name"` // 混合节点角色名称
 
 }
 
 type ServerModel struct {
-	Id                int64  `gorm:"column:-" json:"id"`                // 服务器id
-	BomCode           int64  `gorm:"column:-" json:"bomCode"`           // BOM编码
-	Arch              string `gorm:"column:-" json:"arch"`              // 硬件架构
-	ConfigurationInfo string `gorm:"column:-" json:"configurationInfo"` // 配置概要
+	Id                int64  `gorm:"-" json:"id"`                // 服务器id
+	BomCode           int64  `gorm:"-" json:"bomCode"`           // BOM编码
+	Arch              string `gorm:"-" json:"arch"`              // 硬件架构
+	ConfigurationInfo string `gorm:"-" json:"configurationInfo"` // 配置概要
 }
