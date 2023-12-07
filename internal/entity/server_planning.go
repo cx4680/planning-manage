@@ -18,6 +18,7 @@ type ServerPlanning struct {
 	UpdateTime         time.Time        `gorm:"column:update_time" json:"updateTime"`              // 更新时间
 	DeleteState        int              `gorm:"column:delete_state" json:"-"`                      // 作废状态：1，作废；0，正常
 	NodeRoleName       string           `gorm:"-" json:"nodeRoleName"`                             // 节点角色名称
+	NodeRoleClassify   string           `gorm:"-" json:"nodeRoleClassify"`                         // 节点角色分类
 	NodeRoleAnnotation string           `gorm:"-" json:"nodeRoleAnnotation"`                       // 节点说明
 	ServerModel        string           `gorm:"-" json:"serverModel"`                              // 机型
 	ServerArch         string           `gorm:"-" json:"ServerArch"`                               // 架构

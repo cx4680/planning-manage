@@ -89,6 +89,7 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 			serverPlanning.ServerArch = serverBaselineCpuTypeMap[request.CpuType].Arch
 		}
 		serverPlanning.NodeRoleName = v.NodeRoleName
+		serverPlanning.NodeRoleClassify = v.Classify
 		serverPlanning.NodeRoleAnnotation = v.Annotation
 		serverPlanning.SupportDpdk = v.SupportDPDK
 		serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[v.Id]
@@ -235,7 +236,13 @@ func getMixedNodeRoleMap(nodeRoleIdList []int64) (map[int64][]*entity.MixedNodeR
 	for _, v := range nodeRoleMixedDeployList {
 		mixedNodeRoleMap[v.NodeRoleId] = append(mixedNodeRoleMap[v.NodeRoleId], &entity.MixedNodeRole{
 			Id:   nodeRoleBaselineMap[v.MixedNodeRoleId].Id,
-			Name: nodeRoleBaselineMap[v.MixedNodeRoleId].NodeRoleName,
+			Name: "混合部署：" + nodeRoleBaselineMap[v.MixedNodeRoleId].NodeRoleName,
+		})
+	}
+	for k := range mixedNodeRoleMap {
+		mixedNodeRoleMap[k] = append(mixedNodeRoleMap[k], &entity.MixedNodeRole{
+			Id:   k,
+			Name: "独立部署",
 		})
 	}
 	return mixedNodeRoleMap, nil
