@@ -24,6 +24,7 @@ type ProjectManage struct {
 	RegionName        string    `gorm:"-" json:"regionName"`                             //region名称
 	AzName            string    `gorm:"-" json:"azName"`                                 //az名称
 	CellName          string    `gorm:"-" json:"cellName"`                               //cell名称
+	PlanCount         int       `gorm:"-" json:"planCount"`                              //cell名称
 }
 
 func (entity *ProjectManage) TableName() string {
