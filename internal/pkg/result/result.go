@@ -13,6 +13,7 @@ const (
 	codeKey     = "code"
 	dataKey     = "data"
 	successCode = "Success"
+	msg         = "errorMsg"
 )
 
 type ResData struct {
@@ -102,5 +103,13 @@ func Failure(context *gin.Context, errorCode string, httpStatusCode int) {
 	context.JSON(httpStatusCode, map[string]interface{}{
 		requestId: context.GetString(constant.XRequestID),
 		codeKey:   errorCode,
+	})
+}
+
+func FailureWithMsg(context *gin.Context, errorCode string, httpStatusCode int, errorMsg string) {
+	context.JSON(httpStatusCode, map[string]interface{}{
+		requestId: context.GetString(constant.XRequestID),
+		codeKey:   errorCode,
+		msg:       errorMsg,
 	})
 }
