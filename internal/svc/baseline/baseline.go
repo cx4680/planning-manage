@@ -146,11 +146,11 @@ func ImportCloudProductBaseline(context *gin.Context, softwareVersion entity.Sof
 	// 先查询节点角色表，导入的版本是否已有数据，如没有，提示先导入节点角色基线
 	nodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
 	if err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return true
-	}
-	if len(nodeRoleBaselines) == 0 {
-		result.Failure(context, errorcodes.NodeRoleMustImportFirst, http.StatusBadRequest)
+		if err == gorm.ErrRecordNotFound {
+			result.Failure(context, errorcodes.NodeRoleMustImportFirst, http.StatusBadRequest)
+		} else {
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		}
 		return true
 	}
 	var cloudProductBaselineExcelList []CloudProductBaselineExcel
@@ -208,21 +208,9 @@ func ImportCloudProductBaseline(context *gin.Context, softwareVersion entity.Sof
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			cloudProductBaselines, err = QueryCloudProductBaselineByVersionId(softwareVersion.Id)
-			if err != nil {
-				log.Error(err)
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
-			}
 			cloudProductCodeMap := make(map[string]int64)
 			for _, cloudProductBaseline := range cloudProductBaselines {
 				cloudProductCodeMap[cloudProductBaseline.ProductCode] = cloudProductBaseline.Id
-			}
-			nodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(softwareVersion.Id)
-			if err != nil {
-				log.Error(err)
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
 			}
 			nodeRoleNameMap := make(map[string]int64)
 			for _, nodeRoleBaseline := range nodeRoleBaselines {
@@ -342,9 +330,11 @@ func ImportNodeRoleBaseline(context *gin.Context, softwareVersion entity.Softwar
 							MixedNodeRoleId: mixDeployNodeRoleId,
 						})
 					}
-					if err := BatchCreateNodeRoleMixedDeploy(mixedNodeRoles); err != nil {
-						result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-						return true
+					if len(mixedNodeRoles) > 0 {
+						if err := BatchCreateNodeRoleMixedDeploy(mixedNodeRoles); err != nil {
+							result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+							return true
+						}
 					}
 				}
 			}
