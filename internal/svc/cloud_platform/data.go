@@ -61,7 +61,7 @@ func UpdateCloudPlatform(request *Request) error {
 	if err := checkBusiness(request, true); err != nil {
 		return err
 	}
-	projectEntity := &entity.ProjectManage{
+	cloudPlatformEntity := &entity.CloudPlatformManage{
 		Id:           request.Id,
 		Name:         request.Name,
 		Type:         request.Type,
@@ -69,7 +69,7 @@ func UpdateCloudPlatform(request *Request) error {
 		UpdateUserId: request.UserId,
 		UpdateTime:   datetime.GetNow(),
 	}
-	if err := data.DB.Updates(projectEntity).Error; err != nil {
+	if err := data.DB.Updates(cloudPlatformEntity).Error; err != nil {
 		return err
 	}
 	return nil
