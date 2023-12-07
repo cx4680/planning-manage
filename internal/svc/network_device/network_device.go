@@ -18,7 +18,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/ip_demand"
@@ -219,7 +218,7 @@ func SaveDeviceList(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	planId := request[0].PlanId
+	planId := req.PlanId
 	// 组装网络设备清单数据
 	for _, networkDevice := range request {
 		device := new(entity.NetworkDeviceList)
@@ -261,9 +260,14 @@ func SaveDeviceList(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
+	if len(ipDemandBaselines) == 0 {
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.IpDemandBaselineEmpty)
+	}
 	// 转ip基线ID Map
 	ipBaselineIdMap := util.ListToMaps(ipDemandBaselines, "ID")
-	userId := user.GetUserId(c)
+	log.Infof("IP需求基线表转为map后的数据=%v", ipBaselineIdMap)
+	//userId := user.GetUserId(c)
+	userId := "1"
 	err = data.DB.Transaction(func(tx *gorm.DB) error {
 		if len(deviceList) > 0 {
 			// 失效库里保存的
@@ -273,7 +277,7 @@ func SaveDeviceList(c *gin.Context) {
 			}
 		}
 		// 更新方案表的状态
-		err = plan.UpdatePlanStage(tx, planId, constant.PLANNED, userId)
+		err = plan.UpdatePlanStage(tx, planId, constant.PLANNED, userId, constant.BUSINESS_END)
 		if err != nil {
 			return err
 		}

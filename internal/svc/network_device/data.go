@@ -91,8 +91,8 @@ func getBrandsByVersionIdAndNetworkVersion(versionId int64, networkVersion strin
 	return brands, nil
 }
 
-func getDeviceRoleGroupNumByPlanId(planId int64) ([]DeviceRoleGroupNum, error) {
-	var roleNum []DeviceRoleGroupNum
+func getDeviceRoleGroupNumByPlanId(planId int64) ([]*DeviceRoleGroupNum, error) {
+	var roleNum []*DeviceRoleGroupNum
 	if err := data.DB.Raw("SELECT count(DISTINCT logical_grouping) as groupNum,network_device_role_id as deviceRoleId FROM network_device_list where plan_id=? GROUP BY network_device_role_id", planId).Scan(&roleNum).Error; err != nil {
 		log.Errorf("[getDeviceRoleGroupNumByPlanId] error, %v", err)
 		return nil, err

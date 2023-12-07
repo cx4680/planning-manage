@@ -92,8 +92,13 @@ func UpdatePlan(request *Request) error {
 	return nil
 }
 
-func UpdatePlanStage(tx *gorm.DB, planId int64, stage string, userId string) error {
-	if err := tx.Model(entity.PlanManage{}).Where("id = ?", planId).Update("stage", stage).Update("update_user_id", userId).Update("update_time", time.Now().Unix()).Error; err != nil {
+func UpdatePlanStage(tx *gorm.DB, planId int64, stage string, userId string, planState string) error {
+	if err := tx.Model(entity.PlanManage{}).Where("id = ?", planId).Updates(entity.PlanManage{
+		Stage:            stage,
+		BusinessPanStage: planState,
+		UpdateUserId:     userId,
+		UpdateTime:       time.Now(),
+	}).Error; err != nil {
 		log.Errorf("[UpdatePlanStage] update plan stage error, %v", err)
 		return err
 	}

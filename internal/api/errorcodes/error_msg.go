@@ -6,4 +6,5 @@ const (
 	ServerBaselineEmpty            = "服务器基线数据为空"
 	ParamError                     = "参数不正确"
 	NetworkDeviceRoleBaselineEmpty = "网络设备角色基线数据为空"
+	IpDemandBaselineEmpty          = "IP需求基线数据为空"
 )
