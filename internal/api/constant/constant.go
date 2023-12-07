@@ -145,7 +145,7 @@ const (
 
 const (
 	WhetherRequiredNo         = 0
-	WhetherRequiredYes        = 0
+	WhetherRequiredYes        = 1
 	WhetherRequiredNoChinese  = "否"
 	WhetherRequiredYesChinese = "是"
 )

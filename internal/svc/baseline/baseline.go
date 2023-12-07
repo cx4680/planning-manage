@@ -21,6 +21,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 )
 
 func Import(context *gin.Context) {
@@ -164,25 +165,20 @@ func ImportCloudProductBaseline(context *gin.Context, softwareVersion entity.Sof
 		for i := range cloudProductBaselineExcelList {
 			dependProductCode := cloudProductBaselineExcelList[i].DependProductCode
 			if dependProductCode != "" {
-				cloudProductBaselineExcelList[i].DependProductCodes = strings.Split(dependProductCode, constant.SplitLineBreak)
+				cloudProductBaselineExcelList[i].DependProductCodes = util.SplitString(dependProductCode, constant.SplitLineBreak)
 			}
 			controlResNodeRole := cloudProductBaselineExcelList[i].ControlResNodeRole
 			if controlResNodeRole != "" {
-				cloudProductBaselineExcelList[i].ControlResNodeRoles = strings.Split(controlResNodeRole, constant.SplitLineBreak)
+				cloudProductBaselineExcelList[i].ControlResNodeRoles = util.SplitString(controlResNodeRole, constant.SplitLineBreak)
 			}
 			resNodeRole := cloudProductBaselineExcelList[i].ResNodeRole
 			if resNodeRole != "" {
-				cloudProductBaselineExcelList[i].ResNodeRoles = strings.Split(resNodeRole, constant.SplitLineBreak)
+				cloudProductBaselineExcelList[i].ResNodeRoles = util.SplitString(resNodeRole, constant.SplitLineBreak)
 			}
 			whetherRequired := cloudProductBaselineExcelList[i].WhetherRequired
-			var whetherRequiredType int
-			if whetherRequired == constant.WhetherRequiredNoChinese {
-				whetherRequiredType = constant.WhetherRequiredNo
-			} else if whetherRequired == constant.WhetherRequiredYesChinese {
+			whetherRequiredType := constant.WhetherRequiredNo
+			if whetherRequired == constant.WhetherRequiredYesChinese {
 				whetherRequiredType = constant.WhetherRequiredYes
-			} else {
-				result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
-				return true
 			}
 			cloudProductBaselines = append(cloudProductBaselines, entity.CloudProductBaseline{
 				VersionId:       softwareVersion.Id,
@@ -278,7 +274,7 @@ func ImportNodeRoleBaseline(context *gin.Context, softwareVersion entity.Softwar
 		for i := range nodeRoleBaselineExcelList {
 			mixedDeploy := nodeRoleBaselineExcelList[i].MixedDeploy
 			if mixedDeploy != "" {
-				nodeRoleBaselineExcelList[i].MixedDeploys = strings.Split(mixedDeploy, constant.SplitLineBreak)
+				nodeRoleBaselineExcelList[i].MixedDeploys = util.SplitString(mixedDeploy, constant.SplitLineBreak)
 			}
 			supportDPDK := constant.NodeRoleNotSupportDPDK
 			if nodeRoleBaselineExcelList[i].SupportDPDK == constant.NodeRoleSupportDPDKCn {
@@ -365,7 +361,7 @@ func ImportServerBaseline(context *gin.Context, softwareVersion entity.SoftwareV
 		for i := range serverBaselineExcelList {
 			nodeRole := serverBaselineExcelList[i].NodeRole
 			if nodeRole != "" {
-				serverBaselineExcelList[i].NodeRoles = strings.Split(nodeRole, constant.SplitLineBreak)
+				serverBaselineExcelList[i].NodeRoles = util.SplitString(nodeRole, constant.SplitLineBreak)
 			}
 			serverBaselines = append(serverBaselines, entity.ServerBaseline{
 				VersionId:           softwareVersion.Id,
@@ -463,7 +459,7 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 				twoNetworkIsoEnum = constant.NetworkModelNo
 			} else {
 				twoNetworkIsoEnum = constant.NeedQueryOtherTable
-				networkDeviceRoleBaselineExcelList[i].TwoNetworkIsos = strings.Split(twoNetworkIso, constant.SplitLineBreak)
+				networkDeviceRoleBaselineExcelList[i].TwoNetworkIsos = util.SplitString(twoNetworkIso, constant.SplitLineBreak)
 			}
 
 			if threeNetworkIso == constant.NetworkModelYesChinese {
@@ -472,7 +468,7 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 				threeNetworkIsoEnum = constant.NetworkModelNo
 			} else {
 				threeNetworkIsoEnum = constant.NeedQueryOtherTable
-				networkDeviceRoleBaselineExcelList[i].ThreeNetworkIsos = strings.Split(threeNetworkIso, constant.SplitLineBreak)
+				networkDeviceRoleBaselineExcelList[i].ThreeNetworkIsos = util.SplitString(threeNetworkIso, constant.SplitLineBreak)
 			}
 
 			if triplePlay == constant.NetworkModelYesChinese {
@@ -481,7 +477,7 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 				triplePlayEnum = constant.NetworkModelNo
 			} else {
 				triplePlayEnum = constant.NeedQueryOtherTable
-				networkDeviceRoleBaselineExcelList[i].TriplePlays = strings.Split(triplePlay, constant.SplitLineBreak)
+				networkDeviceRoleBaselineExcelList[i].TriplePlays = util.SplitString(triplePlay, constant.SplitLineBreak)
 			}
 			networkDeviceRoleBaselines = append(networkDeviceRoleBaselines, entity.NetworkDeviceRoleBaseline{
 				VersionId:       softwareVersion.Id,
@@ -569,9 +565,8 @@ func HandleNetworkModelRoleRels(networkModelRoles []string, nodeRoleMap map[stri
 func GetRoleNameAndNum(role string) (int, string) {
 	if role != "" {
 		if strings.Contains(role, constant.SplitLineAsterisk) {
-			roles := strings.Split(role, constant.SplitLineAsterisk)
-			roleNum := strings.TrimSpace(roles[len(roles)-1])
-			num, err := strconv.Atoi(roleNum)
+			roles := util.SplitString(role, constant.SplitLineAsterisk)
+			num, err := strconv.Atoi(roles[len(roles)-1])
 			if err != nil {
 				log.Error("get roleNum error: ", err)
 			}
@@ -605,7 +600,7 @@ func ImportNetworkDeviceBaseline(context *gin.Context, softwareVersion entity.So
 		for i := range networkDeviceBaselineExcelList {
 			networkDeviceRole := networkDeviceBaselineExcelList[i].NetworkDeviceRole
 			if networkDeviceRole != "" {
-				networkDeviceBaselineExcelList[i].NetworkDeviceRoles = strings.Split(networkDeviceRole, constant.SplitLineBreak)
+				networkDeviceBaselineExcelList[i].NetworkDeviceRoles = util.SplitString(networkDeviceRole, constant.SplitLineBreak)
 			}
 			var deviceType int
 			if networkDeviceBaselineExcelList[i].DeviceType == constant.NetworkDeviceTypeXinchuangCn {
@@ -688,7 +683,7 @@ func ImportIPDemandBaseline(context *gin.Context, softwareVersion entity.Softwar
 		for i := range ipDemandBaselineExcelList {
 			networkDeviceRole := ipDemandBaselineExcelList[i].NetworkDeviceRole
 			if networkDeviceRole != "" {
-				ipDemandBaselineExcelList[i].NetworkDeviceRoles = strings.Split(networkDeviceRole, constant.SplitLineBreak)
+				ipDemandBaselineExcelList[i].NetworkDeviceRoles = util.SplitString(networkDeviceRole, constant.SplitLineBreak)
 			}
 			ipDemandBaselines = append(ipDemandBaselines, entity.IPDemandBaseline{
 				VersionId:    softwareVersion.Id,

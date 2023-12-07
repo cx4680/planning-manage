@@ -21,3 +21,18 @@ func IsBlank(str string) bool {
 func IsNotBlank(str string) bool {
 	return !IsBlank(str)
 }
+
+func SplitString(str string, split string) []string {
+	if str != "" {
+		var stringList []string
+		splitStrings := strings.Split(str, split)
+		for _, splitString := range splitStrings {
+			splitString = strings.TrimSpace(splitString)
+			if splitString != "" {
+				stringList = append(stringList, splitString)
+			}
+		}
+		return stringList
+	}
+	return nil
+}
