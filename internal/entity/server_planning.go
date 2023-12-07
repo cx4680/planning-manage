@@ -22,8 +22,8 @@ type ServerPlanning struct {
 	ServerModel        string           `gorm:"-" json:"serverModel"`                              // 机型
 	ServerArch         string           `gorm:"-" json:"ServerArch"`                               // 架构
 	SupportDpdk        int              `gorm:"-" json:"supportDpdk"`                              // 是否支持DPDK, 0:否，1：是
-	MixedNodeRoleList  []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`
-	ServerModelList    []*ServerModel   `gorm:"-" json:"serverModelList"`
+	ServerModelList    []*ServerModel   `gorm:"-" json:"serverModelList"`                          // 可选择机型列表
+	MixedNodeRoleList  []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`                        // 可混合部署角色列表
 }
 
 func (entity *ServerPlanning) TableName() string {
@@ -38,7 +38,7 @@ type MixedNodeRole struct {
 
 type ServerModel struct {
 	Id                int64  `gorm:"-" json:"id"`                // 服务器id
-	BomCode           int64  `gorm:"-" json:"bomCode"`           // BOM编码
+	BomCode           string `gorm:"-" json:"bomCode"`           // BOM编码
 	Arch              string `gorm:"-" json:"arch"`              // 硬件架构
 	ConfigurationInfo string `gorm:"-" json:"configurationInfo"` // 配置概要
 }
