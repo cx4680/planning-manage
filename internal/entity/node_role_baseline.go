@@ -6,7 +6,7 @@ type NodeRoleBaseline struct {
 	Id           int64  `gorm:"column:id" json:"id"`                       // 主键id
 	VersionId    int64  `gorm:"column:version_id" json:"versionId"`        // 版本id
 	NodeRoleCode string `gorm:"column:node_role_code" json:"nodeRoleCode"` // 节点角色编码
-	NodeRoleName string `gorm:"column:node_role_name" json:"nodeRoleName"` // 角色
+	NodeRoleName string `gorm:"column:node_role_name" json:"nodeRoleName"` // 节点角色名称
 	MinimumNum   int    `gorm:"column:minimum_num" json:"minimumNum"`      // 单独部署最小数量
 	DeployMethod string `gorm:"column:deploy_method" json:"deployMethod"`  // 部署方式
 	SupportDPDK  int    `gorm:"column:support_dpdk" json:"supportDPDK"`    // 是否支持DPDK, 0:否，1：是

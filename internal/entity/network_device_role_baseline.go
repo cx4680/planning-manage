@@ -10,7 +10,7 @@ type NetworkDeviceRoleBaseline struct {
 	FuncCompoName   string `gorm:"column:func_compo_name" json:"funcCompoName"`     // 功能组件
 	FuncCompoCode   string `gorm:"column:func_compo_code" json:"funcCompoCode"`     // 功能组件命名
 	Description     string `gorm:"column:description" json:"description"`           // 描述
-	TwoNetworkIso   int    `gorm:"column: two_network_iso" json:"twoNetworkIso"`    // 两网分离
+	TwoNetworkIso   int    `gorm:"column:two_network_iso" json:"twoNetworkIso"`     // 两网分离
 	ThreeNetworkIso int    `gorm:"column:three_network_iso" json:"threeNetworkIso"` // 三网分离
 	TriplePlay      int    `gorm:"column:triple_play" json:"triplePlay"`            // 三网合一
 	MinimumNumUnit  int    `gorm:"column:minimum_num_unit" json:"minimumNumUnit"`   // 最小单元数

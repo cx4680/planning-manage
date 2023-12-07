@@ -304,7 +304,7 @@ CREATE TABLE `server_baseline`
     `arch`                  varchar(50)  DEFAULT NULL COMMENT '硬件架构',
     `network_interface`     varchar(50)  DEFAULT NULL COMMENT '网络接口',
     `bom_code`              varchar(255) DEFAULT NULL COMMENT 'BOM编码',
-    `configuration_info`    varchar(500) DEFAULT NULL COMMENT '配置概要',
+    `configuration_info`    varchar(1000) DEFAULT NULL COMMENT '配置概要',
     `spec`                  varchar(255) DEFAULT NULL COMMENT '规格',
     `cpu_type`              varchar(50)  DEFAULT NULL COMMENT 'CPU类型',
     `cpu`                   int(11) DEFAULT NULL COMMENT 'CPU核数',
