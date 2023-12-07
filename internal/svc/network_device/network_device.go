@@ -74,6 +74,10 @@ func GetBrandsByPlanId(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
+	if versionId == 0 {
+		result.Failure(c, errorcodes.NotFoundVersionMsg, http.StatusInternalServerError)
+		return
+	}
 	// 根据方案id查询云产品规划信息  取其中一条拿服务器基线表ID
 	serverPlanningList, err := server.QueryServerPlanningListByPlanId(planId)
 	if err != nil {
@@ -82,7 +86,7 @@ func GetBrandsByPlanId(c *gin.Context) {
 		return
 	}
 	if len(serverPlanningList) == 0 {
-		result.Failure(c, "服务器规划列表不能为空", http.StatusInternalServerError)
+		result.Failure(c, errorcodes.ServerPlanningListEmpty, http.StatusInternalServerError)
 		return
 	}
 	serverBaselineId := serverPlanningList[0].ServerBaselineId
@@ -91,6 +95,10 @@ func GetBrandsByPlanId(c *gin.Context) {
 	if err != nil {
 		log.Errorf("[QueryServiceBaselineById] search baseline by id error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if serverBaseline.Id == 0 {
+		result.Failure(c, errorcodes.ServerBaselineEmpty, http.StatusInternalServerError)
 		return
 	}
 	networkVersion := serverBaseline.NetworkInterface
