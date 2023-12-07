@@ -171,7 +171,7 @@ func Router(engine *gin.Engine) {
 			networkGroup.GET("/plan/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id获取网络设备规划信息", "getDevicePlanByPlanId", middleware.GET, middleware.INFO)), network_device.GetDevicePlanByPlanId)
 			// 获取网络设备清单
 			networkGroup.POST("/device/list", middleware.OperatorLog(DefaultEventOpInfo("获取网络设备清单", "listNetworkDevices", middleware.LIST, middleware.INFO)), network_device.ListNetworkDevices)
-			// 获取网络设备清单
+			// 保存网络设备清单
 			networkGroup.POST("/device/save", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备清单", "saveDeviceList", middleware.CREATE, middleware.INFO)), network_device.SaveDeviceList)
 			// 下载网络设备清单
 			networkGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载网络设备清单", "networkDeviceListDownload", middleware.EXPORT, middleware.INFO)), network_device.NetworkDeviceListDownload)

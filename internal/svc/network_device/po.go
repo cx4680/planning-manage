@@ -52,6 +52,6 @@ type NetworkDevices struct {
 }
 
 type NetworkDeviceModel struct {
-	ConfOverview string `form:"configurationOverview"`
+	ConfOverview string `form:"confOverview"`
 	DeviceModel  string `form:"deviceModel"`
 }

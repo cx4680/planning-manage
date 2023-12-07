@@ -334,7 +334,7 @@ func SaveDeviceList(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	result.Success(c, nil)
+	result.Success(c, true)
 	return
 }
 
