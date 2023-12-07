@@ -66,7 +66,6 @@ func GetDevicePlanByPlanId(c *gin.Context) {
 }
 
 func GetBrandsByPlanId(c *gin.Context) {
-	var brands []string
 	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	// 根据方案id查询版本id
 	versionId, err := baseline.GetVersionIdByPlanId(planId)
@@ -104,7 +103,7 @@ func GetBrandsByPlanId(c *gin.Context) {
 	}
 	networkVersion := serverBaseline.NetworkInterface
 	// 根据服务版本id和网络版本查询网络设备基线表查厂商  去重
-	brands, err = getBrandsByVersionIdAndNetworkVersion(versionId, networkVersion)
+	brands, err := getBrandsByVersionIdAndNetworkVersion(versionId, networkVersion)
 	if err != nil {
 		log.Errorf("[getBrandsByPlanId] search brands by planId error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
