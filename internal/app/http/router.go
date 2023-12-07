@@ -144,15 +144,13 @@ func Router(engine *gin.Engine) {
 			// 查询服务器规划列表
 			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryServerList", middleware.LIST, middleware.INFO)), server.List)
 			// 创建服务器规划
-			serverGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "createServerList", middleware.LIST, middleware.INFO)), server.Create)
-			// 修改服务器规划
-			serverGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改服务器", "updateServerList", middleware.LIST, middleware.INFO)), server.Update)
+			serverGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "createServerList", middleware.LIST, middleware.INFO)), server.Save)
 			// 查询服务器架构列表
-			serverGroup.GET("/arch/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.ArchList)
+			serverGroup.GET("/cpu/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.CpuTypeList)
 			// 查询容量规划列表
 			serverGroup.GET("/capacity/list", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "queryServerCapacityList", middleware.LIST, middleware.INFO)), server.CapacityList)
 			// 查询当前可用机型
-			serverGroup.GET("/model/list", middleware.OperatorLog(DefaultEventOpInfo("查询当前可用机型", "queryServerModelList", middleware.LIST, middleware.INFO)), server.ModelList)
+			//serverGroup.GET("/model/list", middleware.OperatorLog(DefaultEventOpInfo("查询当前可用机型", "queryServerModelList", middleware.LIST, middleware.INFO)), server.ModelList)
 		}
 
 		// baseline
