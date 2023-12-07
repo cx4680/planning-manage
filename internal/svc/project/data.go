@@ -11,9 +11,29 @@ import (
 
 func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " update_time "
-	if request.CustomerId != 0 {
-		screenSql += " AND customer_id = ? "
-		screenParams = append(screenParams, request.CustomerId)
+	if util.IsNotBlank(request.Name) {
+		screenSql += " AND name LIKE CONCAT('%','" + request.Name + "','%') "
+		screenParams = append(screenParams, request.Name)
+	}
+	if util.IsNotBlank(request.CustomerName) {
+		var customerList []*entity.CustomerManage
+		if err := data.DB.Where(" AND name LIKE CONCAT('%',?,'%') ", request.CustomerName).Find(&customerList).Error; err != nil {
+			return nil, 0, err
+		}
+		var customerIdList []int64
+		for _, v := range customerList {
+			customerIdList = append(customerIdList, v.ID)
+		}
+		screenSql += " AND customer_id IN (?) "
+		screenParams = append(screenParams, customerIdList)
+	}
+	if util.IsNotBlank(request.Type) {
+		screenSql += " AND type = ? "
+		screenParams = append(screenParams, request.Type)
+	}
+	if util.IsNotBlank(request.Stage) {
+		screenSql += " AND stage = ? "
+		screenParams = append(screenParams, request.Stage)
 	}
 	switch request.SortField {
 	case "createTime":
