@@ -12,7 +12,7 @@ import (
 func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " update_time "
 	if util.IsNotBlank(request.Name) {
-		screenSql += " AND name LIKE CONCAT('%','" + request.Name + "','%') "
+		screenSql += " AND name LIKE CONCAT('%',?,'%') "
 		screenParams = append(screenParams, request.Name)
 	}
 	if util.IsNotBlank(request.CustomerName) {
