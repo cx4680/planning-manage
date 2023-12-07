@@ -168,7 +168,7 @@ func Router(engine *gin.Engine) {
 			// 计算机柜数量
 			//networkGroup.GET("/box/count", middleware.OperatorLog(DefaultEventOpInfo("计算机柜数量", "getCountBoxNum", middleware.GET, middleware.INFO)), network_device.GetCountBoxNum)
 			// 厂商列表查询
-			networkGroup.GET("/brands/:planId", middleware.OperatorLog(DefaultEventOpInfo("厂商列表查询", "getBrandsByPlanId", middleware.LIST, middleware.INFO)), network_device.GetBrandsByPlanId)
+			networkGroup.GET("/brands", middleware.OperatorLog(DefaultEventOpInfo("厂商列表查询", "getBrandsByPlanId", middleware.LIST, middleware.INFO)), network_device.GetBrandsByPlanId)
 			// 根据方案id获取网络设备规划信息
 			networkGroup.GET("/plan/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id获取网络设备规划信息", "getDevicePlanByPlanId", middleware.GET, middleware.INFO)), network_device.GetDevicePlanByPlanId)
 			// 获取网络设备清单
