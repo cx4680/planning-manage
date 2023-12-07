@@ -22,7 +22,7 @@ func ListToMap(list interface{}, key string) map[string]interface{} {
 	return res
 }
 
-func ListToMaps(list interface{}, key string) map[string][]interface{} {
+func ListToMaps(list interface{}, key string) map[string]interface{} {
 	res := make(map[string][]interface{})
 	arr := ToSlice(list)
 	for _, row := range arr {

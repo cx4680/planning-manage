@@ -294,9 +294,9 @@ func SaveDeviceList(c *gin.Context) {
 			var num = 0
 			dto := new(ip_demand.IpDemandBaselineDto)
 			var needCount bool
+			dtos := value.([]*ip_demand.IpDemandBaselineDto)
 			// 根据IP需求规划表的关联设备组进行 网络设备清单分组累加
-			for i, val := range value {
-				v := val.(*ip_demand.IpDemandBaselineDto)
+			for i, v := range dtos {
 				if i == 0 {
 					dto = v
 				}
