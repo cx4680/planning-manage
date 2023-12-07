@@ -42,9 +42,9 @@ func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 		orderSql = " update_time "
 	}
 	switch request.Sort {
-	case "asc":
+	case "ascend":
 		orderSql += " asc "
-	case "desc":
+	case "descend":
 		orderSql += " desc "
 	default:
 		orderSql += " desc "
