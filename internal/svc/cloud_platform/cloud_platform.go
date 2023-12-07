@@ -80,6 +80,7 @@ func Update(c *gin.Context) {
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	result.Success(c, nil)
 }
 
 func checkRequest(request *Request, isCreate bool) error {

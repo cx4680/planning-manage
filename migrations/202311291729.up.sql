@@ -212,6 +212,7 @@ CREATE TABLE `server_planning`
     `id`                 bigint(20) NOT NULL AUTO_INCREMENT COMMENT '服务器规划id',
     `plan_id`            bigint(20) DEFAULT NULL COMMENT ' 方案id',
     `node_role_id`       bigint(20) DEFAULT NULL COMMENT '节点角色id',
+    `mixed_node_role_id` bigint(20) DEFAULT NULL COMMENT '节点角色id',
     `server_baseline_id` bigint(20) DEFAULT NULL COMMENT '服务器基线表id',
     `number`             int          DEFAULT NULL COMMENT '数量',
     `open_dpdk`          int          DEFAULT NULL COMMENT '是否开启DPDK，1：开启，0：关闭',
