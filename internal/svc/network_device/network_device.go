@@ -82,16 +82,10 @@ func GetBrandsByPlanId(c *gin.Context) {
 		result.FailureWithMsg(c, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.ParamError)
 		return
 	}
-	// 根据方案id查询版本id
-	softwareVersion, err := querySoftwareVersionByVersion(baselineVersion, cloudPlatformType)
-	if err != nil && err != gorm.ErrRecordNotFound {
-		log.Error(err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	versionId := softwareVersion.Id
-	if versionId == 0 {
-		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.NotFoundVersionMsg)
+	// 根据云产品版本和云平台类型查询版本ID
+	versionId, err := getVersionId(baselineVersion, cloudPlatformType)
+	if err != nil {
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// 根据方案id查询云产品规划信息  取其中一条拿服务器基线表ID
@@ -145,7 +139,6 @@ func ListNetworkDevices(c *gin.Context) {
 	planId := request.PlanId
 	devicePlan, err := searchDevicePlanByPlanId(planId)
 	if err != nil {
-		log.Errorf("[searchDevicePlanByPlanId] search device plan by planId error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -159,16 +152,10 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	// 根据云产品版本和云平台类型查询版本表
-	softwareVersion, err := querySoftwareVersionByVersion(request.BaselineVersion, request.CloudPlatformType)
-	if err != nil && err != gorm.ErrRecordNotFound {
-		log.Error(err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	versionId := softwareVersion.Id
-	if versionId == 0 {
-		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.NotFoundVersionMsg)
+	// 根据云产品版本和云平台类型查询版本ID
+	versionId, err := getVersionId(request.BaselineVersion, request.CloudPlatformType)
+	if err != nil {
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// 根据方案id查询服务器规划
@@ -262,16 +249,10 @@ func SaveDeviceList(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	// 根据云产品版本和云平台类型查询版本表
-	softwareVersion, err := querySoftwareVersionByVersion(req.BaselineVersion, req.CloudPlatformType)
-	if err != nil && err != gorm.ErrRecordNotFound {
-		log.Error(err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	versionId := softwareVersion.Id
-	if versionId == 0 {
-		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.NotFoundVersionMsg)
+	// 根据云产品版本和云平台类型查询版本ID
+	versionId, err := getVersionId(req.BaselineVersion, req.CloudPlatformType)
+	if err != nil {
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// 根据版本ID查询ip需求基线数据
@@ -534,4 +515,18 @@ func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode s
 		}
 	}
 	return response, nil
+}
+
+func getVersionId(baselineVersion string, cloudPlatformType string) (int64, error) {
+	// 根据方案id查询版本id
+	softwareVersion, err := querySoftwareVersionByVersion(baselineVersion, cloudPlatformType)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		log.Error("获取云产品版本异常, error %v", err)
+		return 0, err
+	}
+	versionId := softwareVersion.Id
+	if versionId == 0 {
+		return 0, errors.New(errorcodes.NotFoundVersionMsg)
+	}
+	return versionId, nil
 }
