@@ -26,6 +26,9 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanningList).Error; err != nil {
 		return nil, err
 	}
+	if len(cloudProductPlanningList) == 0 {
+		return nil, errors.New("该方案未找到关联产品")
+	}
 	var productIdList []int64
 	for _, v := range cloudProductPlanningList {
 		productIdList = append(productIdList, v.ProductId)

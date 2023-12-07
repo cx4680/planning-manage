@@ -133,9 +133,14 @@ const (
 )
 
 const (
-	PLAN     = "plan"     // 待规划
-	PLANNING = "planning" // 规划中
-	PLANNED  = "planned"  // 规划完成
+	PLAN                = "plan"     // 待规划
+	PLANNING            = "planning" // 规划中
+	PLANNED             = "planned"  // 规划完成
+	BUSINESS_START      = "0"        // 业务规划开始阶段
+	CLOUD_PRODUCT_CONF  = "1"        // 云产品配置阶段
+	SERVER_PLAN         = "2"        // 服务器规划阶段
+	NETWORK_DEVICE_PLAN = "3"        // 网络设备规划阶段
+	BUSINESS_END        = "4"        // 业务规划结束
 )
 
 const (

@@ -24,34 +24,34 @@ type DeviceRoleGroupNum struct {
 }
 
 type Request struct {
-	PlanId                int64            `form:"planId"`
-	Brand                 string           `form:"brand"`
-	ApplicationDispersion string           `form:"applicationDispersion"`
-	AwsServerNum          int              `form:"awsServerNum"`
-	AwsBoxNum             int              `form:"awsBoxNum"`
-	TotalBoxNum           int              `form:"totalBoxNum"`
-	Ipv6                  string           `form:"ipv6"`
-	NetworkModel          int              `form:"networkModel"`
-	DeviceType            int              `form:"deviceType"`
-	CloudPlatformType     string           `form:"cloudPlatformType"`
-	BaselineVersion       string           `form:"baselineVersion"`
-	Devices               []NetworkDevices `form:"devices"`
+	PlanId                int64            `json:"planId" form:"planId"`
+	Brand                 string           `json:"brand" form:"brand"`
+	ApplicationDispersion string           `json:"applicationDispersion" form:"applicationDispersion"`
+	AwsServerNum          int              `json:"awsServerNum" form:"awsServerNum"`
+	AwsBoxNum             int              `json:"awsBoxNum" form:"awsBoxNum"`
+	TotalBoxNum           int              `json:"totalBoxNum" form:"totalBoxNum"`
+	Ipv6                  string           `json:"ipv6" form:"ipv6"`
+	NetworkModel          int              `json:"networkModel" form:"networkModel"`
+	DeviceType            int              `json:"deviceType" form:"deviceType"`
+	CloudPlatformType     string           `json:"cloudPlatformType" form:"cloudPlatformType"`
+	BaselineVersion       string           `json:"baselineVersion" form:"baselineVersion"`
+	Devices               []NetworkDevices `json:"devices" form:"devices"`
 }
 
 type NetworkDevices struct {
-	PlanId                int64                `form:"planId"`
-	NetworkDeviceRoleId   int64                `form:"networkDeviceRoleId"`
-	NetworkDeviceRole     string               `form:"networkDeviceRole"`
-	NetworkDeviceRoleName string               `form:"networkDeviceRoleName"`
-	LogicalGrouping       string               `form:"logicalGrouping"`
-	DeviceId              string               `form:"deviceId"`
-	Brand                 string               `form:"brand"`
-	DeviceModel           string               `form:"deviceModel"`
-	ConfOverview          string               `form:"confOverview"`
-	DeviceModels          []NetworkDeviceModel `form:"deviceModels"`
+	PlanId                int64                `json:"devices" form:"planId"`
+	NetworkDeviceRoleId   int64                `json:"networkDeviceRoleId" form:"networkDeviceRoleId"`
+	NetworkDeviceRole     string               `json:"networkDeviceRole" form:"networkDeviceRole"`
+	NetworkDeviceRoleName string               `json:"networkDeviceRoleName" form:"networkDeviceRoleName"`
+	LogicalGrouping       string               `json:"logicalGrouping" form:"logicalGrouping"`
+	DeviceId              string               `json:"deviceId" form:"deviceId"`
+	Brand                 string               `json:"brand" form:"brand"`
+	DeviceModel           string               `json:"deviceModel" form:"deviceModel"`
+	ConfOverview          string               `json:"confOverview" form:"confOverview"`
+	DeviceModels          []NetworkDeviceModel `json:"deviceModels" form:"deviceModels"`
 }
 
 type NetworkDeviceModel struct {
-	ConfOverview string `form:"confOverview"`
-	DeviceModel  string `form:"deviceModel"`
+	ConfOverview string `json:"confOverview" form:"confOverview"`
+	DeviceModel  string `json:"deviceModel" form:"deviceModel"`
 }

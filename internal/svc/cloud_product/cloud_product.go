@@ -62,7 +62,23 @@ func Save(context *gin.Context) {
 		return
 	}
 
-	//TODO 增加依赖校验
+	//依赖校验
+	var productIdList []int64
+	for _, product := range request.ProductList {
+		productIdList = append(productIdList, product.ProductId)
+	}
+	//依赖云产品
+	dependList, err := getDependProductIds()
+	for _, productId := range productIdList {
+		for _, depend := range dependList {
+			//判断productIdList是否包含depend.DependId
+			if productId == depend.ID && !contains(depend.DependId, productIdList) {
+				log.Error("[Save] invalid param error, 选择的云产品有依赖项未选中")
+				result.Failure(context, errorcodes.CLOUD_PRODUCT_DEPENDENCIES_ERROR, http.StatusBadRequest)
+				return
+			}
+		}
+	}
 	session := sessions.Default(context)
 	currentUserId := session.Get("userId").(string)
 	err = saveCloudProductPlanning(request, currentUserId)
@@ -73,6 +89,15 @@ func Save(context *gin.Context) {
 	}
 	result.Success(context, nil)
 	return
+}
+
+func contains(ele int64, arr []int64) bool {
+	for _, data := range arr {
+		if data == ele {
+			return true
+		}
+	}
+	return false
 }
 
 func List(context *gin.Context) {

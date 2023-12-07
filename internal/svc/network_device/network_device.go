@@ -18,7 +18,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/ip_demand"
@@ -125,7 +124,7 @@ func GetBrandsByPlanId(c *gin.Context) {
 
 func ListNetworkDevices(c *gin.Context) {
 	request := &Request{}
-	if err := c.ShouldBindQuery(&request); err != nil {
+	if err := c.BindJSON(&request); err != nil {
 		log.Errorf("list network devices bind param error: ", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
@@ -139,16 +138,6 @@ func ListNetworkDevices(c *gin.Context) {
 	planId := request.PlanId
 	devicePlan, err := searchDevicePlanByPlanId(planId)
 	if err != nil {
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	if devicePlan.Id == 0 {
-		err = createDevicePlan(request)
-	} else {
-		err = updateDevicePlan(request, *devicePlan)
-	}
-	if err != nil {
-		log.Errorf("[saveOrUpdateDevicePlan] save or update device plan error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -166,7 +155,7 @@ func ListNetworkDevices(c *gin.Context) {
 		return
 	}
 	if len(serverPlanningList) == 0 {
-		result.Failure(c, "服务器规划列表不能为空", http.StatusInternalServerError)
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.ServerPlanningListEmpty)
 		return
 	}
 	// 服务器规划数据转为map
@@ -191,12 +180,22 @@ func ListNetworkDevices(c *gin.Context) {
 		return
 	}
 	if len(deviceRoleBaseline) == 0 {
-		result.Failure(c, "网络设备角色基线数据为空", http.StatusInternalServerError)
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.NetworkDeviceRoleBaselineEmpty)
 		return
 	}
 	response, err = transformNetworkDeviceList(versionId, networkInterface, request, deviceRoleBaseline, nodeRoleServerNumMap)
 	if err != nil {
 		log.Errorf("[transformNetworkDeviceList] error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if devicePlan.Id == 0 {
+		err = createDevicePlan(request)
+	} else {
+		err = updateDevicePlan(request, *devicePlan)
+	}
+	if err != nil {
+		log.Errorf("[saveOrUpdateDevicePlan] save or update device plan error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -209,7 +208,7 @@ func SaveDeviceList(c *gin.Context) {
 	var networkDeviceList []*entity.NetworkDeviceList
 	var ipDemandPlannings []*entity.IPDemandPlanning
 	now := datetime.GetNow()
-	if err := c.ShouldBindQuery(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		log.Errorf("save network devices bind param error: ", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
@@ -219,7 +218,7 @@ func SaveDeviceList(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	planId := request[0].PlanId
+	planId := req.PlanId
 	// 组装网络设备清单数据
 	for _, networkDevice := range request {
 		device := new(entity.NetworkDeviceList)
@@ -261,9 +260,14 @@ func SaveDeviceList(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
+	if len(ipDemandBaselines) == 0 {
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.IpDemandBaselineEmpty)
+	}
 	// 转ip基线ID Map
 	ipBaselineIdMap := util.ListToMaps(ipDemandBaselines, "ID")
-	userId := user.GetUserId(c)
+	log.Infof("IP需求基线表转为map后的数据=%v", ipBaselineIdMap)
+	//userId := user.GetUserId(c)
+	userId := "1"
 	err = data.DB.Transaction(func(tx *gorm.DB) error {
 		if len(deviceList) > 0 {
 			// 失效库里保存的
@@ -273,7 +277,7 @@ func SaveDeviceList(c *gin.Context) {
 			}
 		}
 		// 更新方案表的状态
-		err = plan.UpdatePlanStage(tx, planId, constant.PLANNED, userId)
+		err = plan.UpdatePlanStage(tx, planId, constant.PLANNED, userId, constant.BUSINESS_END)
 		if err != nil {
 			return err
 		}
@@ -395,7 +399,7 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 	7.构建网络设备清单列表 两层循环 外层是单元数循环、内层是单元设备数量循环
 	*/
 	model := constant.NetworkModelYes
-	var aswNum map[int64]int
+	aswNum := make(map[int64]int)
 	// TODO roleBaseLine把OASW这条数据移到最后处理
 	for _, deviceRole := range roleBaseLine {
 		if constant.SEPARATION_OF_TWO_NETWORKS == networkModel {
@@ -466,6 +470,7 @@ func dealNetworkModel(versionId int64, networkInterface string, request *Request
 				nodeRoles = append(nodeRoles, roleId)
 			}
 		}
+		log.Infof("角色编码=%v,查询到的节点角色或者设备角色ID=%v", funcCompoCode, nodeRoles)
 		for _, nodeRoleId := range nodeRoles {
 			if constant.NodeRoleType == associatedType {
 				serverNum += nodeRoleServerNumMap[nodeRoleId]
@@ -476,6 +481,7 @@ func dealNetworkModel(versionId int64, networkInterface string, request *Request
 		if constant.NodeRoleType == associatedType {
 			aswNum[id] = serverNum
 		}
+		log.Infof("角色编码=%v,统计出来的服务器数量=%v", funcCompoCode, serverNum)
 		var minimumNumUnit = 1
 		if serverNum > awsServerNum {
 			discuss := serverNum / awsServerNum

@@ -32,11 +32,8 @@ func getCloudProductBaseListByVersionId(versionId int64) ([]CloudProductBaseline
 		return nil, err
 	}
 	// 查询依赖的云产品
-	var cloudProductDependList []CloudProductBaselineDependResponse
-	if err := data.DB.Table("cloud_product_depend_rel cpdr").
-		Select("cpdr.product_id id, cpb.id dependId, cpb.product_name dependProductName, cpb.product_code dependProductCode").
-		Joins("LEFT JOIN cloud_product_baseline cpb ON cpb.id = cpdr.depend_product_id").
-		Find(&cloudProductDependList).Error; err != nil {
+	cloudProductDependList, err := getDependProductIds()
+	if err != nil {
 		return nil, err
 	}
 	var responseList []CloudProductBaselineResponse
@@ -88,6 +85,11 @@ func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId
 	}
 
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		//删除原有的清单
+		if err := tx.Delete(&entity.CloudProductPlanning{}, "plan_id=?", request.PlanId).Error; err != nil {
+			log.Errorf("[saveCloudProductPlanning] delete cloudProductPlanning by planId error,%v", err)
+			return err
+		}
 		// 保存云服务规划清单
 		if err := tx.Table(entity.CloudProductPlanningTable).CreateInBatches(&cloudProductPlanningList, len(cloudProductPlanningList)).Error; err != nil {
 			log.Errorf("[saveCloudProductPlanning] batch create cloudProductPlanning error, %v", err)
@@ -150,4 +152,17 @@ func exportCloudProductPlanningByPlanId(planId int64) (string, []CloudProductPla
 		return "", nil, err
 	}
 	return projectManage.Name + "-" + planManage.Name + "-" + "云产品清单", response, nil
+}
+
+func getDependProductIds() ([]CloudProductBaselineDependResponse, error) {
+	var cloudProductDependList []CloudProductBaselineDependResponse
+	if err := data.DB.Table("cloud_product_depend_rel cpdr").
+		Select("cpdr.product_id id, cpb.id dependId, cpb.product_name dependProductName, cpb.product_code dependProductCode").
+		Joins("LEFT JOIN cloud_product_baseline cpb ON cpb.id = cpdr.depend_product_id").
+		Find(&cloudProductDependList).Error; err != nil {
+
+		log.Errorf("[getDependProductIds] query db err, %v", err)
+		return nil, err
+	}
+	return cloudProductDependList, nil
 }
