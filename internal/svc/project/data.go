@@ -12,7 +12,7 @@ import (
 func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " update_time "
 	if util.IsNotBlank(request.Name) {
-		screenSql += " AND name LIKE CONCAT('%','" + request.Name + "','%') "
+		screenSql += " AND name LIKE CONCAT('%',?,'%') "
 		screenParams = append(screenParams, request.Name)
 	}
 	if util.IsNotBlank(request.CustomerName) {
@@ -57,37 +57,9 @@ func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
-	for i, v := range list {
-		//查询客户名称
-		var customer = &entity.CustomerManage{}
-		if err := data.DB.Where("id = ?", v.CustomerId).First(&customer).Error; err != nil {
-			return nil, 0, err
-		}
-		list[i].CustomerName = customer.CustomerName
-		//查询云平台名称
-		var cloudPlatform = &entity.CloudPlatformManage{}
-		if err := data.DB.Where("id = ?", v.CloudPlatformId).First(&cloudPlatform).Error; err != nil {
-			return nil, 0, err
-		}
-		list[i].CloudPlatformName = cloudPlatform.Name
-		//查询region名称
-		var region = &entity.RegionManage{}
-		if err := data.DB.Where("id = ?", v.RegionId).First(&region).Error; err != nil {
-			return nil, 0, err
-		}
-		list[i].RegionName = region.Name
-		//查询az名称
-		var az = &entity.AzManage{}
-		if err := data.DB.Where("id = ?", v.AzId).First(&az).Error; err != nil {
-			return nil, 0, err
-		}
-		list[i].AzName = az.Name
-		//查询cell名称
-		var cell = &entity.CellManage{}
-		if err := data.DB.Where("id = ?", v.CellId).First(&cell).Error; err != nil {
-			return nil, 0, err
-		}
-		list[i].CellName = cell.Name
+	list, err := buildResponse(list)
+	if err != nil {
+		return nil, 0, err
 	}
 	return list, count, nil
 }
@@ -228,4 +200,80 @@ func checkBusiness(request *Request, isCreate bool) error {
 		}
 	}
 	return nil
+}
+
+func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error) {
+	var projectIdList, customerIdList, cloudPlatformIdList, regionIdList, azIdList, cellIdList []int64
+	for _, v := range list {
+		projectIdList = append(projectIdList, v.Id)
+		customerIdList = append(customerIdList, v.CustomerId)
+		cloudPlatformIdList = append(cloudPlatformIdList, v.CloudPlatformId)
+		regionIdList = append(regionIdList, v.RegionId)
+		azIdList = append(azIdList, v.AzId)
+		cellIdList = append(cellIdList, v.CellId)
+	}
+	//查询方案数量
+	var planList []*entity.PlanManage
+	if err := data.DB.Model(&entity.PlanManage{}).Where("project_id IN (?)", projectIdList).Find(&planList).Error; err != nil {
+		return nil, err
+	}
+	var planCountMap = make(map[int64]int)
+	for _, v := range planList {
+		planCountMap[v.ProjectId]++
+	}
+	//查询客户名称
+	var customerList []*entity.CustomerManage
+	if err := data.DB.Where("id IN (?)", customerIdList).First(&customerList).Error; err != nil {
+		return nil, err
+	}
+	var customerMap = make(map[int64]*entity.CustomerManage)
+	for _, v := range customerList {
+		customerMap[v.ID] = v
+	}
+	//查询云平台名称
+	var cloudPlatformList []*entity.CloudPlatformManage
+	if err := data.DB.Where("id IN (?)", cloudPlatformIdList).First(&cloudPlatformList).Error; err != nil {
+		return nil, err
+	}
+	var cloudPlatformMap = make(map[int64]*entity.CloudPlatformManage)
+	for _, v := range cloudPlatformList {
+		cloudPlatformMap[v.Id] = v
+	}
+	//查询region名称
+	var regionList []*entity.RegionManage
+	if err := data.DB.Where("id IN (?)", regionIdList).First(&regionList).Error; err != nil {
+		return nil, err
+	}
+	var regionMap = make(map[int64]*entity.RegionManage)
+	for _, v := range regionList {
+		regionMap[v.Id] = v
+	}
+	//查询az名称
+	var azList []*entity.AzManage
+	if err := data.DB.Where("id IN (?)", azIdList).First(&azList).Error; err != nil {
+		return nil, err
+	}
+	var azMap = make(map[int64]*entity.AzManage)
+	for _, v := range azList {
+		azMap[v.Id] = v
+	}
+	//查询cell名称
+	var cellList []*entity.CellManage
+	if err := data.DB.Where("id IN (?)", cellIdList).First(&cellList).Error; err != nil {
+		return nil, err
+	}
+	var cellMap = make(map[int64]*entity.CellManage)
+	for _, v := range cellList {
+		cellMap[v.Id] = v
+	}
+
+	for i, v := range list {
+		list[i].PlanCount = planCountMap[v.Id]
+		list[i].CustomerName = customerMap[v.CustomerId].CustomerName
+		list[i].CloudPlatformName = cloudPlatformMap[v.CloudPlatformId].Name
+		list[i].RegionName = regionMap[v.RegionId].Name
+		list[i].AzName = azMap[v.AzId].Name
+		list[i].CellName = cellMap[v.CellId].Name
+	}
+	return list, nil
 }

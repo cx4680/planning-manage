@@ -61,7 +61,7 @@ func searchModelRoleRelByRoleIdAndNetworkModel(roleId int64, networkModel int) (
 	return modelRoleRel, nil
 }
 
-func createDevicePlan(request Request) error {
+func createDevicePlan(request *Request) error {
 	networkPlan := entity.NetworkDevicePlanning{
 		PlanId:                request.PlanId,
 		Brand:                 request.Brand,
@@ -109,7 +109,15 @@ func getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId int64, networ
 	return deviceModel, nil
 }
 
-func updateDevicePlan(request Request, devicePlanning entity.NetworkDevicePlanning) error {
+func querySoftwareVersionByVersion(version string, cloudPlatformType string) (entity.SoftwareVersion, error) {
+	var softwareVersion entity.SoftwareVersion
+	if err := data.DB.Table(entity.SoftwareVersionTable).Where("software_version = ? AND cloud_platform_type = ?", version, cloudPlatformType).First(&softwareVersion).Error; err != nil {
+		return softwareVersion, err
+	}
+	return softwareVersion, nil
+}
+
+func updateDevicePlan(request *Request, devicePlanning entity.NetworkDevicePlanning) error {
 	devicePlanning.UpdateTime = time.Now()
 	devicePlanning.Brand = request.Brand
 	devicePlanning.AwsServerNum = request.AwsServerNum

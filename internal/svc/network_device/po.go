@@ -24,15 +24,18 @@ type DeviceRoleGroupNum struct {
 }
 
 type Request struct {
-	PlanId                int64  `form:"planId"`
-	Brand                 string `form:"brand"`
-	ApplicationDispersion string `form:"applicationDispersion"`
-	AwsServerNum          int    `form:"awsServerNum"`
-	AwsBoxNum             int    `form:"awsBoxNum"`
-	TotalBoxNum           int    `form:"totalBoxNum"`
-	Ipv6                  string `form:"ipv6"`
-	NetworkModel          int    `form:"networkModel"`
-	DeviceType            int    `form:"deviceType"`
+	PlanId                int64            `form:"planId"`
+	Brand                 string           `form:"brand"`
+	ApplicationDispersion string           `form:"applicationDispersion"`
+	AwsServerNum          int              `form:"awsServerNum"`
+	AwsBoxNum             int              `form:"awsBoxNum"`
+	TotalBoxNum           int              `form:"totalBoxNum"`
+	Ipv6                  string           `form:"ipv6"`
+	NetworkModel          int              `form:"networkModel"`
+	DeviceType            int              `form:"deviceType"`
+	CloudPlatformType     string           `form:"cloudPlatformType"`
+	BaselineVersion       string           `form:"baselineVersion"`
+	Devices               []NetworkDevices `form:"devices"`
 }
 
 type NetworkDevices struct {

@@ -13,6 +13,18 @@ import (
 
 func PagePlan(request *Request) ([]*entity.PlanManage, int64, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? AND project_id = ? ", []interface{}{0, request.ProjectId}, " CASE WHEN type = 'standby' OR type = 'delivery' THEN 0 ELSE 1 END ASC "
+	if util.IsNotBlank(request.Name) {
+		screenSql += " AND name LIKE CONCAT('%',?,'%') "
+		screenParams = append(screenParams, request.Name)
+	}
+	if util.IsNotBlank(request.Type) {
+		screenSql += " AND type = ? "
+		screenParams = append(screenParams, request.Type)
+	}
+	if util.IsNotBlank(request.Stage) {
+		screenSql += " AND stage = ? "
+		screenParams = append(screenParams, request.Stage)
+	}
 	switch request.SortField {
 	case "createTime":
 		orderSql += ", create_time "

@@ -69,16 +69,23 @@ func GetDevicePlanByPlanId(c *gin.Context) {
 }
 
 func GetBrandsByPlanId(c *gin.Context) {
-	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
-	// 根据方案id查询版本id
-	versionId, err := baseline.GetVersionIdByPlanId(planId)
-	if err != nil {
-		log.Errorf("[GetVersionIdByPlanId] error, %v", err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+	request := &Request{}
+	if err := c.ShouldBindQuery(&request); err != nil {
+		log.Errorf("list network devices bind param error: ", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if versionId == 0 {
-		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.NotFoundVersionMsg)
+	planId := request.PlanId
+	cloudPlatformType := request.CloudPlatformType
+	baselineVersion := request.BaselineVersion
+	if len(cloudPlatformType) == 0 || len(baselineVersion) == 0 || planId == 0 {
+		result.FailureWithMsg(c, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.ParamError)
+		return
+	}
+	// 根据云产品版本和云平台类型查询版本ID
+	versionId, err := getVersionId(baselineVersion, cloudPlatformType)
+	if err != nil {
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// 根据方案id查询云产品规划信息  取其中一条拿服务器基线表ID
@@ -117,14 +124,14 @@ func GetBrandsByPlanId(c *gin.Context) {
 }
 
 func ListNetworkDevices(c *gin.Context) {
-	request := Request{}
+	request := &Request{}
 	if err := c.ShouldBindQuery(&request); err != nil {
 		log.Errorf("list network devices bind param error: ", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
 	if err := checkRequest(request); err != nil {
-		result.Failure(c, err.Error(), http.StatusBadRequest)
+		result.FailureWithMsg(c, errorcodes.InvalidParam, http.StatusBadRequest, err.Error())
 		return
 	}
 	var response []NetworkDevices
@@ -132,7 +139,6 @@ func ListNetworkDevices(c *gin.Context) {
 	planId := request.PlanId
 	devicePlan, err := searchDevicePlanByPlanId(planId)
 	if err != nil {
-		log.Errorf("[searchDevicePlanByPlanId] search device plan by planId error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -146,11 +152,10 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	// 根据方案id查询版本id 云产品规划表和云产品基线表
-	versionId, err := baseline.GetVersionIdByPlanId(planId)
+	// 根据云产品版本和云平台类型查询版本ID
+	versionId, err := getVersionId(request.BaselineVersion, request.CloudPlatformType)
 	if err != nil {
-		log.Errorf("[GetVersionIdByPlanId] error, %v", err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// 根据方案id查询服务器规划
@@ -200,15 +205,16 @@ func ListNetworkDevices(c *gin.Context) {
 }
 
 func SaveDeviceList(c *gin.Context) {
-	var request []NetworkDevices
+	req := &Request{}
 	var networkDeviceList []*entity.NetworkDeviceList
 	var ipDemandPlannings []*entity.IPDemandPlanning
 	now := datetime.GetNow()
-	if err := c.ShouldBindQuery(&request); err != nil {
+	if err := c.ShouldBindQuery(&req); err != nil {
 		log.Errorf("save network devices bind param error: ", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
+	request := req.Devices
 	if len(request) == 0 {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
@@ -243,11 +249,10 @@ func SaveDeviceList(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	// 根据方案ID查询版本ID
-	versionId, err := baseline.GetVersionIdByPlanId(planId)
+	// 根据云产品版本和云平台类型查询版本ID
+	versionId, err := getVersionId(req.BaselineVersion, req.CloudPlatformType)
 	if err != nil {
-		log.Errorf("[GetVersionIdByPlanId] error, %v", err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// 根据版本ID查询ip需求基线数据
@@ -351,7 +356,7 @@ func NetworkDeviceListDownload(context *gin.Context) {
 	return
 }
 
-func checkRequest(request Request) error {
+func checkRequest(request *Request) error {
 	if request.PlanId == 0 {
 		return errors.New("方案ID参数为空")
 	}
@@ -367,11 +372,17 @@ func checkRequest(request Request) error {
 	if util.IsBlank(request.Brand) {
 		return errors.New("厂商参数为空")
 	}
+	if util.IsBlank(request.CloudPlatformType) {
+		return errors.New("云平台类型参数为空")
+	}
+	if util.IsBlank(request.BaselineVersion) {
+		return errors.New("云产品版本参数为空")
+	}
 	return nil
 }
 
 // 匹配组网模型处理网络设备清单数据
-func transformNetworkDeviceList(versionId int64, networkInterface string, request Request, roleBaseLine []entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int) ([]NetworkDevices, error) {
+func transformNetworkDeviceList(versionId int64, networkInterface string, request *Request, roleBaseLine []entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int) ([]NetworkDevices, error) {
 	var response []NetworkDevices
 	networkModel := request.NetworkModel
 	/**
@@ -409,7 +420,7 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 }
 
 // 根据网络设备角色基线计算数据
-func dealNetworkModel(versionId int64, networkInterface string, request Request, networkModel int, roleBaseLine entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int, aswNum map[int64]int) ([]NetworkDevices, error) {
+func dealNetworkModel(versionId int64, networkInterface string, request *Request, networkModel int, roleBaseLine entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int, aswNum map[int64]int) ([]NetworkDevices, error) {
 	if constant.NetworkModelNo == networkModel {
 		return nil, nil
 	}
@@ -504,4 +515,18 @@ func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode s
 		}
 	}
 	return response, nil
+}
+
+func getVersionId(baselineVersion string, cloudPlatformType string) (int64, error) {
+	// 根据方案id查询版本id
+	softwareVersion, err := querySoftwareVersionByVersion(baselineVersion, cloudPlatformType)
+	if err != nil && err != gorm.ErrRecordNotFound {
+		log.Error("获取云产品版本异常, error %v", err)
+		return 0, err
+	}
+	versionId := softwareVersion.Id
+	if versionId == 0 {
+		return 0, errors.New(errorcodes.NotFoundVersionMsg)
+	}
+	return versionId, nil
 }
