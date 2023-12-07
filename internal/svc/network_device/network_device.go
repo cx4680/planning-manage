@@ -61,6 +61,9 @@ func GetDevicePlanByPlanId(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
+	if devicePlan.PlanId == 0 {
+		devicePlan = nil
+	}
 	result.Success(c, devicePlan)
 	return
 }
