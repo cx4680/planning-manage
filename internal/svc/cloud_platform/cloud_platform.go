@@ -69,7 +69,7 @@ func Update(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-
+	request.UserId = user.GetUserId(c)
 	request.Id, _ = strconv.ParseInt(c.Param("id"), 10, 64)
 	if err := checkRequest(request, false); err != nil {
 		result.Failure(c, err.Error(), http.StatusBadRequest)
