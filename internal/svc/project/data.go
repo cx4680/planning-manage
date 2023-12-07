@@ -203,6 +203,9 @@ func checkBusiness(request *Request, isCreate bool) error {
 }
 
 func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error) {
+	if len(list) == 0 {
+		return list, nil
+	}
 	var projectIdList, customerIdList, cloudPlatformIdList, regionIdList, azIdList, cellIdList []int64
 	for _, v := range list {
 		projectIdList = append(projectIdList, v.Id)
@@ -223,7 +226,7 @@ func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error
 	}
 	//查询客户名称
 	var customerList []*entity.CustomerManage
-	if err := data.DB.Where("id IN (?)", customerIdList).First(&customerList).Error; err != nil {
+	if err := data.DB.Where("id IN (?)", customerIdList).Find(&customerList).Error; err != nil {
 		return nil, err
 	}
 	var customerMap = make(map[int64]*entity.CustomerManage)
@@ -232,7 +235,7 @@ func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error
 	}
 	//查询云平台名称
 	var cloudPlatformList []*entity.CloudPlatformManage
-	if err := data.DB.Where("id IN (?)", cloudPlatformIdList).First(&cloudPlatformList).Error; err != nil {
+	if err := data.DB.Where("id IN (?)", cloudPlatformIdList).Find(&cloudPlatformList).Error; err != nil {
 		return nil, err
 	}
 	var cloudPlatformMap = make(map[int64]*entity.CloudPlatformManage)
@@ -241,7 +244,7 @@ func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error
 	}
 	//查询region名称
 	var regionList []*entity.RegionManage
-	if err := data.DB.Where("id IN (?)", regionIdList).First(&regionList).Error; err != nil {
+	if err := data.DB.Where("id IN (?)", regionIdList).Find(&regionList).Error; err != nil {
 		return nil, err
 	}
 	var regionMap = make(map[int64]*entity.RegionManage)
@@ -250,7 +253,7 @@ func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error
 	}
 	//查询az名称
 	var azList []*entity.AzManage
-	if err := data.DB.Where("id IN (?)", azIdList).First(&azList).Error; err != nil {
+	if err := data.DB.Where("id IN (?)", azIdList).Find(&azList).Error; err != nil {
 		return nil, err
 	}
 	var azMap = make(map[int64]*entity.AzManage)
@@ -259,7 +262,7 @@ func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error
 	}
 	//查询cell名称
 	var cellList []*entity.CellManage
-	if err := data.DB.Where("id IN (?)", cellIdList).First(&cellList).Error; err != nil {
+	if err := data.DB.Where("id IN (?)", cellIdList).Find(&cellList).Error; err != nil {
 		return nil, err
 	}
 	var cellMap = make(map[int64]*entity.CellManage)

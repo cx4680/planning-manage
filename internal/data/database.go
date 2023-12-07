@@ -94,7 +94,7 @@ func migrateData(dsn string) error {
 		MigrationsTable: "planning_manage_migrations",
 	})
 	if err != nil {
-		log.Errorf("schema migration message: %s", err.Error())
+		log.Errorf("MigrationsTable err, schema migration message: %s", err.Error())
 		return err
 	}
 	defer func(instance database.Driver) {
