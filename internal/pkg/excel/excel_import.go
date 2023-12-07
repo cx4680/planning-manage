@@ -3,6 +3,7 @@ package excel
 import (
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/xuri/excelize/v2"
@@ -47,9 +48,10 @@ func importData(f *excelize.File, dst interface{}, sheetName string, headIndex, 
 	for rowIndex, row := range rows {
 		if rowIndex == headIndex {
 			for i, rowValue := range row {
-				if rowValue != "" {
+				trimRowValue := strings.TrimSpace(rowValue)
+				if trimRowValue != "" {
 					headers = append(headers, Header{
-						Name:  rowValue,
+						Name:  trimRowValue,
 						Index: i,
 					})
 				}
@@ -84,14 +86,14 @@ func importData(f *excelize.File, dst interface{}, sheetName string, headIndex, 
 				if excelizeIndex >= len(row) {  // 防止下标越界
 					continue
 				}
-				cellValue = row[excelizeIndex] // 获取单元格的值
+				cellValue = strings.TrimSpace(row[excelizeIndex]) // 获取单元格的值
 			} else { // 否则根据表头名称来拿数据
 				index := HeaderIsContain(headers, excelTag.Name)
 				if index >= 0 { // 当tag里的表头名称和excel表格里面的表头名称相匹配时
 					if index >= len(row) { // 防止下标越界
 						continue
 					}
-					cellValue = row[index] // 获取单元格的值
+					cellValue = strings.TrimSpace(row[index]) // 获取单元格的值
 				}
 			}
 			// 根据字段类型设置值

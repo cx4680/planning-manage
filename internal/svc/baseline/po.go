@@ -18,27 +18,22 @@ const (
 	IPDemandBaselineType          = "ipDemandBaseline"
 )
 
-type ImportBaselineRequest struct {
-	CloudPlatformType string `json:"cloudPlatformType" validate:"required"` // 云平台类型，1：运营云，0：交付云
-	BaselineVersion   string `json:"baselineVersion" validate:"required"`   // 基线版本
-	BaselineType      string `json:"baselineType" validate:"required"`      // 基线类型
-	ReleaseTime       string `json:"releaseTime"`                           // 发布时间
-}
-
 type CloudProductBaselineExcel struct {
-	ProductType         string   `excel:"name:云服务类型;" json:"productType"`           // 产品类型
-	ProductName         string   `excel:"name:云服务;" json:"productName"`             // 产品名称
-	ProductCode         string   `excel:"name:服务编码;" json:"productCode"`            // 产品编码
-	SellSpecs           string   `excel:"name:售卖规格;" json:"sellSpecs"`              // 售卖规格
-	AuthorizedUnit      string   `excel:"name:授权单元;" json:"authorizedUnit"`         // 授权单元
-	WhetherRequired     string   `excel:"name:是否必选;" json:"whetherRequired"`        // 是否必选，0：否，1：是
-	Instructions        string   `excel:"name:说明;" json:"instructions"`             // 说明
-	DependProductCode   string   `excel:"name:依赖服务编码;" json:"dependProductCode"`    // 依赖产品Code
-	ControlResNodeRole  string   `excel:"name:管控资源节点角色;" json:"controlResNodeRole"` // 管控资源节点角色
-	ResNodeRole         string   `excel:"name:资源节点角色;" json:"resNodeRole"`          // 资源节点角色
-	DependProductCodes  []string `json:"dependProductCodes"`                        // 依赖产品Code数组
-	ControlResNodeRoles []string `json:"controlResNodeRoles"`                       // 管控资源节点角色数组
-	ResNodeRoles        []string `json:"resNodeRoles"`                              // 资源节点角色数组
+	ProductType             string   `excel:"name:云服务类型;" json:"productType"`             // 产品类型
+	ProductName             string   `excel:"name:云服务;" json:"productName"`               // 产品名称
+	ProductCode             string   `excel:"name:服务编码;" json:"productCode"`              // 产品编码
+	SellSpecs               string   `excel:"name:售卖规格;" json:"sellSpecs"`                // 售卖规格
+	AuthorizedUnit          string   `excel:"name:授权单元;" json:"authorizedUnit"`           // 授权单元
+	WhetherRequired         string   `excel:"name:是否必选;" json:"whetherRequired"`          // 是否必选，0：否，1：是
+	Instructions            string   `excel:"name:说明;" json:"instructions"`               // 说明
+	DependProductCode       string   `excel:"name:依赖服务编码;" json:"dependProductCode"`      // 依赖产品Code
+	ControlResNodeRole      string   `excel:"name:管控资源节点角色;" json:"controlResNodeRole"`   // 管控资源节点角色
+	ResNodeRole             string   `excel:"name:资源节点角色;" json:"resNodeRole"`            // 资源节点角色
+	ControlResNodeRoleCode  string   `excel:"name:管控角色编码;" json:"controlResNodeRoleCode"` // 管控资源节点角色编码
+	ResNodeRoleCode         string   `excel:"name:资源角色编码;" json:"resNodeRoleCode"`        // 资源节点角色编码
+	DependProductCodes      []string `json:"dependProductCodes"`                          // 依赖产品Code数组
+	ControlResNodeRoleCodes []string `json:"controlResNodeRoleCodes"`                     // 管控资源节点角色编码数组
+	ResNodeRoleCodes        []string `json:"resNodeRoleCodes"`                            // 资源节点角色编码数组
 }
 
 type NodeRoleBaselineExcel struct {
@@ -58,6 +53,7 @@ type ServerBaselineExcel struct {
 	Arch                string   `excel:"name:硬件架构;" json:"Arch"`                      // 硬件架构
 	NetworkInterface    string   `excel:"name:网络接口;" json:"networkInterface"`          // 网络接口
 	NodeRole            string   `excel:"name:节点角色;" json:"nodeRole"`                  // 节点角色
+	NodeRoleCode        string   `excel:"name:节点角色编码;" json:"nodeRoleCode"`            // 节点角色编码
 	BomCode             string   `excel:"name:BOM编码;" json:"bomCode"`                  // BOM编码
 	ConfigurationInfo   string   `excel:"name:配置概要;" json:"configurationInfo"`         // 配置概要
 	Spec                string   `excel:"name:规格;" json:"spec"`                        // 规格
@@ -73,7 +69,7 @@ type ServerBaselineExcel struct {
 	RamDisk             string   `excel:"name:缓存盘;" json:"ramDisk"`                    // 缓存盘
 	NetworkCardNum      int      `excel:"name:网卡数量;" json:"networkCardNum"`            // 网卡数量
 	Power               int      `excel:"name:功率（W）;" json:"power"`                    // 功率
-	NodeRoles           []string `json:"nodeRoles"`                                    // 节点角色数组
+	NodeRoleCodes       []string `json:"nodeRoleCodes"`                                // 节点角色编码数组
 }
 
 type NetworkDeviceRoleBaselineExcel struct {
