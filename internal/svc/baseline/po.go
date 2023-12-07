@@ -44,7 +44,7 @@ type NodeRoleBaselineExcel struct {
 	SupportDPDK  string   `excel:"name:是否支持DPDK;" json:"supportDPDK"` // 是否支持DPDK，0：否，1：是
 	Classify     string   `excel:"name:分类;" json:"classify"`          // 分类
 	MixedDeploy  string   `excel:"name:节点混部;" json:"mixedDeploy"`     // 节点混部
-	Annotation   string   `excel:"name:节点说明;" json:"annotation"`      // 节点说明
+	Annotation   string   `excel:"name:说明;" json:"annotation"`        // 说明
 	BusinessType string   `excel:"name:业务类型;" json:"businessType"`    // 业务类型
 	MixedDeploys []string `json:"mixedDeploys"`                       // 节点混部数组
 }
@@ -52,12 +52,12 @@ type NodeRoleBaselineExcel struct {
 type ServerBaselineExcel struct {
 	Arch                string   `excel:"name:硬件架构;" json:"Arch"`                      // 硬件架构
 	NetworkInterface    string   `excel:"name:网络接口;" json:"networkInterface"`          // 网络接口
-	NodeRole            string   `excel:"name:节点角色;" json:"nodeRole"`                  // 节点角色
+	NodeRoleName        string   `excel:"name:节点角色;" json:"nodeRole"`                  // 节点角色名称
 	NodeRoleCode        string   `excel:"name:节点角色编码;" json:"nodeRoleCode"`            // 节点角色编码
 	BomCode             string   `excel:"name:BOM编码;" json:"bomCode"`                  // BOM编码
 	ConfigurationInfo   string   `excel:"name:配置概要;" json:"configurationInfo"`         // 配置概要
 	Spec                string   `excel:"name:规格;" json:"spec"`                        // 规格
-	CpuType             string   `excel:"name:硬件架构;" json:"cpuType"`                   // CPU类型
+	CpuType             string   `excel:"name:CPU类型;" json:"cpuType"`                  // CPU类型
 	Cpu                 int      `excel:"name:vCPU;" json:"cpu"`                       // CPU核数
 	Gpu                 string   `excel:"name:GPU;" json:"gpu"`                        // GPU
 	Memory              int      `excel:"name:内存;" json:"memory"`                      // 内存
