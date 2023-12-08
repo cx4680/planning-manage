@@ -440,18 +440,15 @@ func dealNetworkModel(versionId int64, networkInterface string, request *Request
 	id := roleBaseLine.Id
 	brand := request.Brand
 	awsServerNum := request.AwsServerNum
+	deviceType := request.DeviceType
 	var response []NetworkDevices
-	deviceModels, _ := getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId, networkInterface, id, brand)
+	deviceModels, _ := getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId, networkInterface, id, brand, deviceType)
 	if len(deviceModels) == 0 {
 		log.Errorf("[getModelsByVersionIdAndRoleAndBrandAndNetworkConfig] 获取网络设备型号为空")
 		return nil, nil
 	}
 	deviceModel := deviceModels[0].DeviceModel
 	confOverview := deviceModels[0].ConfOverview
-	//TODO 根据设备类型获取唯一型号
-	if len(deviceModels) > 1 {
-
-	}
 	if constant.NeedQueryOtherTable == networkModel {
 		var serverNum = 0
 		var nodeRoles []int64
