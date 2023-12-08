@@ -103,7 +103,7 @@ func getDeviceRoleGroupNumByPlanId(tx *gorm.DB, planId int64) ([]*DeviceRoleGrou
 
 func getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId int64, networkInterface string, id int64, brand string, deviceType int) ([]NetworkDeviceModel, error) {
 	var deviceModel []NetworkDeviceModel
-	if err := data.DB.Raw("select a.device_model,a.conf_overview from network_device_baseline a left join network_device_role_rel b on a.id = b.device_id where a.version_id = ? and b.device_role_id = ? and a.network_model = ? and a.manufacturer = ? and device_type = ?", versionId, id, networkInterface, brand, deviceType).Scan(&deviceModel).Error; err != nil {
+	if err := data.DB.Raw("select a.device_model,a.conf_overview from network_device_baseline a left join network_device_role_rel b on a.id = b.device_id where a.version_id = ? and b.device_role_id = ? and a.network_model = ? and a.manufacturer = ? and a.device_type = ?", versionId, id, networkInterface, brand, deviceType).Scan(&deviceModel).Error; err != nil {
 		log.Errorf("[getModelsByVersionIdAndRoleAndBrandAndNetworkConfig] query device model error, %v", err)
 		return nil, err
 	}
