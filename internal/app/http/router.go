@@ -70,6 +70,8 @@ func Router(engine *gin.Engine) {
 			cloudPlatformGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建云平台", "createProject", middleware.CREATE, middleware.INFO)), cloud_platform.Create)
 			// 根据id修改云平台
 			cloudPlatformGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改云平台", "deleteProject", middleware.UPDATE, middleware.INFO)), cloud_platform.Update)
+			// 查询树形图
+			cloudPlatformGroup.GET("/tree", middleware.OperatorLog(DefaultEventOpInfo("查询云平台列表", "queryProjectList", middleware.LIST, middleware.INFO)), cloud_platform.Tree)
 		}
 
 		// region
