@@ -354,7 +354,7 @@ CREATE TABLE `network_device_baseline`
     `manufacturer`  varchar(255) DEFAULT NULL COMMENT '厂商',
     `device_type`   tinyint(4) DEFAULT NULL COMMENT '信创/商用， 0：信创，1：商用',
     `network_model` varchar(255) DEFAULT NULL COMMENT '网络模型',
-    `conf_overview` varchar(500) DEFAULT NULL COMMENT '配置概述',
+    `conf_overview` varchar(1000) DEFAULT NULL COMMENT '配置概述',
     `purpose`       varchar(500) DEFAULT NULL COMMENT '用途',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='网络设备基线表';
