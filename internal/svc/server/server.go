@@ -2,6 +2,7 @@ package server
 
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"errors"
@@ -96,13 +97,14 @@ func Download(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	list, err := DownloadServer(planId)
+	response, fileName, err := DownloadServer(planId)
 	if err != nil {
 		log.Errorf("list server download error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	result.Success(c, list)
+	_ = excel.NormalDownLoad(fileName, "服务器规划清单", "", false, response, c.Writer)
+	result.Success(c, nil)
 }
 
 //func ModelList(c *gin.Context) {

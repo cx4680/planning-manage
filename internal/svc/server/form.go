@@ -29,9 +29,9 @@ type ResponseCapacity struct {
 }
 
 type ResponseDownloadServer struct {
-	NodeRole   string `form:"nodeRole"`
-	ServerType string `form:"serverType"`
-	BomCode    string `form:"bomCode"`
-	Spec       string `form:"Spec"`
-	Number     int    `form:"number"`
+	NodeRole   string `json:"nodeRole" excel:"nodeRole:角色;index:0"`
+	ServerType string `json:"serverType" excel:"serverType:设备类型;index:1"`
+	BomCode    string `json:"bomCode" excel:"bomCode:机型;index:2"`
+	Spec       string `json:"spec" excel:"spec:规格;index:3"`
+	Number     string `json:"number" excel:"number:数量;index:4"`
 }

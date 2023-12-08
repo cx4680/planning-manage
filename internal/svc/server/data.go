@@ -8,6 +8,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
 	"gorm.io/gorm"
+	"strconv"
 	"time"
 )
 
@@ -173,11 +174,11 @@ func ListServerCapacity(request *Request) ([]*ResponseCapacity, error) {
 	return capacityList, nil
 }
 
-func DownloadServer(planId int64) ([]*ResponseDownloadServer, error) {
+func DownloadServer(planId int64) ([]*ResponseDownloadServer, string, error) {
 	//查询服务器规划列表
 	var serverList []*entity.ServerPlanning
 	if err := data.DB.Where("plan_id = ?", planId).Find(&serverList).Error; err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	//查询关联的角色和设备，封装成map
 	var nodeRoleIdList, serverBaselineIdList []int64
@@ -187,7 +188,7 @@ func DownloadServer(planId int64) ([]*ResponseDownloadServer, error) {
 	}
 	var nodeRoleList []*entity.NodeRoleBaseline
 	if err := data.DB.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	var nodeRoleMap = make(map[int64]*entity.NodeRoleBaseline)
 	for _, v := range nodeRoleList {
@@ -195,7 +196,7 @@ func DownloadServer(planId int64) ([]*ResponseDownloadServer, error) {
 	}
 	var serverBaselineList []*entity.ServerBaseline
 	if err := data.DB.Where("id IN (?)", serverBaselineIdList).Find(&serverBaselineList).Error; err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	var serverBaselineMap = make(map[int64]*entity.ServerBaseline)
 	for _, v := range serverBaselineList {
@@ -203,19 +204,31 @@ func DownloadServer(planId int64) ([]*ResponseDownloadServer, error) {
 	}
 	//构建返回体
 	var response []*ResponseDownloadServer
+	var total int
 	for _, v := range serverList {
 		response = append(response, &ResponseDownloadServer{
 			NodeRole:   nodeRoleMap[v.NodeRoleId].NodeRoleName,
 			ServerType: serverBaselineMap[v.ServerBaselineId].Arch,
 			BomCode:    serverBaselineMap[v.ServerBaselineId].BomCode,
 			Spec:       serverBaselineMap[v.ServerBaselineId].Spec,
-			Number:     v.Number,
+			Number:     strconv.Itoa(v.Number),
 		})
+		total += v.Number
 	}
-	//response = append(response,  &ResponseDownloadServer{
-	//	Number:     ,
-	//})
-	return response, nil
+	response = append(response, &ResponseDownloadServer{
+		Number: "总计：" + strconv.Itoa(total) + "台",
+	})
+	//构建文件名称
+	var planManage = &entity.PlanManage{}
+	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).First(&planManage).Error; err != nil {
+		return nil, "", err
+	}
+	var projectManage = &entity.ProjectManage{}
+	if err := data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
+		return nil, "", err
+	}
+	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器规划清单"
+	return response, fileName, nil
 }
 
 //func ListServerModel(request *Request) ([]*entity.ServerBaseline, error) {
