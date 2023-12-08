@@ -358,9 +358,14 @@ func NetworkDeviceListDownload(context *gin.Context) {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
+	total := 0
+	for _, response := range exportResponseDataList {
+		nums, _ := strconv.Atoi(response.Num)
+		total += nums
+	}
 	//手动添加合计行
 	lastData := NetworkDeviceListExportResponse{
-		Num: "总计:" + strconv.Itoa(len(exportResponseDataList)) + "台",
+		Num: "总计:" + strconv.Itoa(total) + "台",
 	}
 	exportResponseDataList = append(exportResponseDataList, lastData)
 	_ = excel.NormalDownLoad(fileName, "网络设备清单", "", false, exportResponseDataList, context.Writer)
