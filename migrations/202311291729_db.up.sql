@@ -182,6 +182,9 @@ INSERT INTO `config_item` VALUES (602, 6, '规划中', 'planning', NULL, 2);
 INSERT INTO `config_item` VALUES (603, 6, '规划完成', 'planned', NULL, 3);
 INSERT INTO `config_item` VALUES (604, 6, '交付中', 'delivering', NULL, 4);
 INSERT INTO `config_item` VALUES (605, 6, '交付完成', 'delivered', NULL, 5);
+INSERT INTO `config_item` VALUES (7, 0, 'az类型', 'azType', NULL, NULL);
+INSERT INTO `config_item` VALUES (701, 7, '控制集群', 'control', NULL, 1);
+INSERT INTO `config_item` VALUES (702, 7, '业务集群', 'business', NULL, 2);
 
 
 CREATE TABLE `cloud_product_baseline`
