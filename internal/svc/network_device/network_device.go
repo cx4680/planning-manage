@@ -290,13 +290,15 @@ func SaveDeviceList(c *gin.Context) {
 		deviceRoleNum, err := getDeviceRoleGroupNumByPlanId(planId)
 		// 转设备角色id和分组数 map
 		deviceRoleIdMap := util.ListToMap(deviceRoleNum, "DeviceRoleId")
+		log.Infof("deviceRoleIdMap=%v", deviceRoleIdMap)
 		for _, value := range ipBaselineIdMap {
 			var num = 0
 			dto := new(ip_demand.IpDemandBaselineDto)
 			var needCount bool
-			dtos := value.([]*ip_demand.IpDemandBaselineDto)
 			// 根据IP需求规划表的关联设备组进行 网络设备清单分组累加
-			for i, v := range dtos {
+			for i, val := range value {
+				v := val.(*ip_demand.IpDemandBaselineDto)
+				log.Infof("IpDemandBaselineDto=%v", v)
 				if i == 0 {
 					dto = v
 				}
