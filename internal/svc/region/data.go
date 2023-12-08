@@ -46,7 +46,7 @@ func CreateRegion(request *Request) error {
 		UpdateTime:      now,
 		DeleteState:     0,
 	}
-	if err := data.DB.Create(regionEntity).Error; err != nil {
+	if err := data.DB.Create(&regionEntity).Error; err != nil {
 		return err
 	}
 	return nil
@@ -65,7 +65,7 @@ func UpdateRegion(request *Request) error {
 		UpdateUserId: request.UserId,
 		UpdateTime:   now,
 	}
-	if err := data.DB.Updates(regionEntity).Error; err != nil {
+	if err := data.DB.Updates(&regionEntity).Error; err != nil {
 		return err
 	}
 	return nil
@@ -87,7 +87,7 @@ func DeleteRegion(request *Request) error {
 		UpdateTime:   now,
 		DeleteState:  1,
 	}
-	if err := data.DB.Updates(regionEntity).Error; err != nil {
+	if err := data.DB.Updates(&regionEntity).Error; err != nil {
 		return err
 	}
 	return nil
