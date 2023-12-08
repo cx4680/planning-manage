@@ -1,12 +1,14 @@
 package server
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
 	"gorm.io/gorm"
+	"time"
 )
 
 type ResponseCapacity struct {
@@ -128,7 +130,11 @@ func SaveServer(request *Request) error {
 		if err := data.DB.Create(serverPlanningEntityList).Error; err != nil {
 			return err
 		}
-		if err := data.DB.Model(&entity.PlanManage{}).Where("id = ?", request.PlanId).Update("BusinessPanStage", 2).Error; err != nil {
+		if err := tx.Model(entity.PlanManage{}).Where("id = ?", request.PlanId).Updates(entity.PlanManage{
+			BusinessPanStage: constant.NETWORK_DEVICE_PLAN,
+			UpdateUserId:     request.UserId,
+			UpdateTime:       time.Now(),
+		}).Error; err != nil {
 			return err
 		}
 		return nil
