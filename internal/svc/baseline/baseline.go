@@ -76,7 +76,7 @@ func Import(context *gin.Context) {
 			CreateTime:        now,
 		}
 		// 新增软件版本
-		if err := CreateSoftwareVersion(softwareVersion); err != nil {
+		if err := CreateSoftwareVersion(&softwareVersion); err != nil {
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 			return
 		}
