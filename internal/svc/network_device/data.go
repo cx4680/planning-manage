@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
+	"strconv"
 	"time"
 )
 
@@ -161,7 +162,7 @@ func exportNetworkDeviceListByPlanId(planId int64) (string, []NetworkDeviceListE
 			networkDevice.Brand,
 			networkDevice.DeviceModel,
 			networkDevice.ConfOverview,
-			roleNum.Num,
+			strconv.Itoa(roleNum.Num),
 		}
 		response = append(response, exportDto)
 	}

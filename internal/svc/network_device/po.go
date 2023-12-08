@@ -6,7 +6,7 @@ type NetworkDeviceListExportResponse struct {
 	Brand                 string `gorm:"column:brand" json:"brand" excel:"name:厂商;index:2"`
 	DeviceModel           string `gorm:"column:device_model" json:"deviceModel" excel:"name:机型;index:3"`
 	ConfOverview          string `gorm:"column:conf_overview" json:"confOverview" excel:"name:规格参数;index:4"`
-	Num                   int    `gorm:"column:num" json:"num" excel:"name:数量;index:5"`
+	Num                   string `gorm:"column:num" json:"num" excel:"name:数量;index:5"`
 }
 
 type NetworkDeviceRoleIdNum struct {
