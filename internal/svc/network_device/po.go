@@ -11,7 +11,7 @@ type NetworkDeviceListExportResponse struct {
 
 type NetworkDeviceRoleIdNum struct {
 	NetworkDeviceRoleId int64 `gorm:"column:network_device_role_id" json:"networkDeviceRoleId"`
-	Num                 int   `gorm:"column:num" json:"num" excel:"数量"`
+	Num                 int   `gorm:"column:num" json:"num"`
 }
 
 type BoxTotalResponse struct {
