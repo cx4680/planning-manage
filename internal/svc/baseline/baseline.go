@@ -220,8 +220,8 @@ func ImportCloudProductBaseline(context *gin.Context, softwareVersion entity.Sof
 				if len(dependProductCodes) > 0 {
 					var cloudProductDependRels []entity.CloudProductDependRel
 					for _, dependProductCode := range dependProductCodes {
-						cloudProductDependProductCode := cloudProductCodeMap[dependProductCode]
-						if cloudProductDependProductCode == 0 {
+						cloudProductDependProductCode, ok := cloudProductCodeMap[dependProductCode]
+						if !ok {
 							log.Errorf("import cloudProductBaseline invalid dependCode: %s", dependProductCode)
 							result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
 							return true
@@ -241,9 +241,15 @@ func ImportCloudProductBaseline(context *gin.Context, softwareVersion entity.Sof
 				var cloudProductNodeRoleRels []entity.CloudProductNodeRoleRel
 				if len(controlResNodeRoleCodes) > 0 {
 					for _, controlResNodeRoleCode := range controlResNodeRoleCodes {
+						nodeRoleId, ok := nodeRoleCodeMap[controlResNodeRoleCode]
+						if !ok {
+							log.Errorf("import cloudProductBaseline invalid controlResNodeRoleCode: %s", controlResNodeRoleCode)
+							result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+							return true
+						}
 						cloudProductNodeRoleRels = append(cloudProductNodeRoleRels, entity.CloudProductNodeRoleRel{
 							ProductId:    productId,
-							NodeRoleId:   nodeRoleCodeMap[controlResNodeRoleCode],
+							NodeRoleId:   nodeRoleId,
 							NodeRoleType: constant.ControlNodeRoleType,
 						})
 					}
@@ -251,9 +257,15 @@ func ImportCloudProductBaseline(context *gin.Context, softwareVersion entity.Sof
 				resNodeRoleCodes := cloudProductBaselineExcel.ResNodeRoleCodes
 				if len(resNodeRoleCodes) > 0 {
 					for _, resNodeRoleCode := range resNodeRoleCodes {
+						nodeRoleId, ok := nodeRoleCodeMap[resNodeRoleCode]
+						if !ok {
+							log.Errorf("import cloudProductBaseline invalid resNodeRoleCode: %s", resNodeRoleCode)
+							result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+							return true
+						}
 						cloudProductNodeRoleRels = append(cloudProductNodeRoleRels, entity.CloudProductNodeRoleRel{
 							ProductId:    productId,
-							NodeRoleId:   nodeRoleCodeMap[resNodeRoleCode],
+							NodeRoleId:   nodeRoleId,
 							NodeRoleType: constant.ResNodeRoleType,
 						})
 					}
@@ -326,8 +338,8 @@ func ImportNodeRoleBaseline(context *gin.Context, softwareVersion entity.Softwar
 				if len(mixedDeploys) > 0 {
 					var mixedNodeRoles []entity.NodeRoleMixedDeploy
 					for _, mixedDeploy := range mixedDeploys {
-						mixDeployNodeRoleId := nodeRoleCodeMap[mixedDeploy]
-						if mixDeployNodeRoleId == 0 {
+						mixDeployNodeRoleId, ok := nodeRoleCodeMap[mixedDeploy]
+						if !ok {
 							log.Infof("import nodeRoleBaseline fail, can not find mixDeployNodeRoleCode: %s", mixedDeploy)
 							result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
 							return true
@@ -423,9 +435,15 @@ func ImportServerBaseline(context *gin.Context, softwareVersion entity.SoftwareV
 					var serverNodeRoleRels []entity.ServerNodeRoleRel
 					serverId := serverModelMap[serverBaselineExcel.BomCode]
 					for _, nodeRoleCode := range nodeRoleCodes {
+						nodeRoleId, ok := nodeRoleCodeMap[nodeRoleCode]
+						if !ok {
+							log.Infof("import serverBaseline fail, can not find nodeRoleCode: %s", nodeRoleCode)
+							result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+							return true
+						}
 						serverNodeRoleRels = append(serverNodeRoleRels, entity.ServerNodeRoleRel{
 							ServerId:   serverId,
-							NodeRoleId: nodeRoleCodeMap[nodeRoleCode],
+							NodeRoleId: nodeRoleId,
 						})
 					}
 					if err := BatchCreateServerNodeRoleRel(serverNodeRoleRels); err != nil {
@@ -566,12 +584,11 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 func HandleNetworkModelRoleRels(networkDeviceRoleId int64, networkModelRoles []string, nodeRoleCodeMap map[string]int64, networkDeviceRoleCodeMap map[string]int64, networkModelRoleRels []entity.NetworkModelRoleRel, networkDeviceRoleBaselineExcel NetworkDeviceRoleBaselineExcel, networkModel int) ([]entity.NetworkModelRoleRel, error) {
 	for _, networkModelRole := range networkModelRoles {
 		var associatedType int
-		var roleId int64
 		roleNum, roleCode := GetRoleNameAndNum(networkModelRole)
-		roleId = nodeRoleCodeMap[roleCode]
-		if roleId == 0 {
-			roleId = networkDeviceRoleCodeMap[roleCode]
-			if roleId == 0 {
+		roleId, ok := nodeRoleCodeMap[roleCode]
+		if !ok {
+			roleId, ok = networkDeviceRoleCodeMap[roleCode]
+			if !ok {
 				errorString := fmt.Sprintf("import networkDeviceRoleBaseline fail, can not find nodeRoleCode or networkDeviceRoleCode: %s", roleCode)
 				log.Info(errorString)
 				return networkModelRoleRels, errors.New(errorString)
