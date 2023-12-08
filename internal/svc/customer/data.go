@@ -31,7 +31,7 @@ func createCustomer(customerParam CreateCustomerRequest, leaderId string, ldapUs
 		UserId:     currentUserId,
 		CustomerId: customer.ID,
 	}
-	// 创建云平台、创建默认region、az
+	// 创建云平台、创建默认region、az、cell
 	if err := cloud_platform.CreateCloudPlatformByCustomerId(&request); err != nil {
 		log.Errorf("[createCustomer] CreateCloudPlatformByCustomerId error, %v", err)
 		return nil, err

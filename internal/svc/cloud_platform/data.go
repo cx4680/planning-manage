@@ -51,7 +51,7 @@ func CreateCloudPlatform(request *Request) error {
 		UpdateTime:   now,
 		DeleteState:  0,
 	}
-	if err := data.DB.Create(cloudPlatformEntity).Error; err != nil {
+	if err := data.DB.Create(&cloudPlatformEntity).Error; err != nil {
 		return err
 	}
 	return nil
@@ -69,7 +69,7 @@ func UpdateCloudPlatform(request *Request) error {
 		UpdateUserId: request.UserId,
 		UpdateTime:   datetime.GetNow(),
 	}
-	if err := data.DB.Updates(cloudPlatformEntity).Error; err != nil {
+	if err := data.DB.Updates(&cloudPlatformEntity).Error; err != nil {
 		return err
 	}
 	return nil
@@ -160,16 +160,30 @@ func CreateCloudPlatformByCustomerId(request *Request) error {
 		UpdateTime:   now,
 		DeleteState:  0,
 	}
+	cellEntity := &entity.CellManage{
+		Name:         "cell1",
+		CreateUserId: request.UserId,
+		CreateTime:   now,
+		UpdateUserId: request.UserId,
+		UpdateTime:   now,
+		DeleteState:  0,
+	}
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(cloudPlatformEntity).Error; err != nil {
+		if err := tx.Create(&cloudPlatformEntity).Error; err != nil {
 			return err
 		}
 		regionEntity.CloudPlatformId = cloudPlatformEntity.Id
-		if err := tx.Create(regionEntity).Error; err != nil {
+		if err := tx.Create(&regionEntity).Error; err != nil {
 			return err
 		}
 		azEntity.RegionId = regionEntity.Id
-		if err := tx.Create(azEntity).Error; err != nil {
+		if err := tx.Create(&azEntity).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&cellEntity).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&entity.AzCellRel{AzId: azEntity.Id, CellId: cellEntity.Id}).Error; err != nil {
 			return err
 		}
 		return nil
