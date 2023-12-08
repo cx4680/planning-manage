@@ -15,7 +15,6 @@ import (
 type Request struct {
 	Id              int64
 	UserId          string
-	Name            string `form:"name"`
 	Code            string `form:"code"`
 	RegionId        int64  `form:"regionId"`
 	MachineRoomName string `json:"machineRoomName"`
@@ -105,9 +104,6 @@ func Delete(c *gin.Context) {
 }
 
 func checkRequest(request *Request, isCreate bool) error {
-	if util.IsBlank(request.Name) {
-		return errors.New("name参数为空")
-	}
 	if util.IsBlank(request.Code) {
 		return errors.New("code参数为空")
 	}

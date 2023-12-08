@@ -275,7 +275,7 @@ func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error
 		list[i].CustomerName = customerMap[v.CustomerId].CustomerName
 		list[i].CloudPlatformName = cloudPlatformMap[v.CloudPlatformId].Name
 		list[i].RegionName = regionMap[v.RegionId].Name
-		list[i].AzName = azMap[v.AzId].Name
+		list[i].AzCode = azMap[v.AzId].Code
 		list[i].CellName = cellMap[v.CellId].Name
 	}
 	return list, nil

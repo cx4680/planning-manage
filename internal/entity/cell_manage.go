@@ -6,7 +6,6 @@ const CellManageTable = "cell_manage"
 
 type CellManage struct {
 	Id           int64     `gorm:"column:id" json:"id"`                       //cell Id
-	Code         string    `gorm:"column:code" json:"code"`                   //cell编码
 	Name         string    `gorm:"column:name" json:"name"`                   //cell名称
 	CreateUserId string    `gorm:"column:create_user_id" json:"createUserId"` //创建人id
 	CreateTime   time.Time `gorm:"column:create_time" json:"createTime"`      //创建时间

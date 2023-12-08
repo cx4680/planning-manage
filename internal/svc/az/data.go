@@ -37,7 +37,6 @@ func CreateAz(request *Request) error {
 	}
 	now := datetime.GetNow()
 	azEntity := &entity.AzManage{
-		Name:            request.Name,
 		Code:            request.Code,
 		RegionId:        request.RegionId,
 		MachineRoomName: request.MachineRoomName,
@@ -64,7 +63,6 @@ func UpdateAz(request *Request) error {
 	now := datetime.GetNow()
 	azEntity := &entity.AzManage{
 		Id:              request.Id,
-		Name:            request.Name,
 		Code:            request.Code,
 		MachineRoomName: request.MachineRoomName,
 		MachineRoomCode: request.MachineRoomCode,
