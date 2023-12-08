@@ -127,10 +127,10 @@ func SaveServer(request *Request) error {
 				DeleteState:      0,
 			})
 		}
-		if err := data.DB.Create(serverPlanningEntityList).Error; err != nil {
+		if err := data.DB.Create(&serverPlanningEntityList).Error; err != nil {
 			return err
 		}
-		if err := tx.Model(entity.PlanManage{}).Where("id = ?", request.PlanId).Updates(entity.PlanManage{
+		if err := tx.Model(entity.PlanManage{}).Where("id = ?", request.PlanId).Updates(&entity.PlanManage{
 			BusinessPanStage: constant.NETWORK_DEVICE_PLAN,
 			UpdateUserId:     request.UserId,
 			UpdateTime:       time.Now(),
