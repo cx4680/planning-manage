@@ -12,17 +12,6 @@ import (
 	"strconv"
 )
 
-type Request struct {
-	Id              int64
-	UserId          string
-	Name            string `form:"name"`
-	Type            string `form:"type"`
-	CustomerId      int64  `form:"customerId"`
-	CloudPlatformId int64  `form:"cloudPlatformId"`
-	SortField       string `form:"sortField"`
-	Sort            string `form:"sort"`
-}
-
 func List(c *gin.Context) {
 	request := &Request{}
 	if err := c.ShouldBindQuery(&request); err != nil {
