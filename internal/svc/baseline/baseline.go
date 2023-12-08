@@ -89,22 +89,22 @@ func Import(context *gin.Context) {
 	}
 	f, err := excelize.OpenFile(filePath)
 	if err != nil {
-		log.Error(err)
+		log.Errorf("excelize openFile error: %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		if err := f.Close(); err != nil {
-			log.Error(err)
+			log.Errorf("excelize close error: %v", err)
 		}
 		if err := os.Remove(filePath); err != nil {
-			log.Error(err)
+			log.Errorf("os removeFile error: %v", err)
 		}
 		return
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			log.Error(err)
+			log.Errorf("excelize close error: %v", err)
 		}
 		if err := os.Remove(filePath); err != nil {
-			log.Error(err)
+			log.Errorf("os removeFile error: %v", err)
 		}
 	}()
 	switch baselineType {
@@ -157,7 +157,7 @@ func ImportCloudProductBaseline(context *gin.Context, softwareVersion entity.Sof
 	}
 	var cloudProductBaselineExcelList []CloudProductBaselineExcel
 	if err := excel.ImportBySheet(f, &cloudProductBaselineExcelList, CloudProductBaselineSheetName, 0, 1); err != nil {
-		log.Error(err)
+		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return true
 	}
@@ -285,7 +285,7 @@ func ImportCloudProductBaseline(context *gin.Context, softwareVersion entity.Sof
 func ImportNodeRoleBaseline(context *gin.Context, softwareVersion entity.SoftwareVersion, f *excelize.File) bool {
 	var nodeRoleBaselineExcelList []NodeRoleBaselineExcel
 	if err := excel.ImportBySheet(f, &nodeRoleBaselineExcelList, NodeRoleBaselineSheetName, 0, 1); err != nil {
-		log.Error(err)
+		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return true
 	}
@@ -375,7 +375,7 @@ func ImportServerBaseline(context *gin.Context, softwareVersion entity.SoftwareV
 	}
 	var serverBaselineExcelList []ServerBaselineExcel
 	if err := excel.ImportBySheet(f, &serverBaselineExcelList, ServerBaselineSheetName, 0, 1); err != nil {
-		log.Error(err)
+		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return true
 	}
@@ -470,7 +470,7 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, softwareVersion entit
 	}
 	var networkDeviceRoleBaselineExcelList []NetworkDeviceRoleBaselineExcel
 	if err := excel.ImportBySheet(f, &networkDeviceRoleBaselineExcelList, NetworkDeviceRoleBaselineSheetName, 0, 1); err != nil {
-		log.Error(err)
+		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return true
 	}
@@ -637,7 +637,7 @@ func ImportNetworkDeviceBaseline(context *gin.Context, softwareVersion entity.So
 	}
 	var networkDeviceBaselineExcelList []NetworkDeviceBaselineExcel
 	if err := excel.ImportBySheet(f, &networkDeviceBaselineExcelList, NetworkDeviceBaselineSheetName, 0, 1); err != nil {
-		log.Error(err)
+		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return true
 	}
@@ -727,7 +727,7 @@ func ImportIPDemandBaseline(context *gin.Context, softwareVersion entity.Softwar
 	}
 	var ipDemandBaselineExcelList []IPDemandBaselineExcel
 	if err := excel.ImportBySheet(f, &ipDemandBaselineExcelList, IPDemandBaselineSheetName, 0, 1); err != nil {
-		log.Error(err)
+		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return true
 	}
