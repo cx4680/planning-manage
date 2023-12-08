@@ -139,16 +139,16 @@ CREATE TABLE `plan_manage`
 (
     `id`                  bigint(20) NOT NULL AUTO_INCREMENT COMMENT '方案id',
     `name`                varchar(255) DEFAULT NULL COMMENT '方案名称',
-    `type`                varchar(50) DEFAULT NULL COMMENT '方案类型',
-    `stage`               varchar(50) DEFAULT NULL COMMENT '方案阶段',
+    `type`                varchar(50)  DEFAULT NULL COMMENT '方案类型',
+    `stage`               varchar(50)  DEFAULT NULL COMMENT '方案阶段',
     `project_id`          int NULL DEFAULT NULL COMMENT '项目id',
     `create_user_id`      varchar(255) DEFAULT NULL COMMENT '创建人id',
     `create_time`         datetime NULL DEFAULT NULL COMMENT '创建时间',
     `update_user_id`      varchar(255) DEFAULT NULL COMMENT '更新人id',
     `update_time`         datetime NULL DEFAULT NULL COMMENT '更新时间',
     `delete_state`        tinyint(1) NULL DEFAULT NULL COMMENT '作废状态：1，作废；0，正常',
-    `business_plan_stage` varchar(255) DEFAULT NULL COMMENT '业务规划阶段：0，业务规划开始阶段；1，云产品配置阶段；2，服务器规划阶段；3，网络设备规划阶段； 4，业务规划结束',
-    `deliver_plan_stage`  varchar(255) DEFAULT NULL COMMENT '交付规划阶段：0，交付规划开始阶段',
+    `business_plan_stage` tinyint(1) NULL DEFAULT NULL COMMENT '业务规划阶段：0，业务规划开始阶段；1，云产品配置阶段；2，服务器规划阶段；3，网络设备规划阶段； 4，业务规划结束',
+    `deliver_plan_stage`  tinyint(1) NULL DEFAULT NULL COMMENT '交付规划阶段：0，交付规划开始阶段',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 

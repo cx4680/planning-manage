@@ -128,6 +128,9 @@ func SaveServer(request *Request) error {
 		if err := data.DB.Create(serverPlanningEntityList).Error; err != nil {
 			return err
 		}
+		if err := data.DB.Model(&entity.PlanManage{}).Where("id = ?", request.PlanId).Update("BusinessPanStage", 2).Error; err != nil {
+			return err
+		}
 		return nil
 	}); err != nil {
 		return err

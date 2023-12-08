@@ -92,7 +92,7 @@ func UpdatePlan(request *Request) error {
 	return nil
 }
 
-func UpdatePlanStage(tx *gorm.DB, planId int64, stage string, userId string, planState string) error {
+func UpdatePlanStage(tx *gorm.DB, planId int64, stage string, userId string, planState int) error {
 	if err := tx.Model(entity.PlanManage{}).Where("id = ?", planId).Updates(entity.PlanManage{
 		Stage:            stage,
 		BusinessPanStage: planState,
