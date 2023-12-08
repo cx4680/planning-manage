@@ -160,6 +160,14 @@ func CreateCloudPlatformByCustomerId(request *Request) error {
 		UpdateTime:   now,
 		DeleteState:  0,
 	}
+	cellEntity := &entity.CellManage{
+		Name:         "cell1",
+		CreateUserId: request.UserId,
+		CreateTime:   now,
+		UpdateUserId: request.UserId,
+		UpdateTime:   now,
+		DeleteState:  0,
+	}
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(cloudPlatformEntity).Error; err != nil {
 			return err
@@ -170,6 +178,9 @@ func CreateCloudPlatformByCustomerId(request *Request) error {
 		}
 		azEntity.RegionId = regionEntity.Id
 		if err := tx.Create(azEntity).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(cellEntity).Error; err != nil {
 			return err
 		}
 		return nil
