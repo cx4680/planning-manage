@@ -265,7 +265,7 @@ CREATE TABLE `network_device_list` (
   `network_device_role_id` bigint(20) DEFAULT NULL COMMENT '设备类型->网络设备角色ID',
   `logical_grouping` varchar(255) DEFAULT NULL COMMENT '逻辑分组',
   `device_id` varchar(255) DEFAULT NULL COMMENT '设备ID',
-    `conf_overview` varchar(500) DEFAULT NULL COMMENT '配置概述',
+    `conf_overview` varchar(1000) DEFAULT NULL COMMENT '配置概述',
   `brand` varchar(45) DEFAULT NULL COMMENT '厂商',
   `device_model` varchar(45) DEFAULT NULL COMMENT '设备型号',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
