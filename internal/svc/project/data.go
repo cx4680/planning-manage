@@ -11,6 +11,10 @@ import (
 
 func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " update_time "
+	if request.CustomerId != 0 {
+		screenSql += " AND customer_id = ? "
+		screenParams = append(screenParams, request.CustomerId)
+	}
 	if util.IsNotBlank(request.Name) {
 		screenSql += " AND name LIKE CONCAT('%',?,'%') "
 		screenParams = append(screenParams, request.Name)
@@ -144,6 +148,14 @@ func DeleteProject(request *Request) error {
 
 func checkBusiness(request *Request, isCreate bool) error {
 	if isCreate {
+		//校验customerId
+		var customerCount int64
+		if err := data.DB.Model(&entity.CustomerManage{}).Where("id = ? AND delete_state = ?", request.CustomerId, 0).Count(&customerCount).Error; err != nil {
+			return err
+		}
+		if customerCount == 0 {
+			return errors.New("customerId参数错误")
+		}
 		//校验projectType
 		var projectTypeCount int64
 		if err := data.DB.Model(&entity.ConfigItem{}).Where("p_id = ? AND code = ?", "3", request.Type).Count(&projectTypeCount).Error; err != nil {

@@ -15,11 +15,10 @@ import (
 type Request struct {
 	Id        int64
 	UserId    string
-	Name      string  `form:"name"`
-	AzId      int64   `form:"azId"`
-	AzIdList  []int64 `form:"azIdList"`
-	SortField string  `form:"sortField"`
-	Sort      string  `form:"sort"`
+	Name      string `form:"name"`
+	AzId      int64  `form:"azId"`
+	SortField string `form:"sortField"`
+	Sort      string `form:"sort"`
 }
 
 func List(c *gin.Context) {
@@ -103,8 +102,8 @@ func checkRequest(request *Request, isCreate bool) error {
 	if util.IsBlank(request.Name) {
 		return errors.New("name参数为空")
 	}
-	if len(request.AzIdList) == 0 {
-		return errors.New("azIdList参数为空")
+	if request.AzId == 0 {
+		return errors.New("azId参数为空")
 	}
 	if !isCreate {
 		if request.Id == 0 {

@@ -5,7 +5,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"errors"
-	"gorm.io/gorm"
 )
 
 func ListAz(request *Request) ([]*entity.AzManage, error) {
@@ -86,15 +85,7 @@ func DeleteAz(request *Request) error {
 		UpdateTime:   now,
 		DeleteState:  1,
 	}
-	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Updates(&azEntity).Error; err != nil {
-			return err
-		}
-		if err := tx.Delete(&entity.AzCellRel{AzId: request.Id}).Error; err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+	if err := data.DB.Updates(&azEntity).Error; err != nil {
 		return err
 	}
 	return nil

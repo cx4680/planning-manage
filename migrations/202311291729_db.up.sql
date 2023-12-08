@@ -108,13 +108,6 @@ CREATE TABLE `cell_manage`
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'az管理表' ROW_FORMAT = Dynamic;
 
 
-CREATE TABLE `az_cell_rel`
-(
-    `az_id`   bigint(20) NULL DEFAULT NULL COMMENT 'azId',
-    `cell_id` bigint(20) NULL DEFAULT NULL COMMENT 'cell Id'
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'cell_az关联表' ROW_FORMAT = Dynamic;
-
-
 CREATE TABLE `project_manage`
 (
     `id`                bigint(20) NOT NULL AUTO_INCREMENT COMMENT '项目id',

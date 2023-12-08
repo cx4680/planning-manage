@@ -98,27 +98,14 @@ func TreeCloudPlatform(request *Request) ([]*entity.RegionManage, error) {
 		regionAzMap[v.RegionId] = append(regionAzMap[v.RegionId], v)
 		azIdList = append(azIdList, v.Id)
 	}
-	//查询az cell关联表
-	var azCellRel []*entity.AzCellRel
-	if err := data.DB.Model(&entity.AzCellRel{}).Where("az_id IN (?)", azIdList).Find(&azCellRel).Error; err != nil {
-		return nil, err
-	}
-	var cellIdList []int64
-	for _, v := range azCellRel {
-		cellIdList = append(cellIdList, v.CellId)
-	}
 	//查询cell
 	var cellList []*entity.CellManage
-	if err := data.DB.Model(&entity.CellManage{}).Where("id IN (?)", cellIdList).Find(&cellList).Error; err != nil {
+	if err := data.DB.Model(&entity.CellManage{}).Where(" delete_state = ? AND az_id IN (?)", 0, azIdList).Find(&cellList).Error; err != nil {
 		return nil, err
 	}
-	var cellMap = make(map[int64]*entity.CellManage)
-	for _, v := range cellList {
-		cellMap[v.Id] = v
-	}
 	var azCellMap = make(map[int64][]*entity.CellManage)
-	for _, v := range azCellRel {
-		azCellMap[v.AzId] = append(azCellMap[v.AzId], cellMap[v.CellId])
+	for _, v := range cellList {
+		azCellMap[v.AzId] = append(azCellMap[v.AzId], v)
 	}
 	//构建返回体
 	for i, region := range RegionList {
@@ -180,10 +167,8 @@ func CreateCloudPlatformByCustomerId(request *Request) error {
 		if err := tx.Create(&azEntity).Error; err != nil {
 			return err
 		}
+		cellEntity.AzId = azEntity.Id
 		if err := tx.Create(&cellEntity).Error; err != nil {
-			return err
-		}
-		if err := tx.Create(&entity.AzCellRel{AzId: azEntity.Id, CellId: cellEntity.Id}).Error; err != nil {
 			return err
 		}
 		return nil

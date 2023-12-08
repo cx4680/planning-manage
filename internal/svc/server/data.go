@@ -11,17 +11,6 @@ import (
 	"time"
 )
 
-type ResponseCapacity struct {
-	Id              int64  `json:"id"`
-	ProductId       int64  `json:"productId"`
-	ProductName     string `json:"productName"`
-	CapacitySpecs   string `json:"capacitySpecs"`
-	SalesSpecs      string `json:"salesSpecs"`
-	OverbookingRate string `json:"overbookingRate"`
-	Number          string `json:"number"`
-	Unit            string `json:"unit"`
-}
-
 func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 	//查询云产品规划表
 	var cloudProductPlanningList []*entity.CloudProductPlanning
@@ -182,6 +171,51 @@ func ListServerCapacity(request *Request) ([]*ResponseCapacity, error) {
 	var capacityList []*ResponseCapacity
 
 	return capacityList, nil
+}
+
+func DownloadServer(planId int64) ([]*ResponseDownloadServer, error) {
+	//查询服务器规划列表
+	var serverList []*entity.ServerPlanning
+	if err := data.DB.Where("plan_id = ?", planId).Find(&serverList).Error; err != nil {
+		return nil, err
+	}
+	//查询关联的角色和设备，封装成map
+	var nodeRoleIdList, serverBaselineIdList []int64
+	for _, v := range serverList {
+		nodeRoleIdList = append(nodeRoleIdList, v.NodeRoleId)
+		serverBaselineIdList = append(serverBaselineIdList, v.ServerBaselineId)
+	}
+	var nodeRoleList []*entity.NodeRoleBaseline
+	if err := data.DB.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
+		return nil, err
+	}
+	var nodeRoleMap = make(map[int64]*entity.NodeRoleBaseline)
+	for _, v := range nodeRoleList {
+		nodeRoleMap[v.Id] = v
+	}
+	var serverBaselineList []*entity.ServerBaseline
+	if err := data.DB.Where("id IN (?)", serverBaselineIdList).Find(&serverBaselineList).Error; err != nil {
+		return nil, err
+	}
+	var serverBaselineMap = make(map[int64]*entity.ServerBaseline)
+	for _, v := range serverBaselineList {
+		serverBaselineMap[v.Id] = v
+	}
+	//构建返回体
+	var response []*ResponseDownloadServer
+	for _, v := range serverList {
+		response = append(response, &ResponseDownloadServer{
+			NodeRole:   nodeRoleMap[v.NodeRoleId].NodeRoleName,
+			ServerType: serverBaselineMap[v.ServerBaselineId].Arch,
+			BomCode:    serverBaselineMap[v.ServerBaselineId].BomCode,
+			Spec:       serverBaselineMap[v.ServerBaselineId].Spec,
+			Number:     v.Number,
+		})
+	}
+	//response = append(response,  &ResponseDownloadServer{
+	//	Number:     ,
+	//})
+	return response, nil
 }
 
 //func ListServerModel(request *Request) ([]*entity.ServerBaseline, error) {
