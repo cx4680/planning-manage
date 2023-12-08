@@ -26,8 +26,9 @@ func GetExcelColumnName(columnNumber int) string {
 // ExportExcel excel导出
 func ExportExcel(sheet, title, fields string, isGhbj, isIgnore bool, list interface{}, changeHead map[string]string, e *Excel) (err error) {
 	index, _ := e.F.GetSheetIndex(sheet)
-	if index < 0 { // 如果sheet名称不存在
-		e.F.NewSheet(sheet)
+	if index < 0 { // 如果sheet名称不存在，将默认的sheet页名称替换为传进来的
+		//e.F.NewSheet(sheet)
+		e.F.SetSheetName("Sheet1", sheet)
 	}
 	// 构造excel表格
 	// 取目标对象的元素类型、字段类型和 tag

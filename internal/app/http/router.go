@@ -182,7 +182,7 @@ func Router(engine *gin.Engine) {
 		ipDemandGroup := v1.Group("/ipDemand")
 		{
 			// 下载IP需求表
-			ipDemandGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载IP需求清单", "ipDemandListDownload", middleware.EXPORT, middleware.INFO)), ip_demand.IpDemandListDownload)
+			ipDemandGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载IP需求表", "ipDemandListDownload", middleware.EXPORT, middleware.INFO)), ip_demand.IpDemandListDownload)
 		}
 
 		// cloudProduct

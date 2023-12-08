@@ -91,9 +91,9 @@ func getBrandsByVersionIdAndNetworkVersion(versionId int64, networkVersion strin
 	return brands, nil
 }
 
-func getDeviceRoleGroupNumByPlanId(planId int64) ([]*DeviceRoleGroupNum, error) {
+func getDeviceRoleGroupNumByPlanId(tx *gorm.DB, planId int64) ([]*DeviceRoleGroupNum, error) {
 	var roleNum []*DeviceRoleGroupNum
-	if err := data.DB.Raw("SELECT count(DISTINCT logical_grouping) as groupNum,network_device_role_id as deviceRoleId FROM network_device_list where plan_id=? GROUP BY network_device_role_id", planId).Scan(&roleNum).Error; err != nil {
+	if err := tx.Raw("SELECT count(DISTINCT logical_grouping) as groupNum,network_device_role_id FROM network_device_list where plan_id=? GROUP BY network_device_role_id", planId).Scan(&roleNum).Error; err != nil {
 		log.Errorf("[getDeviceRoleGroupNumByPlanId] error, %v", err)
 		return nil, err
 	}
@@ -134,12 +134,12 @@ func updateDevicePlan(request *Request, devicePlanning entity.NetworkDevicePlann
 
 func exportNetworkDeviceListByPlanId(planId int64) (string, []NetworkDeviceListExportResponse, error) {
 	var planManage entity.PlanManage
-	if err := data.DB.Where("id=?", planId).Scan(planManage).Error; err != nil {
+	if err := data.DB.Table(entity.PlanManageTable).Where("id=? and delete_state = 0", planId).Scan(&planManage).Error; err != nil {
 		log.Errorf("[exportNetworkDeviceListByPlanId] get planManage by id err, %v", err)
 		return "", nil, err
 	}
 	var projectManage entity.ProjectManage
-	if err := data.DB.Where("id=?", planManage.ProjectId).Scan(projectManage).Error; err != nil {
+	if err := data.DB.Table(entity.ProjectManageTable).Where("id=? and delete_state = 0", planManage.ProjectId).Scan(&projectManage).Error; err != nil {
 		log.Errorf("[exportNetworkDeviceListByPlanId] get projectManage by id err, %v", err)
 		return "", nil, err
 	}

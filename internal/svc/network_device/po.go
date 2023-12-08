@@ -19,8 +19,8 @@ type BoxTotalResponse struct {
 }
 
 type DeviceRoleGroupNum struct {
-	DeviceRoleId int64 `form:"deviceRoleId"`
-	GroupNum     int   `form:"groupNum"`
+	DeviceRoleId int64 `gorm:"column:network_device_role_id" form:"deviceRoleId"`
+	GroupNum     int   `gorm:"column:groupNum" form:"groupNum"`
 }
 
 type Request struct {

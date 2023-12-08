@@ -43,12 +43,12 @@ func SaveBatch(tx *gorm.DB, demandPlannings []*entity.IPDemandPlanning) error {
 
 func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExportResponse, error) {
 	var planManage entity.PlanManage
-	if err := data.DB.Where("id=?", planId).Scan(planManage).Error; err != nil {
+	if err := data.DB.Table(entity.PlanManageTable).Where("id=? and delete_state = 0", planId).Scan(&planManage).Error; err != nil {
 		log.Errorf("[exportIpDemandPlanningByPlanId] get planManage by id err, %v", err)
 		return "", nil, err
 	}
 	var projectManage entity.ProjectManage
-	if err := data.DB.Where("id=?", planManage.ProjectId).Scan(projectManage).Error; err != nil {
+	if err := data.DB.Table(entity.ProjectManageTable).Where("id=? and delete_state = 0", planManage.ProjectId).Scan(&projectManage).Error; err != nil {
 		log.Errorf("[exportIpDemandPlanningByPlanId] get projectManage by id err, %v", err)
 		return "", nil, err
 	}
