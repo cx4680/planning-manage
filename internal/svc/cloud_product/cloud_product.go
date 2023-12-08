@@ -61,20 +61,32 @@ func Save(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-
-	//依赖校验
 	var productIdList []int64
 	for _, product := range request.ProductList {
 		productIdList = append(productIdList, product.ProductId)
 	}
-	//依赖云产品
+	//必选云产品校验
+	baselineResponseList, err := getCloudProductBaseListByVersionId(request.VersionId)
+	if err != nil {
+		log.Errorf("[ListCloudProductBaseline] getCloudProductBaseListByVersionId error", err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	for _, baseline := range baselineResponseList {
+		if baseline.WhetherRequired == 1 && !contains(baseline.ID, productIdList) {
+			log.Error("[Save] invalid param error, 必选云产品未选中")
+			result.Failure(context, errorcodes.CloudProductRequireError, http.StatusBadRequest)
+			return
+		}
+	}
+	//依赖云产品校验
 	dependList, err := getDependProductIds()
 	for _, productId := range productIdList {
 		for _, depend := range dependList {
 			//判断productIdList是否包含depend.DependId
 			if productId == depend.ID && !contains(depend.DependId, productIdList) {
 				log.Error("[Save] invalid param error, 选择的云产品有依赖项未选中")
-				result.Failure(context, errorcodes.CLOUD_PRODUCT_DEPENDENCIES_ERROR, http.StatusBadRequest)
+				result.Failure(context, errorcodes.CloudProductDependenciesError, http.StatusBadRequest)
 				return
 			}
 		}

@@ -1,8 +1,8 @@
 package cloud_product
 
 type CloudProductPlanningRequest struct {
-	PlanId int64 `json:"planId"`
-	//VersionId int64 `json:"versionId"`
+	PlanId      int64         `json:"planId"`
+	VersionId   int64         `json:"versionId"`
 	ServiceYear int           `json:"serviceYear"`
 	ProductList []ProductList `json:"productList"`
 }
