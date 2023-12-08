@@ -22,7 +22,7 @@ type ProjectManage struct {
 	CustomerName      string    `gorm:"-" json:"customerName"`                           //客户名称
 	CloudPlatformName string    `gorm:"-" json:"cloudPlatformName"`                      //云平台名称
 	RegionName        string    `gorm:"-" json:"regionName"`                             //region名称
-	AzName            string    `gorm:"-" json:"azName"`                                 //az名称
+	AzCode            string    `gorm:"-" json:"azCode"`                                 //az编码
 	CellName          string    `gorm:"-" json:"cellName"`                               //cell名称
 	PlanCount         int       `gorm:"-" json:"planCount"`                              //cell名称
 }

@@ -75,6 +75,61 @@ func UpdateCloudPlatform(request *Request) error {
 	return nil
 }
 
+func TreeCloudPlatform(request *Request) ([]*entity.RegionManage, error) {
+	//查询region
+	var RegionList []*entity.RegionManage
+	if err := data.DB.Model(&entity.RegionManage{}).Where(" delete_state = ? AND cloud_platform_id = ?", 0, request.CloudPlatformId).Find(&RegionList).Error; err != nil {
+		return nil, err
+	}
+	var cloudPlatformRegionMap = make(map[int64][]*entity.RegionManage)
+	var regionIdList []int64
+	for _, v := range RegionList {
+		cloudPlatformRegionMap[v.CloudPlatformId] = append(cloudPlatformRegionMap[v.CloudPlatformId], v)
+		regionIdList = append(regionIdList, v.Id)
+	}
+	//查询az
+	var azList []*entity.AzManage
+	if err := data.DB.Model(&entity.AzManage{}).Where(" delete_state = ? AND region_id IN (?)", 0, regionIdList).Find(&azList).Error; err != nil {
+		return nil, err
+	}
+	var regionAzMap = make(map[int64][]*entity.AzManage)
+	var azIdList []int64
+	for _, v := range azList {
+		regionAzMap[v.RegionId] = append(regionAzMap[v.RegionId], v)
+		azIdList = append(azIdList, v.Id)
+	}
+	//查询az cell关联表
+	var azCellRel []*entity.AzCellRel
+	if err := data.DB.Model(&entity.AzCellRel{}).Where("az_id IN (?)", azIdList).Find(&azCellRel).Error; err != nil {
+		return nil, err
+	}
+	var cellIdList []int64
+	for _, v := range azCellRel {
+		cellIdList = append(cellIdList, v.CellId)
+	}
+	//查询cell
+	var cellList []*entity.CellManage
+	if err := data.DB.Model(&entity.CellManage{}).Where("id IN (?)", cellIdList).Find(&cellList).Error; err != nil {
+		return nil, err
+	}
+	var cellMap = make(map[int64]*entity.CellManage)
+	for _, v := range cellList {
+		cellMap[v.Id] = v
+	}
+	var azCellMap = make(map[int64][]*entity.CellManage)
+	for _, v := range azCellRel {
+		azCellMap[v.AzId] = append(azCellMap[v.AzId], cellMap[v.CellId])
+	}
+	//构建返回体
+	for i, region := range RegionList {
+		RegionList[i].AzList = regionAzMap[region.Id]
+		for i1, az := range regionAzMap[region.Id] {
+			RegionList[i].AzList[i1].CellList = azCellMap[az.Id]
+		}
+	}
+	return RegionList, nil
+}
+
 func CreateCloudPlatformByCustomerId(request *Request) error {
 	now := datetime.GetNow()
 	cloudPlatformEntity := &entity.CloudPlatformManage{
@@ -98,7 +153,6 @@ func CreateCloudPlatformByCustomerId(request *Request) error {
 		DeleteState:  0,
 	}
 	azEntity := &entity.AzManage{
-		Name:         "zone1",
 		Code:         "zone1",
 		CreateUserId: request.UserId,
 		CreateTime:   now,

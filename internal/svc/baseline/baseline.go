@@ -627,9 +627,9 @@ func ImportNetworkDeviceBaseline(context *gin.Context, softwareVersion entity.So
 	if len(networkDeviceBaselineExcelList) > 0 {
 		var networkDeviceBaselines []entity.NetworkDeviceBaseline
 		for i := range networkDeviceBaselineExcelList {
-			networkDeviceRole := networkDeviceBaselineExcelList[i].NetworkDeviceRole
+			networkDeviceRole := networkDeviceBaselineExcelList[i].NetworkDeviceRoleCode
 			if networkDeviceRole != "" {
-				networkDeviceBaselineExcelList[i].NetworkDeviceRoles = util.SplitString(networkDeviceRole, constant.SplitLineBreak)
+				networkDeviceBaselineExcelList[i].NetworkDeviceRoleCodes = util.SplitString(networkDeviceRole, constant.SplitLineBreak)
 			}
 			var deviceType int
 			if networkDeviceBaselineExcelList[i].DeviceType == constant.NetworkDeviceTypeXinchuangCn {
@@ -672,10 +672,16 @@ func ImportNetworkDeviceBaseline(context *gin.Context, softwareVersion entity.So
 			var networkDeviceRoleRels []entity.NetworkDeviceRoleRel
 			for _, networkDeviceBaselineExcel := range networkDeviceBaselineExcelList {
 				networkDeviceId := networkDeviceBaselineMap[networkDeviceBaselineExcel.DeviceModel]
-				for _, networkDeviceRole := range networkDeviceBaselineExcel.NetworkDeviceRoles {
+				for _, networkDeviceRoleCode := range networkDeviceBaselineExcel.NetworkDeviceRoleCodes {
+					networkDeviceRoleId, ok := networkDeviceRoleCodeMap[networkDeviceRoleCode]
+					if !ok {
+						log.Infof("import networkDeviceBaseline fail, can not find networkDeviceRoleCode: %s", networkDeviceRoleCode)
+						result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+						return true
+					}
 					networkDeviceRoleRels = append(networkDeviceRoleRels, entity.NetworkDeviceRoleRel{
 						DeviceId:     networkDeviceId,
-						DeviceRoleId: networkDeviceRoleCodeMap[networkDeviceRole],
+						DeviceRoleId: networkDeviceRoleId,
 					})
 				}
 			}
@@ -711,9 +717,9 @@ func ImportIPDemandBaseline(context *gin.Context, softwareVersion entity.Softwar
 	if len(ipDemandBaselineExcelList) > 0 {
 		var ipDemandBaselines []entity.IPDemandBaseline
 		for i := range ipDemandBaselineExcelList {
-			networkDeviceRole := ipDemandBaselineExcelList[i].NetworkDeviceRole
+			networkDeviceRole := ipDemandBaselineExcelList[i].NetworkDeviceRoleCode
 			if networkDeviceRole != "" {
-				ipDemandBaselineExcelList[i].NetworkDeviceRoles = util.SplitString(networkDeviceRole, constant.SplitLineBreak)
+				ipDemandBaselineExcelList[i].NetworkDeviceRoleCodes = util.SplitString(networkDeviceRole, constant.SplitLineBreak)
 			}
 			ipDemandBaselines = append(ipDemandBaselines, entity.IPDemandBaseline{
 				VersionId:    softwareVersion.Id,
@@ -749,10 +755,17 @@ func ImportIPDemandBaseline(context *gin.Context, softwareVersion entity.Softwar
 			}
 			var ipDemandDeviceRoleRels []entity.IPDemandDeviceRoleRel
 			for _, ipDemandBaselineExcel := range ipDemandBaselineExcelList {
-				for _, networkDeviceRole := range ipDemandBaselineExcel.NetworkDeviceRoles {
+				ipDemandId := ipDemandBaselineMap[ipDemandBaselineExcel.Vlan]
+				for _, networkDeviceRoleCode := range ipDemandBaselineExcel.NetworkDeviceRoleCodes {
+					deviceRoleId, ok := networkDeviceRoleCodeMap[networkDeviceRoleCode]
+					if !ok {
+						log.Infof("import IPDemandBaseline fail, can not find networkDeviceRoleCode: %s", networkDeviceRoleCode)
+						result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+						return true
+					}
 					ipDemandDeviceRoleRels = append(ipDemandDeviceRoleRels, entity.IPDemandDeviceRoleRel{
-						IPDemandId:   ipDemandBaselineMap[ipDemandBaselineExcel.Vlan],
-						DeviceRoleId: networkDeviceRoleCodeMap[networkDeviceRole],
+						IPDemandId:   ipDemandId,
+						DeviceRoleId: deviceRoleId,
 					})
 				}
 			}

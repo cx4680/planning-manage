@@ -80,7 +80,6 @@ CREATE TABLE `az_manage`
 (
     `id`                bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'azId',
     `code`              varchar(255) DEFAULT NULL COMMENT 'az编码',
-    `name`              varchar(255) DEFAULT NULL COMMENT 'az名称',
     `region_id`         bigint(20) NULL DEFAULT NULL COMMENT 'regionId',
     `machine_room_name` varchar(255) NULL DEFAULT NULL COMMENT '机房名称',
     `machine_room_code` varchar(255) NULL DEFAULT NULL COMMENT '机房编码',
@@ -99,7 +98,6 @@ CREATE TABLE `az_manage`
 CREATE TABLE `cell_manage`
 (
     `id`             bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'cell Id',
-    `code`           varchar(255) DEFAULT NULL COMMENT 'cell编码',
     `name`           varchar(255) DEFAULT NULL COMMENT 'cell名称',
     `create_user_id` varchar(255) DEFAULT NULL COMMENT '创建人id',
     `create_time`    datetime NULL DEFAULT NULL COMMENT '创建时间',

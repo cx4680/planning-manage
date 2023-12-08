@@ -13,13 +13,14 @@ import (
 )
 
 type Request struct {
-	Id         int64
-	UserId     string
-	Name       string `form:"name"`
-	Type       string `form:"type"`
-	CustomerId int64  `form:"customerId"`
-	SortField  string `form:"sortField"`
-	Sort       string `form:"sort"`
+	Id              int64
+	UserId          string
+	Name            string `form:"name"`
+	Type            string `form:"type"`
+	CustomerId      int64  `form:"customerId"`
+	CloudPlatformId int64  `form:"cloudPlatformId"`
+	SortField       string `form:"sortField"`
+	Sort            string `form:"sort"`
 }
 
 func List(c *gin.Context) {
@@ -81,6 +82,26 @@ func Update(c *gin.Context) {
 		return
 	}
 	result.Success(c, nil)
+}
+
+func Tree(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindQuery(&request); err != nil {
+		log.Errorf("list platform bind param error: ", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	if request.CloudPlatformId == 0 {
+		result.Failure(c, "cloudPlatformId参数为空", http.StatusBadRequest)
+		return
+	}
+	list, err := TreeCloudPlatform(request)
+	if err != nil {
+		log.Errorf("list platform error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, list)
 }
 
 func checkRequest(request *Request, isCreate bool) error {
