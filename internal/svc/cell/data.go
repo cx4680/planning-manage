@@ -46,7 +46,6 @@ func CreateCell(request *Request) error {
 	now := datetime.GetNow()
 	cellEntity := &entity.CellManage{
 		Name:         request.Name,
-		Code:         request.Code,
 		CreateUserId: request.UserId,
 		CreateTime:   now,
 		UpdateUserId: request.UserId,
@@ -79,7 +78,6 @@ func UpdateCell(request *Request) error {
 	cellEntity := &entity.CellManage{
 		Id:           request.Id,
 		Name:         request.Name,
-		Code:         request.Code,
 		UpdateUserId: request.UserId,
 		UpdateTime:   now,
 	}

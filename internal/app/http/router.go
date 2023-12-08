@@ -85,7 +85,6 @@ func Router(engine *gin.Engine) {
 			regionGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改region", "updateRegion", middleware.UPDATE, middleware.INFO)), region.Update)
 			// 删除region
 			regionGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除方案", "deleteRegion", middleware.DELETE, middleware.INFO)), region.Delete)
-
 		}
 
 		// az

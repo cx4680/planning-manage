@@ -16,7 +16,6 @@ type Request struct {
 	Id        int64
 	UserId    string
 	Name      string  `form:"name"`
-	Code      string  `form:"code"`
 	AzId      int64   `form:"azId"`
 	AzIdList  []int64 `form:"azIdList"`
 	SortField string  `form:"sortField"`
@@ -103,9 +102,6 @@ func Delete(c *gin.Context) {
 func checkRequest(request *Request, isCreate bool) error {
 	if util.IsBlank(request.Name) {
 		return errors.New("name参数为空")
-	}
-	if util.IsBlank(request.Code) {
-		return errors.New("code参数为空")
 	}
 	if len(request.AzIdList) == 0 {
 		return errors.New("azIdList参数为空")

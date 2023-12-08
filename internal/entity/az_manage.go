@@ -7,7 +7,6 @@ const AzManageTable = "az_manage"
 type AzManage struct {
 	Id              int64         `gorm:"column:id" json:"id"`                             //azId
 	Code            string        `gorm:"column:code" json:"code"`                         //az编码
-	Name            string        `gorm:"column:name" json:"name"`                         //az名称
 	RegionId        int64         `gorm:"column:region_id" json:"regionId"`                //regionId
 	MachineRoomName string        `gorm:"column:machine_room_name" json:"machineRoomName"` //机房名称
 	MachineRoomCode string        `gorm:"column:machine_room_code" json:"machineRoomCode"` //机房缩写
