@@ -11,6 +11,10 @@ import (
 
 func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " update_time "
+	if request.Id != 0 {
+		screenSql += " AND id = ? "
+		screenParams = append(screenParams, request.Id)
+	}
 	if request.CustomerId != 0 {
 		screenSql += " AND customer_id = ? "
 		screenParams = append(screenParams, request.CustomerId)
