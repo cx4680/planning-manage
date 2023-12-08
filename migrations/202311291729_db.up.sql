@@ -99,6 +99,7 @@ CREATE TABLE `cell_manage`
 (
     `id`             bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'cell Id',
     `name`           varchar(255) DEFAULT NULL COMMENT 'cell名称',
+    `az_id`          bigint(20) NULL DEFAULT NULL COMMENT 'azId',
     `create_user_id` varchar(255) DEFAULT NULL COMMENT '创建人id',
     `create_time`    datetime NULL DEFAULT NULL COMMENT '创建时间',
     `update_user_id` varchar(255) NULL DEFAULT NULL COMMENT '更新人id',
@@ -181,6 +182,9 @@ INSERT INTO `config_item` VALUES (602, 6, '规划中', 'planning', NULL, 2);
 INSERT INTO `config_item` VALUES (603, 6, '规划完成', 'planned', NULL, 3);
 INSERT INTO `config_item` VALUES (604, 6, '交付中', 'delivering', NULL, 4);
 INSERT INTO `config_item` VALUES (605, 6, '交付完成', 'delivered', NULL, 5);
+INSERT INTO `config_item` VALUES (7, 0, '集群类型', 'cellType', NULL, NULL);
+INSERT INTO `config_item` VALUES (701, 7, '控制集群', 'control', NULL, 1);
+INSERT INTO `config_item` VALUES (702, 7, '业务集群', 'business', NULL, 2);
 
 
 CREATE TABLE `cloud_product_baseline`
