@@ -69,24 +69,24 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	var customerList []entity.CustomerManage
 	var count int64
 
-	db := data.DB.Table("customer_manage").Select("DISTINCT customer_manage.*")
+	db := data.DB.Table("customer_manage cm").Select("DISTINCT cm.*")
 
-	db.Where("customer_manage.delete_state=0")
+	db.Where("cm.delete_state=0")
 	if len(customerPageParam.CustomerName) > 0 {
-		db.Where("customer_manage.customer_name like ?", `%`+customerPageParam.CustomerName+`%`)
+		db.Where("cm.customer_name like ?", `%`+customerPageParam.CustomerName+`%`)
 	}
 	if len(customerPageParam.LeaderName) > 0 {
-		db.Where("customer_manage.leader_name like ?", `%`+customerPageParam.LeaderName+`%`)
+		db.Where("cm.leader_name like ?", `%`+customerPageParam.LeaderName+`%`)
 	}
 	if roleManage.Role != "admin" {
-		db.Where("(customer_manage.leader_id = ? OR permissions_manage.user_id = ?)", currentUserId, currentUserId)
+		db.Where("cm.leader_id = ? OR pm.user_id = ?", currentUserId, currentUserId)
 	}
-	if err := db.Joins("LEFT JOIN permissions_manage ON permissions_manage.customer_id = customer_manage.id").
+	if err := db.Joins("LEFT JOIN permissions_manage pm ON pm.customer_id = cm.id").
 		Order(customerPageParam.OrderBy).
 		Limit(customerPageParam.Size).
 		Offset((customerPageParam.Current - 1) * customerPageParam.Size).
 		Find(&customerList).
-		Select("count(DISTINCT customer_manage.id)").
+		Select("count(DISTINCT cm.id)").
 		Limit(-1).
 		Offset(-1).
 		Count(&count).Error; err != nil {

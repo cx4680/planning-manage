@@ -192,15 +192,15 @@ INSERT INTO `config_item` VALUES (605, 6, '交付完成', 'delivered', NULL, 5);
 
 CREATE TABLE `cloud_product_baseline`
 (
-    `id`                bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
-    `version_id`        bigint(20) DEFAULT NULL COMMENT '软件版本id',
-    `product_type`      varchar(100) DEFAULT NULL COMMENT '产品类型',
-    `product_name`      varchar(255) DEFAULT NULL COMMENT '产品名称',
-    `product_code`      varchar(100) DEFAULT NULL COMMENT '产品code',
-    `sell_specs`        varchar(255) DEFAULT NULL COMMENT '售卖规格',
-    `authorized_unit`   varchar(255) DEFAULT NULL COMMENT '授权单元',
-    `whether_required`  tinyint(4) DEFAULT NULL COMMENT '是否必选，0：否，1：是',
-    `instructions`      varchar(500) DEFAULT NULL COMMENT '说明',
+    `id`               bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `version_id`       bigint(20) DEFAULT NULL COMMENT '软件版本id',
+    `product_type`     varchar(100) DEFAULT NULL COMMENT '产品类型',
+    `product_name`     varchar(255) DEFAULT NULL COMMENT '产品名称',
+    `product_code`     varchar(100) DEFAULT NULL COMMENT '产品code',
+    `sell_specs`       varchar(255) DEFAULT NULL COMMENT '售卖规格',
+    `authorized_unit`  varchar(255) DEFAULT NULL COMMENT '授权单元',
+    `whether_required` tinyint(4) DEFAULT NULL COMMENT '是否必选，0：否，1：是',
+    `instructions`     varchar(500) DEFAULT NULL COMMENT '说明',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品基线';
 
@@ -239,11 +239,11 @@ CREATE TABLE `node_role_baseline`
     `id`             bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
     `version_id`     bigint(20) DEFAULT NULL COMMENT '软件版本id',
     `node_role_code` varchar(255) DEFAULT NULL COMMENT '节点角色编码',
-    `node_role_name`      varchar(255) DEFAULT NULL COMMENT '节点角色名称',
+    `node_role_name` varchar(255) DEFAULT NULL COMMENT '节点角色名称',
     `minimum_num`    int(11) DEFAULT NULL COMMENT '单独部署最小数量',
     `deploy_method`  varchar(255) DEFAULT NULL COMMENT '部署方式',
-    `support_dpdk`    tinyint(4) DEFAULT NULL COMMENT '是否支持DPDK，0：否，1：是',
-    `classify`  varchar(255) DEFAULT NULL COMMENT '分类',
+    `support_dpdk`   tinyint(4) DEFAULT NULL COMMENT '是否支持DPDK，0：否，1：是',
+    `classify`       varchar(255) DEFAULT NULL COMMENT '分类',
     `annotation`     varchar(500) DEFAULT NULL COMMENT '节点说明',
     `business_type`  varchar(255) DEFAULT NULL COMMENT '业务类型',
     PRIMARY KEY (`id`)
@@ -257,22 +257,23 @@ CREATE TABLE `node_role_mixed_deploy`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='节点角色混部表';
 
 
-CREATE TABLE `network_device_list` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT,
-  `plan_id` bigint(20) NOT NULL COMMENT '方案ID',
-  `network_device_role` varchar(45) DEFAULT NULL COMMENT '设备类型->网络设备角色编码',
-	`network_device_role_name` varchar(255) DEFAULT NULL COMMENT '设备类型->网络设备角色名称',
-  `network_device_role_id` bigint(20) DEFAULT NULL COMMENT '设备类型->网络设备角色ID',
-  `logical_grouping` varchar(255) DEFAULT NULL COMMENT '逻辑分组',
-  `device_id` varchar(255) DEFAULT NULL COMMENT '设备ID',
-    `conf_overview` varchar(1000) DEFAULT NULL COMMENT '配置概述',
-  `brand` varchar(45) DEFAULT NULL COMMENT '厂商',
-  `device_model` varchar(45) DEFAULT NULL COMMENT '设备型号',
-  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
-  `update_time` datetime DEFAULT NULL COMMENT '修改时间',
-  `delete_state` tinyint(4) DEFAULT NULL COMMENT '删除状态0：未删除；1：已删除',
-  PRIMARY KEY (`id`) USING BTREE,
-  KEY `IDX_U_PLAN_ID_STATE` (`plan_id`,`delete_state`)
+CREATE TABLE `network_device_list`
+(
+    `id`                       bigint(20) NOT NULL AUTO_INCREMENT,
+    `plan_id`                  bigint(20) NOT NULL COMMENT '方案ID',
+    `network_device_role`      varchar(45)   DEFAULT NULL COMMENT '设备类型->网络设备角色编码',
+    `network_device_role_name` varchar(255)  DEFAULT NULL COMMENT '设备类型->网络设备角色名称',
+    `network_device_role_id`   bigint(20) DEFAULT NULL COMMENT '设备类型->网络设备角色ID',
+    `logical_grouping`         varchar(255)  DEFAULT NULL COMMENT '逻辑分组',
+    `device_id`                varchar(255)  DEFAULT NULL COMMENT '设备ID',
+    `conf_overview`            varchar(1000) DEFAULT NULL COMMENT '配置概述',
+    `brand`                    varchar(45)   DEFAULT NULL COMMENT '厂商',
+    `device_model`             varchar(45)   DEFAULT NULL COMMENT '设备型号',
+    `create_time`              datetime      DEFAULT NULL COMMENT '创建时间',
+    `update_time`              datetime      DEFAULT NULL COMMENT '修改时间',
+    `delete_state`             tinyint(4) DEFAULT NULL COMMENT '删除状态0：未删除；1：已删除',
+    PRIMARY KEY (`id`) USING BTREE,
+    KEY                        `IDX_U_PLAN_ID_STATE` (`plan_id`,`delete_state`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='网络设备清单';
 
 
@@ -288,8 +289,8 @@ CREATE TABLE `network_device_planning`
     `create_time`            datetime                       DEFAULT NULL COMMENT '创建时间',
     `update_time`            datetime                       DEFAULT NULL COMMENT '更新时间',
     `ipv6`                   char(1)                        DEFAULT '0' COMMENT '是否为ipv4/ipv6双栈交付 0：ipv4交付 1:ipv4/ipv6双栈交付',
-    `network_model`           tinyint(4)                       DEFAULT 1 COMMENT '组网模型: 1-三网合一  2-两网分离  3-三网分离',
-	`device_type` tinyint(4) DEFAULT NULL COMMENT '设备类型，0：信创，1：商用',
+    `network_model`          tinyint(4) DEFAULT 1 COMMENT '组网模型: 1-三网合一  2-两网分离  3-三网分离',
+    `device_type`            tinyint(4) DEFAULT NULL COMMENT '设备类型，0：信创，1：商用',
     PRIMARY KEY (`id`) USING BTREE,
     UNIQUE KEY `IDX_U_PLAN_ID` (`plan_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='网络设备规划表';
@@ -299,21 +300,21 @@ CREATE TABLE `server_baseline`
 (
     `id`                    bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
     `version_id`            bigint(20) DEFAULT NULL COMMENT '版本id',
-    `arch`                  varchar(50)  DEFAULT NULL COMMENT '硬件架构',
-    `network_interface`     varchar(50)  DEFAULT NULL COMMENT '网络接口',
-    `bom_code`              varchar(255) DEFAULT NULL COMMENT 'BOM编码',
+    `arch`                  varchar(50)   DEFAULT NULL COMMENT '硬件架构',
+    `network_interface`     varchar(50)   DEFAULT NULL COMMENT '网络接口',
+    `bom_code`              varchar(255)  DEFAULT NULL COMMENT 'BOM编码',
     `configuration_info`    varchar(1000) DEFAULT NULL COMMENT '配置概要',
-    `spec`                  varchar(255) DEFAULT NULL COMMENT '规格',
-    `cpu_type`              varchar(50)  DEFAULT NULL COMMENT 'CPU类型',
+    `spec`                  varchar(255)  DEFAULT NULL COMMENT '规格',
+    `cpu_type`              varchar(50)   DEFAULT NULL COMMENT 'CPU类型',
     `cpu`                   int(11) DEFAULT NULL COMMENT 'CPU核数',
-    `gpu`                   varchar(255) DEFAULT NULL COMMENT 'GPU',
+    `gpu`                   varchar(255)  DEFAULT NULL COMMENT 'GPU',
     `memory`                int(11) DEFAULT NULL COMMENT '内存',
-    `system_disk_type`      varchar(20)  DEFAULT NULL COMMENT '系统盘类型',
-    `system_disk`           varchar(255) DEFAULT NULL COMMENT '系统盘',
-    `storage_disk_type`     varchar(50)  DEFAULT NULL COMMENT '存储盘类型',
+    `system_disk_type`      varchar(20)   DEFAULT NULL COMMENT '系统盘类型',
+    `system_disk`           varchar(255)  DEFAULT NULL COMMENT '系统盘',
+    `storage_disk_type`     varchar(50)   DEFAULT NULL COMMENT '存储盘类型',
     `storage_disk_num`      int(11) DEFAULT NULL COMMENT '存储盘数量',
     `storage_disk_capacity` int(11) DEFAULT NULL COMMENT '存储盘单盘容量（G）',
-    `ram_disk`              varchar(255) DEFAULT NULL COMMENT '缓存盘',
+    `ram_disk`              varchar(255)  DEFAULT NULL COMMENT '缓存盘',
     `network_card_num`      int(11) DEFAULT NULL COMMENT '网卡数量',
     `power`                 int(11) DEFAULT NULL COMMENT '功率',
     PRIMARY KEY (`id`)
@@ -350,12 +351,12 @@ CREATE TABLE `network_device_baseline`
 (
     `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
     `version_id`    bigint(20) DEFAULT NULL COMMENT '版本id',
-    `device_model`  varchar(255) DEFAULT NULL COMMENT '设备型号',
-    `manufacturer`  varchar(255) DEFAULT NULL COMMENT '厂商',
+    `device_model`  varchar(255)  DEFAULT NULL COMMENT '设备型号',
+    `manufacturer`  varchar(255)  DEFAULT NULL COMMENT '厂商',
     `device_type`   tinyint(4) DEFAULT NULL COMMENT '信创/商用， 0：信创，1：商用',
-    `network_model` varchar(255) DEFAULT NULL COMMENT '网络模型',
+    `network_model` varchar(255)  DEFAULT NULL COMMENT '网络模型',
     `conf_overview` varchar(1000) DEFAULT NULL COMMENT '配置概述',
-    `purpose`       varchar(500) DEFAULT NULL COMMENT '用途',
+    `purpose`       varchar(500)  DEFAULT NULL COMMENT '用途',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='网络设备基线表';
 

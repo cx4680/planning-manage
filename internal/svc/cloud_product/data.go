@@ -98,15 +98,12 @@ func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId
 		// 更新方案业务规划阶段
 		if err := tx.Table(entity.PlanManageTable).Where("id = ?", request.PlanId).
 			Update("business_plan_stage", 1).
+			Update("stage", "planning").
 			Update("update_user_id", currentUserId).
 			Update("update_time", time.Now()).Error; err != nil {
 			log.Errorf("[saveCloudProductPlanning] update plan business stage error, %v", err)
 			return err
 		}
-		// TODO 删除服务器规划清单列表
-
-		// TODO 删除容量规划列表
-
 		return nil
 	}); err != nil {
 		log.Errorf("[saveCloudProductPlanning] error, %v", err)
@@ -117,7 +114,7 @@ func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId
 
 func listCloudProductPlanningByPlanId(planId int64) ([]entity.CloudProductPlanning, error) {
 	var cloudProductPlanningList []entity.CloudProductPlanning
-	if err := data.DB.Where("plan_id=?", planId).Scan(&cloudProductPlanningList).Error; err != nil {
+	if err := data.DB.Table(entity.CloudProductPlanningTable).Where("plan_id=?", planId).Scan(&cloudProductPlanningList).Error; err != nil {
 		log.Errorf("[listCloudProductPlanningByPlanId] error, %v", err)
 		return nil, err
 	}
@@ -126,27 +123,27 @@ func listCloudProductPlanningByPlanId(planId int64) ([]entity.CloudProductPlanni
 
 func exportCloudProductPlanningByPlanId(planId int64) (string, []CloudProductPlanningExportResponse, error) {
 	var planManage entity.PlanManage
-	if err := data.DB.Where("id=?", planId).Scan(planManage).Error; err != nil {
+	if err := data.DB.Table(entity.PlanManageTable).Where("id=?", planId).Scan(&planManage).Error; err != nil {
 		log.Errorf("[exportCloudProductPlanningByPlanId] get planManage by id err, %v", err)
 		return "", nil, err
 	}
 
 	var projectManage entity.ProjectManage
-	if err := data.DB.Where("id=?", planManage.ProjectId).Scan(projectManage).Error; err != nil {
+	if err := data.DB.Table(entity.ProjectManageTable).Where("id=?", planManage.ProjectId).Scan(&projectManage).Error; err != nil {
 		log.Errorf("[exportCloudProductPlanningByPlanId] get projectManage by id err, %v", err)
 		return "", nil, err
 	}
 
 	var cloudProductPlanningList []entity.CloudProductPlanning
-	if err := data.DB.Where("plan_id=?", planId).Scan(&cloudProductPlanningList).Error; err != nil {
+	if err := data.DB.Table(entity.CloudProductPlanningTable).Where("plan_id=?", planId).Scan(&cloudProductPlanningList).Error; err != nil {
 		log.Errorf("[exportCloudProductPlanningByPlanId] error, %v", err)
 		return "", nil, err
 	}
 
 	var response []CloudProductPlanningExportResponse
-	if err := data.DB.Table("cloud_product_planning").Select("cloud_product_baseline.product_type,cloud_product_baseline.product_name, cloud_product_baseline.instructions, cloud_product_planning.sell_specs").
-		Joins("LEFT JOIN cloud_product_baseline ON cloud_product_baseline.id = cloud_product_planning.product_id").
-		Where("cloud_product_planning.plan_id=?", planId).
+	if err := data.DB.Table("cloud_product_planning cpp").Select("cpb.product_type,cpb.product_name, cpb.instructions, cpp.sell_spec").
+		Joins("LEFT JOIN cloud_product_baseline cpb ON cpb.id = cpp.product_id").
+		Where("cpp.plan_id=?", planId).
 		Find(&response).Error; err != nil {
 		log.Errorf("[exportCloudProductPlanningByPlanId] query db error")
 		return "", nil, err

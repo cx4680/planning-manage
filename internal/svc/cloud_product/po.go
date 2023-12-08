@@ -33,8 +33,8 @@ type CloudProductBaselineDependResponse struct {
 }
 
 type CloudProductPlanningExportResponse struct {
-	ProductType  string `gorm:"column:product_type" json:"productType"`
-	ProductName  string `gorm:"column:product_name" json:"productName"`
-	Instructions string `gorm:"column:instructions" json:"instructions"`
-	SellSpec     string `gorm:"column:sell_spec" json:"sellSpec"`
+	ProductType  string `excel:"name:产品类型;" gorm:"column:product_type" json:"productType"`
+	ProductName  string `excel:"name:产品名称;" gorm:"column:product_name" json:"productName"`
+	Instructions string `excel:"name:售卖规格;" gorm:"column:instructions" json:"instructions"`
+	SellSpec     string `excel:"name:说明;" gorm:"column:sell_spec" json:"sellSpec"`
 }
