@@ -153,7 +153,6 @@ func CreateCloudPlatformByCustomerId(request *Request) error {
 		DeleteState:  0,
 	}
 	azEntity := &entity.AzManage{
-		Name:         "zone1",
 		Code:         "zone1",
 		CreateUserId: request.UserId,
 		CreateTime:   now,
