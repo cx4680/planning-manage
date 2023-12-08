@@ -27,8 +27,8 @@ func QuerySoftwareVersionByVersion(version string, cloudPlatformType string) (en
 	return softwareVersion, nil
 }
 
-func CreateSoftwareVersion(softwareVersion entity.SoftwareVersion) error {
-	if err := data.DB.Table(entity.SoftwareVersionTable).Create(&softwareVersion).Scan(&softwareVersion).Error; err != nil {
+func CreateSoftwareVersion(softwareVersion *entity.SoftwareVersion) error {
+	if err := data.DB.Table(entity.SoftwareVersionTable).Create(softwareVersion).Scan(softwareVersion).Error; err != nil {
 		log.Errorf("insert software version error: ", err)
 		return err
 	}
