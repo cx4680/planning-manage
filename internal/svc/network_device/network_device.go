@@ -287,7 +287,7 @@ func SaveDeviceList(c *gin.Context) {
 			return err
 		}
 		// 根据方案ID查询网络设备清单
-		deviceRoleNum, err := getDeviceRoleGroupNumByPlanId(planId)
+		deviceRoleNum, err := getDeviceRoleGroupNumByPlanId(tx, planId)
 		// 转设备角色id和分组数 map
 		deviceRoleIdMap := util.ListToMap(deviceRoleNum, "DeviceRoleId")
 		log.Infof("deviceRoleIdMap=%v", deviceRoleIdMap)
