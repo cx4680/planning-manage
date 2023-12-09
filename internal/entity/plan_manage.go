@@ -17,6 +17,7 @@ type PlanManage struct {
 	DeleteState      int       `gorm:"column:delete_state" json:"deleteState"`             //作废状态：1，作废；0，正常
 	BusinessPanStage int       `gorm:"column:business_plan_stage" json:"businessPanStage"` //业务规划阶段：0，业务规划开始阶段；1，云产品配置阶段；2，服务器规划阶段；3，网络设备规划阶段； 4，业务规划结束
 	DeliverPlanStage int       `gorm:"column:deliver_plan_stage" json:"deliverPlanStage"`  //交付规划阶段：0，交付规划开始阶段
+	Alternative      int       `gorm:"-" json:"alternative"`                               //是否有备选方案
 }
 
 func (entity *PlanManage) TableName() string {

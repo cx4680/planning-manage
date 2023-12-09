@@ -53,6 +53,15 @@ func PagePlan(request *Request) ([]*entity.PlanManage, int64, error) {
 	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
+	var alternativeCount int64
+	if err := data.DB.Model(&entity.PlanManage{}).Where(" delete_state = ? AND project_id = ? AND type = ?", 0, request.ProjectId, "alternate").Count(&alternativeCount).Error; err != nil {
+		return nil, 0, err
+	}
+	if alternativeCount > 0 {
+		for i := range list {
+			list[i].Alternative = 1
+		}
+	}
 	return list, count, nil
 }
 

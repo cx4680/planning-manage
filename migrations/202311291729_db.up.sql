@@ -174,7 +174,7 @@ INSERT INTO `config_item` VALUES (402, 4, '交付阶段', 'delivery', NULL, 2);
 INSERT INTO `config_item` VALUES (403, 4, '已交付', 'delivered', NULL, 3);
 INSERT INTO `config_item` VALUES (5, 0, '方案类型', 'planType', NULL, NULL);
 INSERT INTO `config_item` VALUES (501, 5, '普通方案', 'general', NULL, 1);
-INSERT INTO `config_item` VALUES (502, 5, '备用方案', 'standby', NULL, 2);
+INSERT INTO `config_item` VALUES (502, 5, '备选方案', 'alternate', NULL, 2);
 INSERT INTO `config_item` VALUES (503, 5, '交付方案', 'delivery', NULL, 3);
 INSERT INTO `config_item` VALUES (6, 0, '方案阶段', 'planStage', NULL, NULL);
 INSERT INTO `config_item` VALUES (601, 6, '待规划', 'plan', NULL, 1);
