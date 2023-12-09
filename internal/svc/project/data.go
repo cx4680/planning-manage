@@ -288,11 +288,21 @@ func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error
 
 	for i, v := range list {
 		list[i].PlanCount = planCountMap[v.Id]
-		list[i].CustomerName = customerMap[v.CustomerId].CustomerName
-		list[i].CloudPlatformName = cloudPlatformMap[v.CloudPlatformId].Name
-		list[i].RegionName = regionMap[v.RegionId].Name
-		list[i].AzCode = azMap[v.AzId].Code
-		list[i].CellName = cellMap[v.CellId].Name
+		if customerMap[v.CustomerId] != nil {
+			list[i].CustomerName = customerMap[v.CustomerId].CustomerName
+		}
+		if cloudPlatformMap[v.CloudPlatformId] != nil {
+			list[i].CloudPlatformName = cloudPlatformMap[v.CloudPlatformId].Name
+		}
+		if regionMap[v.RegionId] != nil {
+			list[i].RegionName = regionMap[v.RegionId].Name
+		}
+		if azMap[v.AzId] != nil {
+			list[i].AzCode = azMap[v.AzId].Code
+		}
+		if cellMap[v.CellId] != nil {
+			list[i].CellName = cellMap[v.CellId].Name
+		}
 	}
 	return list, nil
 }
