@@ -117,7 +117,7 @@ func SaveServer(request *Request) error {
 				DeleteState:      0,
 			})
 		}
-		if err := data.DB.Create(&serverPlanningEntityList).Error; err != nil {
+		if err := tx.Create(&serverPlanningEntityList).Error; err != nil {
 			return err
 		}
 		if err := tx.Model(entity.PlanManage{}).Where("id = ?", request.PlanId).Updates(&entity.PlanManage{
