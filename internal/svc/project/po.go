@@ -1,8 +1,8 @@
 package project
 
 type Request struct {
-	Id                int64 `form:"id"`
 	UserId            string
+	Id                int64  `form:"id"`
 	Name              string `form:"name"`
 	CustomerName      string `form:"CustomerName"`
 	Type              string `form:"type"`
