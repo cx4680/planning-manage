@@ -61,6 +61,7 @@ func CpuTypeList(c *gin.Context) {
 	}
 	if request.PlanId == 0 {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+		return
 	}
 	list, err := ListServerCpuType(request)
 	if err != nil {

@@ -99,10 +99,10 @@ func SaveServer(request *Request) error {
 		return err
 	}
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		tx.Where("planId = ?", request.PlanId).Delete(&entity.ServerPlanning{})
+		tx.Where("plan_id = ?", request.PlanId).Delete(&entity.ServerPlanning{})
 		now := datetime.GetNow()
 		var serverPlanningEntityList []*entity.ServerPlanning
-		for _, v := range request.serverList {
+		for _, v := range request.ServerList {
 			serverPlanningEntityList = append(serverPlanningEntityList, &entity.ServerPlanning{
 				PlanId:           request.PlanId,
 				NodeRoleId:       v.NodeRoleId,
@@ -150,9 +150,14 @@ func ListServerCpuType(request *Request) ([]string, error) {
 	if err := data.DB.Where("version_id = ?", cloudProductBaseline.VersionId).Find(&serverBaselineList).Error; err != nil {
 		return nil, err
 	}
+	var cpuTypeMap = make(map[string]interface{})
 	var cpuTypeList []string
 	for _, v := range serverBaselineList {
-		cpuTypeList = append(cpuTypeList, v.CpuType)
+		_, ok := cpuTypeMap[v.CpuType]
+		if !ok {
+			cpuTypeMap[v.CpuType] = struct{}{}
+			cpuTypeList = append(cpuTypeList, v.CpuType)
+		}
 	}
 	return cpuTypeList, nil
 }
@@ -265,7 +270,7 @@ func QueryServerPlanningListByPlanId(planId int64) ([]entity.ServerPlanning, err
 func checkBusiness(request *Request) error {
 	//校验planId
 	var planCount int64
-	if err := data.DB.Model(&entity.PlanManage{}).Where("id = ? AND delete_state = ?", request.Id, 0).Count(&planCount).Error; err != nil {
+	if err := data.DB.Model(&entity.PlanManage{}).Where("id = ? AND delete_state = ?", request.PlanId, 0).Count(&planCount).Error; err != nil {
 		return err
 	}
 	if planCount == 0 {
@@ -275,8 +280,17 @@ func checkBusiness(request *Request) error {
 }
 
 func getMixedNodeRoleMap(nodeRoleIdList []int64) (map[int64][]*entity.MixedNodeRole, error) {
+	var nodeRoleIdMap = make(map[int64]interface{})
+	var newNodeRoleId []int64
+	for _, v := range nodeRoleIdList {
+		_, ok := nodeRoleIdMap[v]
+		if !ok {
+			nodeRoleIdMap[v] = struct{}{}
+			newNodeRoleId = append(newNodeRoleId, v)
+		}
+	}
 	var nodeRoleMixedDeployList []*entity.NodeRoleMixedDeploy
-	if err := data.DB.Where("node_role_id IN (?)", nodeRoleIdList).Find(&nodeRoleMixedDeployList).Error; err != nil {
+	if err := data.DB.Where("node_role_id IN (?)", newNodeRoleId).Find(&nodeRoleMixedDeployList).Error; err != nil {
 		return nil, err
 	}
 	var mixedNodeRoleIdList []int64
@@ -284,7 +298,7 @@ func getMixedNodeRoleMap(nodeRoleIdList []int64) (map[int64][]*entity.MixedNodeR
 		mixedNodeRoleIdList = append(mixedNodeRoleIdList, v.MixedNodeRoleId)
 	}
 	var mixedNodeRoleBaselineList []*entity.NodeRoleBaseline
-	if err := data.DB.Where("id IN (?)", nodeRoleIdList).Find(&mixedNodeRoleBaselineList).Error; err != nil {
+	if err := data.DB.Where("id IN (?)", newNodeRoleId).Find(&mixedNodeRoleBaselineList).Error; err != nil {
 		return nil, err
 	}
 	var nodeRoleBaselineMap = make(map[int64]*entity.NodeRoleBaseline)
@@ -292,16 +306,16 @@ func getMixedNodeRoleMap(nodeRoleIdList []int64) (map[int64][]*entity.MixedNodeR
 		nodeRoleBaselineMap[v.Id] = v
 	}
 	var mixedNodeRoleMap = make(map[int64][]*entity.MixedNodeRole)
+	for _, v := range newNodeRoleId {
+		mixedNodeRoleMap[v] = append(mixedNodeRoleMap[v], &entity.MixedNodeRole{
+			Id:   v,
+			Name: "独立部署",
+		})
+	}
 	for _, v := range nodeRoleMixedDeployList {
 		mixedNodeRoleMap[v.NodeRoleId] = append(mixedNodeRoleMap[v.NodeRoleId], &entity.MixedNodeRole{
 			Id:   nodeRoleBaselineMap[v.MixedNodeRoleId].Id,
 			Name: "混合部署：" + nodeRoleBaselineMap[v.MixedNodeRoleId].NodeRoleName,
-		})
-	}
-	for k := range mixedNodeRoleMap {
-		mixedNodeRoleMap[k] = append(mixedNodeRoleMap[k], &entity.MixedNodeRole{
-			Id:   k,
-			Name: "独立部署",
 		})
 	}
 	return mixedNodeRoleMap, nil

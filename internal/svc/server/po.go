@@ -6,7 +6,7 @@ type Request struct {
 	PlanId         int64            `form:"planId"`
 	NetworkVersion string           `form:"networkVersion"`
 	CpuType        string           `form:"cpuType"`
-	serverList     []*RequestServer `form:"serverList"`
+	ServerList     []*RequestServer `form:"serverList"`
 }
 
 type RequestServer struct {
