@@ -19,7 +19,7 @@ func Page(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if request.ProjectId == 0 {
+	if request.ProjectId == 0 || request.Id == 0 {
 		result.Failure(c, "projectId参数为空", http.StatusBadRequest)
 		return
 	}

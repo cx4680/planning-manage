@@ -12,7 +12,11 @@ import (
 )
 
 func PagePlan(request *Request) ([]*entity.PlanManage, int64, error) {
-	screenSql, screenParams, orderSql := " delete_state = ? AND project_id = ? ", []interface{}{0, request.ProjectId}, " CASE WHEN type = 'standby' OR type = 'delivery' THEN 0 ELSE 1 END ASC "
+	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " CASE WHEN type = 'standby' OR type = 'delivery' THEN 0 ELSE 1 END ASC "
+	if request.ProjectId != 0 {
+		screenSql += " AND project_id = ? "
+		screenParams = append(screenParams, request.ProjectId)
+	}
 	if request.Id != 0 {
 		screenSql += " AND id = ? "
 		screenParams = append(screenParams, request.Id)
