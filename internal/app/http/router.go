@@ -146,7 +146,9 @@ func Router(engine *gin.Engine) {
 			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryServerList", middleware.LIST, middleware.INFO)), server.List)
 			// 创建服务器规划
 			serverGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "createServerList", middleware.LIST, middleware.INFO)), server.Save)
-			// 查询服务器架构列表
+			// 查询网络类型列表
+			serverGroup.GET("/network/list", middleware.OperatorLog(DefaultEventOpInfo("查询网络类型列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.NetworkTypeList)
+			// 查询cpu类型列表
 			serverGroup.GET("/cpu/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.CpuTypeList)
 			// 查询容量规划列表
 			serverGroup.GET("/capacity/list", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "queryServerCapacityList", middleware.LIST, middleware.INFO)), server.CapacityList)
