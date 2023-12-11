@@ -146,6 +146,7 @@ const (
 const (
 	SplitLineBreak    = "\n"
 	SplitLineAsterisk = "*"
+	SplitLineColon    = ":"
 )
 
 const (
@@ -185,4 +186,11 @@ const (
 	NodeRoleNotSupportDPDK   = 0
 	NodeRoleSupportDPDKCn    = "是"
 	NodeRoleNotSupportDPDKCn = "否"
+)
+
+const (
+	NodeWastageCalcTypeNumCn     = "数量"
+	NodeWastageCalcTypePercentCn = "百分比"
+	NodeWastageCalcTypeNum       = 1
+	NodeWastageCalcTypePercent   = 2
 )

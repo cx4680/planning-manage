@@ -138,6 +138,21 @@ func Import(context *gin.Context) {
 			return
 		}
 		break
+	case CapConvertBaselineType:
+		if ImportCapConvertBaseline(context, softwareVersion, f) {
+			return
+		}
+		break
+	case CapActualResBaselineType:
+		if ImportCapActualResBaseline(context, softwareVersion, f) {
+			return
+		}
+		break
+	case CapServerCalcBaselineType:
+		if ImportCapServerCalcBaseline(context, softwareVersion, f) {
+			return
+		}
+		break
 	default:
 		break
 	}
@@ -792,6 +807,151 @@ func ImportIPDemandBaseline(context *gin.Context, softwareVersion entity.Softwar
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
+			}
+		}
+	}
+	return false
+}
+
+func ImportCapConvertBaseline(context *gin.Context, softwareVersion entity.SoftwareVersion, f *excelize.File) bool {
+	var capConvertBaselineExcelList []CapConvertBaselineExcel
+	if err := excel.ImportBySheet(f, &capConvertBaselineExcelList, CapConvertBaselineSheetName, 0, 1); err != nil {
+		log.Errorf("excel import error: %v", err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return true
+	}
+	if len(capConvertBaselineExcelList) > 0 {
+		var capConvertBaselines []entity.CapConvertBaseline
+		for _, capConvertBaselineExcel := range capConvertBaselineExcelList {
+			capConvertBaselines = append(capConvertBaselines, entity.CapConvertBaseline{
+				VersionId:        softwareVersion.Id,
+				ProductName:      capConvertBaselineExcel.ProductName,
+				ProductCode:      capConvertBaselineExcel.ProductCode,
+				SellSpecs:        capConvertBaselineExcel.SellSpecs,
+				CapPlanningInput: capConvertBaselineExcel.CapPlanningInput,
+				Unit:             capConvertBaselineExcel.Unit,
+				Features:         capConvertBaselineExcel.Features,
+				Description:      capConvertBaselineExcel.Description,
+			})
+		}
+		originCapConvertBaselines, err := QueryCapConvertBaselineByVersionId(softwareVersion.Id)
+		if err != nil && err != gorm.ErrRecordNotFound {
+			log.Error(err)
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return true
+		}
+		if len(originCapConvertBaselines) > 0 {
+			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
+		} else {
+			if err := BatchCreateCapConvertBaseline(capConvertBaselines); err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func ImportCapActualResBaseline(context *gin.Context, softwareVersion entity.SoftwareVersion, f *excelize.File) bool {
+	var capActualBaselineExcelList []CapActualResBaselineExcel
+	if err := excel.ImportBySheet(f, &capActualBaselineExcelList, CapActualResBaselineSheetName, 0, 1); err != nil {
+		log.Errorf("excel import error: %v", err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return true
+	}
+	if len(capActualBaselineExcelList) > 0 {
+		var capActualResBaselines []entity.CapActualResBaseline
+		for _, capActualResBaselineExcel := range capActualBaselineExcelList {
+			occRatio := capActualResBaselineExcel.OccRatio
+			var occRatioNumerator string
+			var occRatioDenominator string
+			if occRatio != "" {
+				occRatios := strings.Split(occRatio, constant.SplitLineColon)
+				if len(occRatio) != 2 {
+					log.Infof("import capActualResBaseline fail, occRatio length: ", len(occRatio))
+					result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+					return true
+				}
+				occRatioNumerator = occRatios[0]
+				occRatioDenominator = occRatios[1]
+			}
+			capActualResBaselines = append(capActualResBaselines, entity.CapActualResBaseline{
+				VersionId:           softwareVersion.Id,
+				ProductCode:         capActualResBaselineExcel.ProductCode,
+				SellSpecs:           capActualResBaselineExcel.SellSpecs,
+				SellUnit:            capActualResBaselineExcel.SellUnit,
+				ExpendRes:           capActualResBaselineExcel.ExpendRes,
+				ExpendResCode:       capActualResBaselineExcel.ExpendResCode,
+				Features:            capActualResBaselineExcel.Features,
+				OccRatioNumerator:   occRatioNumerator,
+				OccRatioDenominator: occRatioDenominator,
+				Remarks:             capActualResBaselineExcel.Remarks,
+			})
+		}
+		originCapActualResBaselines, err := QueryCapActualResBaselineByVersionId(softwareVersion.Id)
+		if err != nil && err != gorm.ErrRecordNotFound {
+			log.Error(err)
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return true
+		}
+		if len(originCapActualResBaselines) > 0 {
+			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
+		} else {
+			if err := BatchCreateCapActualResBaseline(capActualResBaselines); err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func ImportCapServerCalcBaseline(context *gin.Context, softwareVersion entity.SoftwareVersion, f *excelize.File) bool {
+	var capServerCalcBaselineExcelList []CapServerCalcBaselineExcel
+	if err := excel.ImportBySheet(f, &capServerCalcBaselineExcelList, CapServerCalcBaselineSheetName, 0, 1); err != nil {
+		log.Errorf("excel import error: %v", err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return true
+	}
+	if len(capServerCalcBaselineExcelList) > 0 {
+		var capServerCalcBaselines []entity.CapServerCalcBaseline
+		for _, capServerCalcBaselineExcel := range capServerCalcBaselineExcelList {
+			nodeWastageCalcTypeStr := capServerCalcBaselineExcel.NodeWastageCalcType
+			var nodeWastageCalcType int
+			if nodeWastageCalcTypeStr == constant.NodeWastageCalcTypeNumCn {
+				nodeWastageCalcType = constant.NodeWastageCalcTypeNum
+			} else if nodeWastageCalcTypeStr == constant.NodeWastageCalcTypePercentCn {
+				nodeWastageCalcType = constant.NodeWastageCalcTypePercent
+			} else {
+				nodeWastageCalcType = 0
+			}
+			capServerCalcBaselines = append(capServerCalcBaselines, entity.CapServerCalcBaseline{
+				VersionId:           softwareVersion.Id,
+				ExpendRes:           capServerCalcBaselineExcel.ExpendRes,
+				ExpendResCode:       capServerCalcBaselineExcel.ExpendResCode,
+				ExpendNodeRoleCode:  capServerCalcBaselineExcel.ExpendNodeRoleCode,
+				OccNodeRes:          capServerCalcBaselineExcel.OccNodeRes,
+				OccNodeResCode:      capServerCalcBaselineExcel.OccNodeResCode,
+				NodeWastage:         capServerCalcBaselineExcel.NodeWastage,
+				NodeWastageCalcType: nodeWastageCalcType,
+				WaterLevel:          capServerCalcBaselineExcel.WaterLevel,
+			})
+		}
+		originCapServerCalcBaselines, err := QueryCapServerCalcBaselineByVersionId(softwareVersion.Id)
+		if err != nil && err != gorm.ErrRecordNotFound {
+			log.Error(err)
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return true
+		}
+		if len(originCapServerCalcBaselines) > 0 {
+			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
+		} else {
+			if err := BatchCreateCapServerCalcBaseline(capServerCalcBaselines); err != nil {
+				log.Error(err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
 			}
 		}
 	}

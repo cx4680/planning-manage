@@ -439,3 +439,45 @@ CREATE TABLE `network_model_role_rel`
     `role_id`                bigint(20) DEFAULT NULL COMMENT '关联的节点角色id或者网络设备角色id',
     `role_num`               int(11) DEFAULT NULL COMMENT '关联相同角色数量'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='网络组网模式与节点角色或者网络设备角色关联表';
+
+CREATE TABLE `cap_convert_baseline` (
+                                        `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+                                        `version_id`    bigint(20) DEFAULT NULL COMMENT '版本id',
+                                        `product_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '产品名称',
+                                        `product_code` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '产品code',
+                                        `sell_specs` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '售卖规格',
+                                        `cap_planning_input` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '容量规划输入',
+                                        `unit` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位',
+                                        `features` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '特性',
+                                        `description` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '说明',
+                                        PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='云服务容量换算基线表';
+
+CREATE TABLE `cap_actual_res_baseline` (
+                                           `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+                                           `version_id`    bigint(20) DEFAULT NULL COMMENT '版本id',
+                                           `product_code` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '产品code',
+                                           `sell_specs` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '售卖规格',
+                                           `sell_unit` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '售卖单元',
+                                           `expend_res` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '消耗资源',
+                                           `expend_res_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '消耗资源编码',
+                                           `features` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '特性',
+                                           `occ_ratio_numerator` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '占用比例分子，为N的时候需要根据用户实际填写来做计算',
+                                           `occ_ratio_denominator` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '占用比例分母',
+                                           `remarks` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '备注',
+                                           PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='云服务容量-实际资源消耗基线表';
+
+CREATE TABLE `cap_server_calc_baseline` (
+                                            `id` bigint(20) NOT NULL COMMENT '主键id',
+                                            `version_id`    bigint(20) DEFAULT NULL COMMENT '版本id',
+                                            `expend_res` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '消耗资源',
+                                            `expend_res_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '消耗资源编码',
+                                            `expend_node_role_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '消耗节点角色编码',
+                                            `occ_node_res` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '占用节点资源',
+                                            `occ_node_res_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '占用节点资源编码',
+                                            `node_wastage` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '节点损耗',
+                                            `node_wastage_calc_type` tinyint(4) DEFAULT NULL COMMENT '节点损耗计算类型，1：数量，2：百分比',
+                                            `water_level` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '水位',
+                                            PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务器数量计算基线表';

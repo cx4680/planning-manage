@@ -203,3 +203,51 @@ func BatchCreateIPDemandDeviceRoleRel(ipDemandDeviceRoleRels []entity.IPDemandDe
 	}
 	return nil
 }
+
+func QueryCapConvertBaselineByVersionId(versionId int64) ([]entity.CapConvertBaseline, error) {
+	var capConvertBaselines []entity.CapConvertBaseline
+	if err := data.DB.Table(entity.CapConvertBaselineTable).Where("version_id = ? ", versionId).Find(&capConvertBaselines).Error; err != nil {
+		return capConvertBaselines, err
+	}
+	return capConvertBaselines, nil
+}
+
+func BatchCreateCapConvertBaseline(capConvertBaselines []entity.CapConvertBaseline) error {
+	if err := data.DB.Table(entity.CapConvertBaselineTable).Create(&capConvertBaselines).Scan(&capConvertBaselines).Error; err != nil {
+		log.Errorf("batch insert capConvertBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func QueryCapActualResBaselineByVersionId(versionId int64) ([]entity.CapActualResBaseline, error) {
+	var capActualResBaselines []entity.CapActualResBaseline
+	if err := data.DB.Table(entity.CapActualResBaselineTable).Where("version_id = ? ", versionId).Find(&capActualResBaselines).Error; err != nil {
+		return capActualResBaselines, err
+	}
+	return capActualResBaselines, nil
+}
+
+func BatchCreateCapActualResBaseline(capActualResBaselines []entity.CapActualResBaseline) error {
+	if err := data.DB.Table(entity.CapActualResBaselineTable).Create(&capActualResBaselines).Scan(&capActualResBaselines).Error; err != nil {
+		log.Errorf("batch insert capActualResBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func QueryCapServerCalcBaselineByVersionId(versionId int64) ([]entity.CapServerCalcBaseline, error) {
+	var capServerCalcBaselines []entity.CapServerCalcBaseline
+	if err := data.DB.Table(entity.CapServerCalcBaselineTable).Where("version_id = ? ", versionId).Find(&capServerCalcBaselines).Error; err != nil {
+		return capServerCalcBaselines, err
+	}
+	return capServerCalcBaselines, nil
+}
+
+func BatchCreateCapServerCalcBaseline(capServerCalcBaselines []entity.CapServerCalcBaseline) error {
+	if err := data.DB.Table(entity.CapServerCalcBaselineTable).Create(&capServerCalcBaselines).Scan(&capServerCalcBaselines).Error; err != nil {
+		log.Errorf("batch insert capServerCalcBaseline error: %v", err)
+		return err
+	}
+	return nil
+}

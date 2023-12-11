@@ -7,6 +7,9 @@ const (
 	NetworkDeviceRoleBaselineSheetName = "网络设备角色基线"
 	NodeRoleBaselineSheetName          = "节点角色基线"
 	IPDemandBaselineSheetName          = "IP需求规划"
+	CapConvertBaselineSheetName        = "云服务容量换算"
+	CapActualResBaselineSheetName      = "云服务容量实际资源消耗"
+	CapServerCalcBaselineSheetName     = "服务器数量计算"
 )
 
 const (
@@ -16,6 +19,9 @@ const (
 	NetworkDeviceRoleBaselineType = "networkDeviceRoleBaseline"
 	NodeRoleBaselineType          = "nodeRoleBaseline"
 	IPDemandBaselineType          = "ipDemandBaseline"
+	CapConvertBaselineType        = "capConvertBaseline"
+	CapActualResBaselineType      = "capActualResBaseline"
+	CapServerCalcBaselineType     = "capServerCalcBaseline"
 )
 
 type CloudProductBaselineExcel struct {
@@ -109,4 +115,36 @@ type IPDemandBaselineExcel struct {
 	AssignNum              string   `excel:"name:数量（C）;" json:"assignNum"`             // 分配数量
 	Remark                 string   `excel:"name:备注;" json:"remark"`                   // 备注
 	NetworkDeviceRoleCodes []string `json:"networkDeviceRoleCodes"`                    // 关联设备组数组
+}
+
+type CapConvertBaselineExcel struct {
+	ProductName      string `excel:"name:云服务;" json:"productName"`         // 产品名称
+	ProductCode      string `excel:"name:服务编码;" json:"productCode"`        // 产品编码
+	SellSpecs        string `excel:"name:售卖规格;" json:"sellSpecs"`          // 售卖规格
+	CapPlanningInput string `excel:"name:容量规划输入;" json:"capPlanningInput"` // 容量规划输入
+	Unit             string `excel:"name:单位;" json:"unit"`                 // 单位
+	Features         string `excel:"name:特性;" json:"features"`             // 特性
+	Description      string `excel:"name:说明;" json:"description"`          // 说明
+}
+
+type CapActualResBaselineExcel struct {
+	ProductCode   string `excel:"name:服务编码;" json:"productCode"`     // 产品编码
+	SellSpecs     string `excel:"name:售卖规格;" json:"sellSpecs"`       // 售卖规格
+	SellUnit      string `excel:"name:售卖单元;" json:"sellUnit"`        // 售卖单元
+	ExpendRes     string `excel:"name:消耗资源;" json:"expendRes"`       // 消耗资源
+	ExpendResCode string `excel:"name:消耗资源编码;" json:"expendResCode"` // 消耗资源编码
+	Features      string `excel:"name:特性;" json:"features"`          // 特性
+	OccRatio      string `excel:"name:占用比例;" json:"occRatio"`        // 占用比例
+	Remarks       string `excel:"name:备注;" json:"remarks"`           // 备注
+}
+
+type CapServerCalcBaselineExcel struct {
+	ExpendRes           string `excel:"name:消耗资源;" json:"expendRes"`               // 消耗资源
+	ExpendResCode       string `excel:"name:消耗资源编码;" json:"expendResCode"`         // 消耗资源编码
+	ExpendNodeRoleCode  string `excel:"name:消耗节点角色编码;" json:"expendNodeRoleCode"`  // 消耗节点角色编码
+	OccNodeRes          string `excel:"name:占用节点资源;" json:"occNodeRes"`            // 占用节点资源
+	OccNodeResCode      string `excel:"name:占用节点资源编码;" json:"occNodeResCode"`      // 占用节点资源编码
+	NodeWastage         string `excel:"name:节点损耗;" json:"nodeWastage"`             // 节点损耗
+	NodeWastageCalcType string `excel:"name:节点损耗计算类型;" json:"nodeWastageCalcType"` // 节点损耗计算类型，1：数量，2：百分比
+	WaterLevel          string `excel:"name:水位;" json:"waterLevel"`                // 水位
 }
