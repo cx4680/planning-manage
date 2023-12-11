@@ -453,12 +453,14 @@ func dealNetworkModel(versionId int64, networkInterface string, request *Request
 	deviceType := request.DeviceType
 	var response []NetworkDevices
 	deviceModels, _ := getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId, networkInterface, id, brand, deviceType)
+	var deviceModel string
+	var confOverview string
 	if len(deviceModels) == 0 {
 		log.Errorf("[getModelsByVersionIdAndRoleAndBrandAndNetworkConfig] 获取网络设备型号为空")
-		return nil, nil
+	} else {
+		deviceModel = deviceModels[0].DeviceModel
+		confOverview = deviceModels[0].ConfOverview
 	}
-	deviceModel := deviceModels[0].DeviceModel
-	confOverview := deviceModels[0].ConfOverview
 	if constant.NeedQueryOtherTable == networkModel {
 		var serverNum = 0
 		var nodeRoles []int64
