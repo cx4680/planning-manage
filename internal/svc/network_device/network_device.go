@@ -133,6 +133,7 @@ func ListNetworkDevices(c *gin.Context) {
 		result.FailureWithMsg(c, errorcodes.InvalidParam, http.StatusBadRequest, err.Error())
 		return
 	}
+	var finalResponse NetworkDevicesResponse
 	var response []NetworkDevices
 	// 根据方案ID查询网络设备规划表 没有则保存，有则更新
 	planId := request.PlanId
@@ -189,6 +190,10 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
+	//计算网络设备总数
+	total := len(response)
+	finalResponse.Total = total
+	finalResponse.NetworkDeviceList = response
 	if devicePlan.Id == 0 {
 		err = createDevicePlan(request)
 	} else {
@@ -199,7 +204,7 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	result.Success(c, response)
+	result.Success(c, finalResponse)
 	return
 }
 
