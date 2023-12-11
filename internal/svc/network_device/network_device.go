@@ -77,7 +77,7 @@ func GetBrandsByPlanId(c *gin.Context) {
 	planId := request.PlanId
 	cloudPlatformType := request.CloudPlatformType
 	baselineVersion := request.BaselineVersion
-	if len(cloudPlatformType) == 0 || len(baselineVersion) == 0 || planId == 0 {
+	if util.IsBlank(cloudPlatformType) || util.IsBlank(baselineVersion) || planId == 0 {
 		result.FailureWithMsg(c, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.ParamError)
 		return
 	}
