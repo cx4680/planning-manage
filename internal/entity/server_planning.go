@@ -21,7 +21,7 @@ type ServerPlanning struct {
 	NodeRoleClassify   string           `gorm:"-" json:"nodeRoleClassify"`                         // 节点角色分类
 	NodeRoleAnnotation string           `gorm:"-" json:"nodeRoleAnnotation"`                       // 节点说明
 	SupportDpdk        int              `gorm:"-" json:"supportDpdk"`                              // 是否支持DPDK, 0:否，1：是
-	ServerBomCode      string           `gorm:"-" json:"serverBomCode"`                            // 机型
+	ServerBomCode      string           `gorm:"-" json:"serverBomCode"`                            // BOM编码
 	ServerArch         string           `gorm:"-" json:"ServerArch"`                               // 架构
 	ServerBaselineList []*ServerModel   `gorm:"-" json:"serverBaselineList"`                       // 可选择机型列表
 	MixedNodeRoleList  []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`                        // 可混合部署角色列表
@@ -40,6 +40,8 @@ type MixedNodeRole struct {
 type ServerModel struct {
 	Id                int64  `gorm:"-" json:"id"`                // 服务器id
 	BomCode           string `gorm:"-" json:"bomCode"`           // BOM编码
+	NetworkInterface  string `gorm:"-" json:"networkInterface"`  // BOM编码
+	CpuType           string `gorm:"-" json:"cpuType"`           // BOM编码
 	Arch              string `gorm:"-" json:"arch"`              // 硬件架构
 	ConfigurationInfo string `gorm:"-" json:"configurationInfo"` // 配置概要
 }
