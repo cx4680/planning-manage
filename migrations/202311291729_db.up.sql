@@ -264,21 +264,21 @@ CREATE TABLE `network_device_list`
     `logical_grouping`         varchar(255)  DEFAULT NULL COMMENT '逻辑分组',
     `device_id`                varchar(255)  DEFAULT NULL COMMENT '设备ID',
     `conf_overview`            varchar(1000) DEFAULT NULL COMMENT '配置概述',
-    `brand`                    varchar(45)   DEFAULT NULL COMMENT '厂商',
-    `device_model`             varchar(45)   DEFAULT NULL COMMENT '设备型号',
+    `brand`                    varchar(255)   DEFAULT NULL COMMENT '厂商',
+    `device_model`             varchar(255)   DEFAULT NULL COMMENT '设备型号',
     `create_time`              datetime      DEFAULT NULL COMMENT '创建时间',
     `update_time`              datetime      DEFAULT NULL COMMENT '修改时间',
     `delete_state`             tinyint(4) DEFAULT NULL COMMENT '删除状态0：未删除；1：已删除',
     PRIMARY KEY (`id`) USING BTREE,
     KEY                        `IDX_U_PLAN_ID_STATE` (`plan_id`,`delete_state`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='网络设备清单';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='网络设备清单';
 
 
 CREATE TABLE `network_device_planning`
 (
     `id`                     bigint(20) NOT NULL AUTO_INCREMENT,
     `plan_id`                bigint(20) NOT NULL COMMENT '方案ID',
-    `brand`                  varchar(45) CHARACTER SET utf8 DEFAULT NULL COMMENT '厂商',
+    `brand`                  varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT '厂商',
     `application_dispersion` char(1)                        DEFAULT '1' COMMENT '应用分散度: 1-分散在不同服务器',
     `aws_server_num`         tinyint(2) DEFAULT NULL COMMENT 'AWS下连服务器数44/45',
     `aws_box_num`            tinyint(2) DEFAULT NULL COMMENT '每组AWS几个机柜4/3',

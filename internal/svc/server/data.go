@@ -39,56 +39,54 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 	if err := data.DB.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleBaselineList).Error; err != nil {
 		return nil, err
 	}
-	//查询已保存的服务器规划表
-	var serverPlanningList []*entity.ServerPlanning
-	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&serverPlanningList).Error; err != nil {
-		return nil, err
-	}
-	var serverPlanningMap = make(map[int64]*entity.ServerPlanning)
-	for _, v := range serverPlanningList {
-		serverPlanningMap[v.NodeRoleId] = v
-	}
-	//查询机型
-	NodeRoleServerBaselineListMap, err := getNodeRoleServerBaselineMap(nodeRoleBaselineList)
+	//查询角色服务器基线map
+	serverBaselineMap, nodeRoleServerBaselineListMap, screenServerBaselineList, err := getNodeRoleServerBaselineMap(nodeRoleIdList, request)
 	if err != nil {
 		return nil, err
 	}
-	//查询cpuType
-	serverBaselineIdMap, cpuTypeServerBaselineMap, err := getServerBaselineMap(productIdList[0])
 	if err != nil {
 		return nil, err
 	}
-	//查询部署方式map
+	//查询混合部署方式map
 	mixedNodeRoleMap, err := getMixedNodeRoleMap(nodeRoleIdList)
 	if err != nil {
 		return nil, err
+	}
+	//查询已保存的服务器规划表
+	var serverPlanningList []*entity.ServerPlanning
+	if err = data.DB.Where("plan_id = ?", request.PlanId).Find(&serverPlanningList).Error; err != nil {
+		return nil, err
+	}
+	var nodeRoleServerPlanningMap = make(map[int64]*entity.ServerPlanning)
+	for _, v := range serverPlanningList {
+		nodeRoleServerPlanningMap[v.NodeRoleId] = v
 	}
 	//构建返回体
 	var list []*entity.ServerPlanning
 	for _, v := range nodeRoleBaselineList {
 		serverPlanning := &entity.ServerPlanning{}
-		_, ok := serverPlanningMap[v.Id]
+		_, ok := nodeRoleServerPlanningMap[v.Id]
 		if ok {
-			serverPlanning = serverPlanningMap[v.Id]
-			serverPlanning.ServerBaselineId = serverBaselineIdMap[serverPlanning.ServerBaselineId].Id
-			serverPlanning.ServerModel = serverBaselineIdMap[serverPlanning.ServerBaselineId].BomCode
-			serverPlanning.ServerArch = serverBaselineIdMap[serverPlanning.ServerBaselineId].Arch
+			serverPlanning = nodeRoleServerPlanningMap[v.Id]
+			serverPlanning.ServerBomCode = serverBaselineMap[serverPlanning.ServerBaselineId].BomCode
+			serverPlanning.ServerArch = serverBaselineMap[serverPlanning.ServerBaselineId].Arch
 		} else {
 			serverPlanning.PlanId = request.PlanId
 			serverPlanning.NodeRoleId = v.Id
 			serverPlanning.Number = v.MinimumNum
-		}
-		if util.IsNotBlank(request.CpuType) {
-			serverPlanning.ServerBaselineId = cpuTypeServerBaselineMap[request.CpuType].Id
-			serverPlanning.ServerModel = cpuTypeServerBaselineMap[request.CpuType].BomCode
-			serverPlanning.ServerArch = cpuTypeServerBaselineMap[request.CpuType].Arch
+			if len(screenServerBaselineList) != 0 {
+				serverPlanning.ServerBaselineId = screenServerBaselineList[0].Id
+				serverPlanning.ServerBomCode = screenServerBaselineList[0].BomCode
+				serverPlanning.ServerArch = screenServerBaselineList[0].Arch
+			}
+			serverPlanning.MixedNodeRoleId = v.Id
 		}
 		serverPlanning.NodeRoleName = v.NodeRoleName
 		serverPlanning.NodeRoleClassify = v.Classify
 		serverPlanning.NodeRoleAnnotation = v.Annotation
 		serverPlanning.SupportDpdk = v.SupportDPDK
+		serverPlanning.ServerBaselineList = nodeRoleServerBaselineListMap[v.Id]
 		serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[v.Id]
-		serverPlanning.ServerBaselineList = NodeRoleServerBaselineListMap[v.Id]
 		list = append(list, serverPlanning)
 	}
 	return list, nil
@@ -136,18 +134,24 @@ func SaveServer(request *Request) error {
 
 func ListServerNetworkType(request *Request) ([]string, error) {
 	//查询云产品规划表
-	var cloudProductPlanning = &entity.CloudProductPlanning{}
-	if err := data.DB.Where("plan_id = ?", request.PlanId).First(&cloudProductPlanning).Error; err != nil {
+	var cloudProductPlanningList []*entity.CloudProductPlanning
+	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanningList).Error; err != nil {
 		return nil, err
 	}
+	if len(cloudProductPlanningList) == 0 {
+		return nil, errors.New("云产品规划不存在")
+	}
 	//查询云产品基线表
-	var cloudProductBaseline = &entity.CloudProductBaseline{}
-	if err := data.DB.Where("id = ?", cloudProductPlanning.ProductId).First(&cloudProductBaseline).Error; err != nil {
+	var cloudProductBaselineList []*entity.CloudProductBaseline
+	if err := data.DB.Where("id = ?", cloudProductPlanningList[0].ProductId).Find(&cloudProductBaselineList).Error; err != nil {
 		return nil, err
+	}
+	if len(cloudProductPlanningList) == 0 {
+		return nil, errors.New("云产品基线不存在")
 	}
 	//查询服务器基线表
 	var serverBaselineList []*entity.ServerBaseline
-	if err := data.DB.Where("version_id = ?", cloudProductBaseline.VersionId).Find(&serverBaselineList).Error; err != nil {
+	if err := data.DB.Where("version_id = ?", cloudProductBaselineList[0].VersionId).Find(&serverBaselineList).Error; err != nil {
 		return nil, err
 	}
 	var networkTypeMap = make(map[string]interface{})
@@ -164,18 +168,24 @@ func ListServerNetworkType(request *Request) ([]string, error) {
 
 func ListServerCpuType(request *Request) ([]string, error) {
 	//查询云产品规划表
-	var cloudProductPlanning = &entity.CloudProductPlanning{}
-	if err := data.DB.Where("plan_id = ?", request.PlanId).First(&cloudProductPlanning).Error; err != nil {
+	var cloudProductPlanningList []*entity.CloudProductPlanning
+	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanningList).Error; err != nil {
 		return nil, err
 	}
+	if len(cloudProductPlanningList) == 0 {
+		return nil, errors.New("云产品规划不存在")
+	}
 	//查询云产品基线表
-	var cloudProductBaseline = &entity.CloudProductBaseline{}
-	if err := data.DB.Where("id = ?", cloudProductPlanning.ProductId).First(&cloudProductBaseline).Error; err != nil {
+	var cloudProductBaselineList []*entity.CloudProductBaseline
+	if err := data.DB.Where("id = ?", cloudProductPlanningList[0].ProductId).Find(&cloudProductBaselineList).Error; err != nil {
 		return nil, err
+	}
+	if len(cloudProductPlanningList) == 0 {
+		return nil, errors.New("云产品基线不存在")
 	}
 	//查询服务器基线表
 	var serverBaselineList []*entity.ServerBaseline
-	if err := data.DB.Where("version_id = ?", cloudProductBaseline.VersionId).Find(&serverBaselineList).Error; err != nil {
+	if err := data.DB.Where("version_id = ?", cloudProductBaselineList[0].VersionId).Find(&serverBaselineList).Error; err != nil {
 		return nil, err
 	}
 	var cpuTypeMap = make(map[string]interface{})
@@ -349,55 +359,46 @@ func getMixedNodeRoleMap(nodeRoleIdList []int64) (map[int64][]*entity.MixedNodeR
 	return mixedNodeRoleMap, nil
 }
 
-func getNodeRoleServerBaselineMap(nodeRoleBaselineList []*entity.NodeRoleBaseline) (map[int64][]*entity.ServerModel, error) {
-	var nodeRoleIdList []int64
-	for _, v := range nodeRoleBaselineList {
-		nodeRoleIdList = append(nodeRoleIdList, v.Id)
-	}
+func getNodeRoleServerBaselineMap(nodeRoleIdList []int64, request *Request) (map[int64]*entity.ServerBaseline, map[int64][]*entity.ServerModel, []*entity.ServerBaseline, error) {
 	//查询服务器和角色关联表
 	var serverNodeRoleRelList []*entity.ServerNodeRoleRel
 	if err := data.DB.Where("node_role_id IN (?)", nodeRoleIdList).Find(&serverNodeRoleRelList).Error; err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
-	var serverNodeRoleRelMap = make(map[int64][]int64)
+	var nodeRoleServerRelMap = make(map[int64][]int64)
+	var serverBaselineIdList []int64
 	for _, v := range serverNodeRoleRelList {
-		serverNodeRoleRelMap[v.NodeRoleId] = append(serverNodeRoleRelMap[v.NodeRoleId], v.ServerId)
-	}
-	//查询服务器基线表
-	var nodeRoleServerBaselineMap = make(map[int64][]*entity.ServerModel)
-	for k, v := range serverNodeRoleRelMap {
-		var serverBaselineList []*entity.ServerBaseline
-		if err := data.DB.Where("id IN (?)", v).Find(&serverBaselineList).Error; err != nil {
-			return nil, err
-		}
-		for _, serverBaseline := range serverBaselineList {
-			nodeRoleServerBaselineMap[k] = append(nodeRoleServerBaselineMap[k], &entity.ServerModel{
-				Id:                serverBaseline.Id,
-				BomCode:           serverBaseline.BomCode,
-				Arch:              serverBaseline.Arch,
-				ConfigurationInfo: serverBaseline.ConfigurationInfo,
-			})
-		}
-	}
-	return nodeRoleServerBaselineMap, nil
-}
-
-func getServerBaselineMap(productId int64) (map[int64]*entity.ServerBaseline, map[string]*entity.ServerBaseline, error) {
-	var serverBaselineIdMap = make(map[int64]*entity.ServerBaseline)
-	var serverBaselineCpuTypeMap = make(map[string]*entity.ServerBaseline)
-	//查询云产品基线表
-	var cloudProductBaseline = &entity.CloudProductBaseline{}
-	if err := data.DB.Where("id = ?", productId).First(&cloudProductBaseline).Error; err != nil {
-		return nil, nil, err
+		nodeRoleServerRelMap[v.NodeRoleId] = append(nodeRoleServerRelMap[v.NodeRoleId], v.ServerId)
+		serverBaselineIdList = append(serverBaselineIdList, v.ServerId)
 	}
 	//查询服务器基线表
 	var serverBaselineList []*entity.ServerBaseline
-	if err := data.DB.Where("version_id = ?", cloudProductBaseline.VersionId).Find(&serverBaselineList).Error; err != nil {
-		return nil, nil, err
+	if err := data.DB.Where("id IN (?)", serverBaselineIdList).Find(&serverBaselineList).Error; err != nil {
+		return nil, nil, nil, err
 	}
+	var serverBaselineMap = make(map[int64]*entity.ServerBaseline)
+	var screenServerBaselineList []*entity.ServerBaseline
 	for _, v := range serverBaselineList {
-		serverBaselineIdMap[v.Id] = v
-		serverBaselineCpuTypeMap[v.CpuType] = v
+		serverBaselineMap[v.Id] = v
+		if (util.IsBlank(request.NetworkInterface) || v.NetworkInterface == request.NetworkInterface) && (util.IsBlank(request.CpuType) || v.CpuType == request.CpuType) {
+			screenServerBaselineList = append(screenServerBaselineList, v)
+		}
 	}
-	return serverBaselineIdMap, serverBaselineCpuTypeMap, nil
+	//查询服务器基线表
+	var nodeRoleServerBaselineMap = make(map[int64][]*entity.ServerModel)
+	for k, serverIdList := range nodeRoleServerRelMap {
+		for _, serverId := range serverIdList {
+			if serverBaselineMap[serverId] != nil {
+				nodeRoleServerBaselineMap[k] = append(nodeRoleServerBaselineMap[k], &entity.ServerModel{
+					Id:                serverBaselineMap[serverId].Id,
+					BomCode:           serverBaselineMap[serverId].BomCode,
+					NetworkInterface:  serverBaselineMap[serverId].NetworkInterface,
+					CpuType:           serverBaselineMap[serverId].CpuType,
+					Arch:              serverBaselineMap[serverId].Arch,
+					ConfigurationInfo: serverBaselineMap[serverId].ConfigurationInfo,
+				})
+			}
+		}
+	}
+	return serverBaselineMap, nodeRoleServerBaselineMap, screenServerBaselineList, nil
 }

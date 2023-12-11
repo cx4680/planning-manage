@@ -133,6 +133,7 @@ func ListNetworkDevices(c *gin.Context) {
 		result.FailureWithMsg(c, errorcodes.InvalidParam, http.StatusBadRequest, err.Error())
 		return
 	}
+	var finalResponse NetworkDevicesResponse
 	var response []NetworkDevices
 	// 根据方案ID查询网络设备规划表 没有则保存，有则更新
 	planId := request.PlanId
@@ -189,6 +190,10 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
+	//计算网络设备总数
+	total := len(response)
+	finalResponse.Total = total
+	finalResponse.NetworkDeviceList = response
 	if devicePlan.Id == 0 {
 		err = createDevicePlan(request)
 	} else {
@@ -199,7 +204,7 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	result.Success(c, response)
+	result.Success(c, finalResponse)
 	return
 }
 
@@ -448,12 +453,14 @@ func dealNetworkModel(versionId int64, networkInterface string, request *Request
 	deviceType := request.DeviceType
 	var response []NetworkDevices
 	deviceModels, _ := getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId, networkInterface, id, brand, deviceType)
+	var deviceModel string
+	var confOverview string
 	if len(deviceModels) == 0 {
 		log.Errorf("[getModelsByVersionIdAndRoleAndBrandAndNetworkConfig] 获取网络设备型号为空")
-		return nil, nil
+	} else {
+		deviceModel = deviceModels[0].DeviceModel
+		confOverview = deviceModels[0].ConfOverview
 	}
-	deviceModel := deviceModels[0].DeviceModel
-	confOverview := deviceModels[0].ConfOverview
 	if constant.NeedQueryOtherTable == networkModel {
 		var serverNum = 0
 		var nodeRoles []int64

@@ -1,12 +1,12 @@
 package server
 
 type Request struct {
-	Id             int64
-	UserId         string
-	PlanId         int64            `form:"planId"`
-	NetworkVersion string           `form:"networkVersion"`
-	CpuType        string           `form:"cpuType"`
-	ServerList     []*RequestServer `form:"serverList"`
+	Id               int64
+	UserId           string
+	PlanId           int64            `form:"planId"`
+	NetworkInterface string           `form:"networkInterface"`
+	CpuType          string           `form:"cpuType"`
+	ServerList       []*RequestServer `form:"serverList"`
 }
 
 type RequestServer struct {

@@ -38,6 +38,11 @@ type Request struct {
 	Devices               []NetworkDevices `json:"devices" form:"devices"`
 }
 
+type NetworkDevicesResponse struct {
+	Total             int              `json:"total" form:"total"`
+	NetworkDeviceList []NetworkDevices `json:"networkDeviceList" form:"networkDeviceList"`
+}
+
 type NetworkDevices struct {
 	PlanId                int64                `json:"devices" form:"planId"`
 	NetworkDeviceRoleId   int64                `json:"networkDeviceRoleId" form:"networkDeviceRoleId"`
