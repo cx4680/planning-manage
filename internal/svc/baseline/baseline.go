@@ -868,8 +868,8 @@ func ImportCapActualResBaseline(context *gin.Context, softwareVersion entity.Sof
 			var occRatioDenominator string
 			if occRatio != "" {
 				occRatios := strings.Split(occRatio, constant.SplitLineColon)
-				if len(occRatio) != 2 {
-					log.Infof("import capActualResBaseline fail, occRatio length: ", len(occRatio))
+				if len(occRatios) != 2 {
+					log.Infof("import capActualResBaseline fail, occRatio length: ", len(occRatios))
 					result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
 					return true
 				}

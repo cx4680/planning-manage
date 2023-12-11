@@ -469,7 +469,7 @@ CREATE TABLE `cap_actual_res_baseline` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='云服务容量-实际资源消耗基线表';
 
 CREATE TABLE `cap_server_calc_baseline` (
-                                            `id` bigint(20) NOT NULL COMMENT '主键id',
+                                            `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
                                             `version_id`    bigint(20) DEFAULT NULL COMMENT '版本id',
                                             `expend_res` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '消耗资源',
                                             `expend_res_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '消耗资源编码',
