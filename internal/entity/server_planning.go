@@ -40,8 +40,8 @@ type MixedNodeRole struct {
 type ServerModel struct {
 	Id                int64  `gorm:"-" json:"id"`                // 服务器id
 	BomCode           string `gorm:"-" json:"bomCode"`           // BOM编码
-	NetworkInterface  string `gorm:"-" json:"networkInterface"`  // BOM编码
-	CpuType           string `gorm:"-" json:"cpuType"`           // BOM编码
+	NetworkInterface  string `gorm:"-" json:"networkInterface"`  // 网络类型
+	CpuType           string `gorm:"-" json:"cpuType"`           // cpu类型
 	Arch              string `gorm:"-" json:"arch"`              // 硬件架构
 	ConfigurationInfo string `gorm:"-" json:"configurationInfo"` // 配置概要
 }
