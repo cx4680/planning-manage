@@ -23,7 +23,7 @@ type ServerPlanning struct {
 	ServerModel        string           `gorm:"-" json:"serverModel"`                              // 机型
 	ServerArch         string           `gorm:"-" json:"ServerArch"`                               // 架构
 	SupportDpdk        int              `gorm:"-" json:"supportDpdk"`                              // 是否支持DPDK, 0:否，1：是
-	ServerModelList    []*ServerModel   `gorm:"-" json:"serverModelList"`                          // 可选择机型列表
+	ServerBaselineList []*ServerModel   `gorm:"-" json:"serverBaselineList"`                       // 可选择机型列表
 	MixedNodeRoleList  []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`                        // 可混合部署角色列表
 }
 

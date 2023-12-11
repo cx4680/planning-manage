@@ -51,6 +51,25 @@ func Save(c *gin.Context) {
 	}
 	result.Success(c, nil)
 }
+func NetworkTypeList(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindQuery(&request); err != nil {
+		log.Errorf("list server network bind param error: ", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	if request.PlanId == 0 {
+		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+		return
+	}
+	list, err := ListServerNetworkType(request)
+	if err != nil {
+		log.Errorf("list server network error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, list)
+}
 
 func CpuTypeList(c *gin.Context) {
 	request := &Request{}
