@@ -58,7 +58,7 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 	if err != nil {
 		return nil, err
 	}
-	//查询部署方式map
+	//查询混合部署方式map
 	mixedNodeRoleMap, err := getMixedNodeRoleMap(nodeRoleIdList)
 	if err != nil {
 		return nil, err
@@ -70,25 +70,28 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 		_, ok := serverPlanningMap[v.Id]
 		if ok {
 			serverPlanning = serverPlanningMap[v.Id]
-			serverPlanning.ServerBaselineId = serverBaselineIdMap[serverPlanning.ServerBaselineId].Id
-			serverPlanning.ServerModel = serverBaselineIdMap[serverPlanning.ServerBaselineId].BomCode
+			serverPlanning.ServerBomCode = serverBaselineIdMap[serverPlanning.ServerBaselineId].BomCode
 			serverPlanning.ServerArch = serverBaselineIdMap[serverPlanning.ServerBaselineId].Arch
 		} else {
 			serverPlanning.PlanId = request.PlanId
 			serverPlanning.NodeRoleId = v.Id
 			serverPlanning.Number = v.MinimumNum
+			if len(NodeRoleServerBaselineListMap[v.Id]) != 0 {
+				serverPlanning.ServerBaselineId = NodeRoleServerBaselineListMap[v.Id][0].Id
+			}
+			serverPlanning.MixedNodeRoleId = v.Id
 		}
 		if util.IsNotBlank(request.CpuType) {
 			serverPlanning.ServerBaselineId = cpuTypeServerBaselineMap[request.CpuType].Id
-			serverPlanning.ServerModel = cpuTypeServerBaselineMap[request.CpuType].BomCode
+			serverPlanning.ServerBomCode = cpuTypeServerBaselineMap[request.CpuType].BomCode
 			serverPlanning.ServerArch = cpuTypeServerBaselineMap[request.CpuType].Arch
 		}
 		serverPlanning.NodeRoleName = v.NodeRoleName
 		serverPlanning.NodeRoleClassify = v.Classify
 		serverPlanning.NodeRoleAnnotation = v.Annotation
 		serverPlanning.SupportDpdk = v.SupportDPDK
-		serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[v.Id]
 		serverPlanning.ServerBaselineList = NodeRoleServerBaselineListMap[v.Id]
+		serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[v.Id]
 		list = append(list, serverPlanning)
 	}
 	return list, nil
