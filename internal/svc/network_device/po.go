@@ -33,8 +33,7 @@ type Request struct {
 	Ipv6                  string           `json:"ipv6" form:"ipv6"`
 	NetworkModel          int              `json:"networkModel" form:"networkModel"`
 	DeviceType            int              `json:"deviceType" form:"deviceType"`
-	CloudPlatformType     string           `json:"cloudPlatformType" form:"cloudPlatformType"`
-	BaselineVersion       string           `json:"baselineVersion" form:"baselineVersion"`
+	VersionId             int64            `json:"versionId" form:"versionId"`
 	Devices               []NetworkDevices `json:"devices" form:"devices"`
 }
 

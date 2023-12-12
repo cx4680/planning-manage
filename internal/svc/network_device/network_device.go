@@ -83,16 +83,9 @@ func GetBrandsByPlanId(c *gin.Context) {
 		return
 	}
 	planId := request.PlanId
-	cloudPlatformType := request.CloudPlatformType
-	baselineVersion := request.BaselineVersion
-	if util.IsBlank(cloudPlatformType) || util.IsBlank(baselineVersion) || planId == 0 {
+	versionId := request.VersionId
+	if versionId == 0 || planId == 0 {
 		result.FailureWithMsg(c, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.ParamError)
-		return
-	}
-	// 根据云产品版本和云平台类型查询版本ID
-	versionId, err := getVersionId(baselineVersion, cloudPlatformType)
-	if err != nil {
-		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// 根据方案id查询云产品规划信息  取其中一条拿服务器基线表ID
@@ -151,11 +144,7 @@ func ListNetworkDevices(c *gin.Context) {
 		return
 	}
 	// 根据云产品版本和云平台类型查询版本ID
-	versionId, err := getVersionId(request.BaselineVersion, request.CloudPlatformType)
-	if err != nil {
-		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, err.Error())
-		return
-	}
+	versionId := request.VersionId
 	// 根据方案id查询服务器规划
 	serverPlanningList, err := server.QueryServerPlanningListByPlanId(planId)
 	if err != nil {
@@ -262,11 +251,7 @@ func SaveDeviceList(c *gin.Context) {
 		return
 	}
 	// 根据云产品版本和云平台类型查询版本ID
-	versionId, err := getVersionId(req.BaselineVersion, req.CloudPlatformType)
-	if err != nil {
-		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, err.Error())
-		return
-	}
+	versionId := req.VersionId
 	// 根据版本ID查询ip需求基线数据
 	ipDemandBaselines, err := ip_demand.GetIpDemandBaselineByVersionId(versionId)
 	if err != nil {
@@ -401,11 +386,8 @@ func checkRequest(request *Request) error {
 	if util.IsBlank(request.Brand) {
 		return errors.New("厂商参数为空")
 	}
-	if util.IsBlank(request.CloudPlatformType) {
-		return errors.New("云平台类型参数为空")
-	}
-	if util.IsBlank(request.BaselineVersion) {
-		return errors.New("云产品版本参数为空")
+	if request.VersionId == 0 {
+		return errors.New("版本ID参数为空")
 	}
 	return nil
 }
