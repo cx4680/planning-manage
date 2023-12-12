@@ -75,7 +75,7 @@ func Save(context *gin.Context) {
 	for _, baseline := range baselineResponseList {
 		if baseline.WhetherRequired == 1 && !contains(baseline.ID, productIdList) {
 			log.Error("[Save] invalid param error, 必选云产品未选中")
-			result.Failure(context, errorcodes.CloudProductRequireError, http.StatusBadRequest)
+			result.Failure(context, errorcodes.CloudProductRequiredError, http.StatusBadRequest)
 			return
 		}
 	}
@@ -86,7 +86,7 @@ func Save(context *gin.Context) {
 			//判断productIdList是否包含depend.DependId
 			if productId == depend.ID && !contains(depend.DependId, productIdList) {
 				log.Error("[Save] invalid param error, 选择的云产品有依赖项未选中")
-				result.Failure(context, errorcodes.CloudProductDependenciesError, http.StatusBadRequest)
+				result.Failure(context, errorcodes.CloudProductDependError, http.StatusBadRequest)
 				return
 			}
 		}
