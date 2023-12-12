@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: planning-manage-ui
+  namespace: planning-manage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: planning-manage-ui
+  template:
+    metadata:
+      labels:
+        app: planning-manage-ui
+    spec:
+      containers:
+        - name: planning-manage-web
+          image: harbor.ceclouddyn.com/intranet/planning-manage-ui:0.16-20231211153947
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 3
