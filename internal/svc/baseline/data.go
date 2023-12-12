@@ -52,6 +52,9 @@ func QueryNodeRoleBaselineByVersionId(versionId int64) ([]entity.NodeRoleBaselin
 }
 
 func BatchCreateNodeRoleBaseline(nodeRoleBaselines []entity.NodeRoleBaseline) error {
+	if len(nodeRoleBaselines) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.NodeRoleBaselineTable).Create(&nodeRoleBaselines).Scan(&nodeRoleBaselines).Error; err != nil {
 		log.Errorf("batch insert nodeRoleBaseline error: %v", err)
 		return err
@@ -80,6 +83,9 @@ func BatchCreateNodeRoleMixedDeploy(nodeRoleMixedDeploys []entity.NodeRoleMixedD
 }
 
 func BatchCreateCloudProductBaseline(cloudProductBaselines []entity.CloudProductBaseline) error {
+	if len(cloudProductBaselines) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.CloudProductBaselineTable).Create(&cloudProductBaselines).Scan(&cloudProductBaselines).Error; err != nil {
 		log.Errorf("batch insert cloudProductBaseline error: %v", err)
 		return err
@@ -288,6 +294,44 @@ func UpdateNodeRoleBaseline(nodeRoleBaselines []entity.NodeRoleBaseline) error {
 	}
 	if err := data.DB.Table(entity.NodeRoleBaselineTable).Updates(&nodeRoleBaselines).Error; err != nil {
 		log.Errorf("update nodeRoleBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func UpdateCloudProductBaseline(cloudProductBaselines []entity.CloudProductBaseline) error {
+	if len(cloudProductBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CloudProductBaselineTable).Updates(&cloudProductBaselines).Error; err != nil {
+		log.Errorf("update cloudProductBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteCloudProductDependRel() error {
+	if err := data.DB.Table(entity.CloudProductDependRelTable).Delete(&entity.CloudProductDependRel{}).Error; err != nil {
+		log.Errorf("delete cloudProductDependRel error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteCloudProductNodeRoleRel() error {
+	if err := data.DB.Table(entity.CloudProductNodeRoleTable).Delete(&entity.CloudProductNodeRoleRel{}).Error; err != nil {
+		log.Errorf("delete cloudProductNodeRoleRel error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteCloudProductBaseline(cloudProductBaselines []entity.CloudProductBaseline) error {
+	if len(cloudProductBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CloudProductBaselineTable).Delete(&cloudProductBaselines).Error; err != nil {
+		log.Errorf("delete cloudProductBaseline error: %v", err)
 		return err
 	}
 	return nil

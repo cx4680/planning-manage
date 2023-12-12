@@ -214,83 +214,131 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 			return true
 		}
 		if len(originCloudProductBaselines) > 0 {
-			// TODO 先查询云产品基线表，看看相同的版本号是否已存在数据，如果已存在，需要先删除已有数据
+			originCloudProductMap := make(map[string]entity.CloudProductBaseline)
+			var insertCloudProductBaselines []entity.CloudProductBaseline
+			var updateCloudProductBaselines []entity.CloudProductBaseline
+			for _, originCloudProductBaseline := range originCloudProductBaselines {
+				originCloudProductMap[originCloudProductBaseline.ProductCode] = originCloudProductBaseline
+			}
+			if err := DeleteCloudProductDependRel(); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if err := DeleteCloudProductNodeRoleRel(); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			for _, cloudProductBaseline := range cloudProductBaselines {
+				originCloudProductBaseline, ok := originCloudProductMap[cloudProductBaseline.ProductCode]
+				if ok {
+					cloudProductBaseline.Id = originCloudProductBaseline.Id
+					updateCloudProductBaselines = append(updateCloudProductBaselines, cloudProductBaseline)
+					delete(originCloudProductMap, cloudProductBaseline.ProductCode)
+				} else {
+					insertCloudProductBaselines = append(insertCloudProductBaselines, cloudProductBaseline)
+				}
+			}
+			if err := BatchCreateCloudProductBaseline(insertCloudProductBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if err := UpdateCloudProductBaseline(updateCloudProductBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if len(originCloudProductMap) > 0 {
+				var deleteCloudProductBaselines []entity.CloudProductBaseline
+				for _, cloudProductBaseline := range originCloudProductMap {
+					deleteCloudProductBaselines = append(deleteCloudProductBaselines, cloudProductBaseline)
+				}
+				if err := DeleteCloudProductBaseline(deleteCloudProductBaselines); err != nil {
+					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+					return true
+				}
+			}
+			cloudProductBaselines = append(insertCloudProductBaselines, updateCloudProductBaselines...)
+			return HandleCloudProductDependAndNodeRole(context, cloudProductBaselines, nodeRoleBaselines, cloudProductBaselineExcelList)
 		} else {
 			if err := BatchCreateCloudProductBaseline(cloudProductBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			cloudProductCodeMap := make(map[string]int64)
-			for _, cloudProductBaseline := range cloudProductBaselines {
-				cloudProductCodeMap[cloudProductBaseline.ProductCode] = cloudProductBaseline.Id
+			return HandleCloudProductDependAndNodeRole(context, cloudProductBaselines, nodeRoleBaselines, cloudProductBaselineExcelList)
+		}
+	}
+	return false
+}
+
+func HandleCloudProductDependAndNodeRole(context *gin.Context, cloudProductBaselines []entity.CloudProductBaseline, nodeRoleBaselines []entity.NodeRoleBaseline, cloudProductBaselineExcelList []CloudProductBaselineExcel) bool {
+	cloudProductCodeMap := make(map[string]int64)
+	for _, cloudProductBaseline := range cloudProductBaselines {
+		cloudProductCodeMap[cloudProductBaseline.ProductCode] = cloudProductBaseline.Id
+	}
+	nodeRoleCodeMap := make(map[string]int64)
+	for _, nodeRoleBaseline := range nodeRoleBaselines {
+		nodeRoleCodeMap[nodeRoleBaseline.NodeRoleCode] = nodeRoleBaseline.Id
+	}
+	for _, cloudProductBaselineExcel := range cloudProductBaselineExcelList {
+		productId := cloudProductCodeMap[cloudProductBaselineExcel.ProductCode]
+		// 处理依赖服务编码
+		dependProductCodes := cloudProductBaselineExcel.DependProductCodes
+		if len(dependProductCodes) > 0 {
+			var cloudProductDependRels []entity.CloudProductDependRel
+			for _, dependProductCode := range dependProductCodes {
+				cloudProductDependProductCode, ok := cloudProductCodeMap[dependProductCode]
+				if !ok {
+					log.Errorf("import cloudProductBaseline invalid dependCode: %s", dependProductCode)
+					result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+					return true
+				}
+				cloudProductDependRels = append(cloudProductDependRels, entity.CloudProductDependRel{
+					ProductId:       productId,
+					DependProductId: cloudProductDependProductCode,
+				})
 			}
-			nodeRoleCodeMap := make(map[string]int64)
-			for _, nodeRoleBaseline := range nodeRoleBaselines {
-				nodeRoleCodeMap[nodeRoleBaseline.NodeRoleCode] = nodeRoleBaseline.Id
+			if err := BatchCreateCloudProductDependRel(cloudProductDependRels); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
 			}
-			for _, cloudProductBaselineExcel := range cloudProductBaselineExcelList {
-				productId := cloudProductCodeMap[cloudProductBaselineExcel.ProductCode]
-				// 处理依赖服务编码
-				dependProductCodes := cloudProductBaselineExcel.DependProductCodes
-				if len(dependProductCodes) > 0 {
-					var cloudProductDependRels []entity.CloudProductDependRel
-					for _, dependProductCode := range dependProductCodes {
-						cloudProductDependProductCode, ok := cloudProductCodeMap[dependProductCode]
-						if !ok {
-							log.Errorf("import cloudProductBaseline invalid dependCode: %s", dependProductCode)
-							result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
-							return true
-						}
-						cloudProductDependRels = append(cloudProductDependRels, entity.CloudProductDependRel{
-							ProductId:       productId,
-							DependProductId: cloudProductDependProductCode,
-						})
-					}
-					if err := BatchCreateCloudProductDependRel(cloudProductDependRels); err != nil {
-						result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-						return true
-					}
+		}
+		// 处理管控资源节点角色和资源节点角色
+		controlResNodeRoleCodes := cloudProductBaselineExcel.ControlResNodeRoleCodes
+		var cloudProductNodeRoleRels []entity.CloudProductNodeRoleRel
+		if len(controlResNodeRoleCodes) > 0 {
+			for _, controlResNodeRoleCode := range controlResNodeRoleCodes {
+				nodeRoleId, ok := nodeRoleCodeMap[controlResNodeRoleCode]
+				if !ok {
+					log.Errorf("import cloudProductBaseline invalid controlResNodeRoleCode: %s", controlResNodeRoleCode)
+					result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+					return true
 				}
-				// 处理管控资源节点角色和资源节点角色
-				controlResNodeRoleCodes := cloudProductBaselineExcel.ControlResNodeRoleCodes
-				var cloudProductNodeRoleRels []entity.CloudProductNodeRoleRel
-				if len(controlResNodeRoleCodes) > 0 {
-					for _, controlResNodeRoleCode := range controlResNodeRoleCodes {
-						nodeRoleId, ok := nodeRoleCodeMap[controlResNodeRoleCode]
-						if !ok {
-							log.Errorf("import cloudProductBaseline invalid controlResNodeRoleCode: %s", controlResNodeRoleCode)
-							result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
-							return true
-						}
-						cloudProductNodeRoleRels = append(cloudProductNodeRoleRels, entity.CloudProductNodeRoleRel{
-							ProductId:    productId,
-							NodeRoleId:   nodeRoleId,
-							NodeRoleType: constant.ControlNodeRoleType,
-						})
-					}
+				cloudProductNodeRoleRels = append(cloudProductNodeRoleRels, entity.CloudProductNodeRoleRel{
+					ProductId:    productId,
+					NodeRoleId:   nodeRoleId,
+					NodeRoleType: constant.ControlNodeRoleType,
+				})
+			}
+		}
+		resNodeRoleCodes := cloudProductBaselineExcel.ResNodeRoleCodes
+		if len(resNodeRoleCodes) > 0 {
+			for _, resNodeRoleCode := range resNodeRoleCodes {
+				nodeRoleId, ok := nodeRoleCodeMap[resNodeRoleCode]
+				if !ok {
+					log.Errorf("import cloudProductBaseline invalid resNodeRoleCode: %s", resNodeRoleCode)
+					result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+					return true
 				}
-				resNodeRoleCodes := cloudProductBaselineExcel.ResNodeRoleCodes
-				if len(resNodeRoleCodes) > 0 {
-					for _, resNodeRoleCode := range resNodeRoleCodes {
-						nodeRoleId, ok := nodeRoleCodeMap[resNodeRoleCode]
-						if !ok {
-							log.Errorf("import cloudProductBaseline invalid resNodeRoleCode: %s", resNodeRoleCode)
-							result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
-							return true
-						}
-						cloudProductNodeRoleRels = append(cloudProductNodeRoleRels, entity.CloudProductNodeRoleRel{
-							ProductId:    productId,
-							NodeRoleId:   nodeRoleId,
-							NodeRoleType: constant.ResNodeRoleType,
-						})
-					}
-				}
-				if len(cloudProductNodeRoleRels) > 0 {
-					if err := BatchCreateCloudProductNodeRoleRel(cloudProductNodeRoleRels); err != nil {
-						result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-						return true
-					}
-				}
+				cloudProductNodeRoleRels = append(cloudProductNodeRoleRels, entity.CloudProductNodeRoleRel{
+					ProductId:    productId,
+					NodeRoleId:   nodeRoleId,
+					NodeRoleType: constant.ResNodeRoleType,
+				})
+			}
+		}
+		if len(cloudProductNodeRoleRels) > 0 {
+			if err := BatchCreateCloudProductNodeRoleRel(cloudProductNodeRoleRels); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
 			}
 		}
 	}
@@ -345,14 +393,14 @@ func ImportNodeRoleBaseline(context *gin.Context, versionId int64, f *excelize.F
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			for i := range nodeRoleBaselines {
-				originNodeRoleBaseline, ok := originNodeRoleMap[nodeRoleBaselines[i].NodeRoleCode]
+			for _, nodeRoleBaseline := range nodeRoleBaselines {
+				originNodeRoleBaseline, ok := originNodeRoleMap[nodeRoleBaseline.NodeRoleCode]
 				if ok {
-					nodeRoleBaselines[i].Id = originNodeRoleBaseline.Id
-					updateNodeRoleBaselines = append(updateNodeRoleBaselines, nodeRoleBaselines[i])
-					delete(originNodeRoleMap, nodeRoleBaselines[i].NodeRoleCode)
+					nodeRoleBaseline.Id = originNodeRoleBaseline.Id
+					updateNodeRoleBaselines = append(updateNodeRoleBaselines, nodeRoleBaseline)
+					delete(originNodeRoleMap, nodeRoleBaseline.NodeRoleCode)
 				} else {
-					insertNodeRoleBaselines = append(insertNodeRoleBaselines, nodeRoleBaselines[i])
+					insertNodeRoleBaselines = append(insertNodeRoleBaselines, nodeRoleBaseline)
 				}
 			}
 			if err := BatchCreateNodeRoleBaseline(insertNodeRoleBaselines); err != nil {
