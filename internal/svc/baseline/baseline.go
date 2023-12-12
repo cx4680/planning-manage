@@ -985,45 +985,83 @@ func ImportIPDemandBaseline(context *gin.Context, versionId int64, f *excelize.F
 			return true
 		}
 		if len(originIPDemandBaselines) > 0 {
-			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
-		} else {
-			if err := BatchCreateIPDemandBaseline(ipDemandBaselines); err != nil {
-				log.Error(err)
+			originIPDemandMap := make(map[string]entity.IPDemandBaseline)
+			var insertIPDemandBaselines []entity.IPDemandBaseline
+			var updateIPDemandBaselines []entity.IPDemandBaseline
+			if err := DeleteIPDemandDeviceRoleRel(); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			ipDemandBaselineMap := make(map[string]int64)
+			for _, originIPDemandBaseline := range originIPDemandBaselines {
+				originIPDemandMap[originIPDemandBaseline.Vlan] = originIPDemandBaseline
+			}
 			for _, ipDemandBaseline := range ipDemandBaselines {
-				ipDemandBaselineMap[ipDemandBaseline.Vlan] = ipDemandBaseline.Id
-			}
-			networkDeviceRoleCodeMap := make(map[string]int64)
-			for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
-				networkDeviceRoleCodeMap[networkDeviceRoleBaseline.FuncCompoCode] = networkDeviceRoleBaseline.Id
-			}
-			var ipDemandDeviceRoleRels []entity.IPDemandDeviceRoleRel
-			for _, ipDemandBaselineExcel := range ipDemandBaselineExcelList {
-				ipDemandId := ipDemandBaselineMap[ipDemandBaselineExcel.Vlan]
-				for _, networkDeviceRoleCode := range ipDemandBaselineExcel.NetworkDeviceRoleCodes {
-					deviceRoleId, ok := networkDeviceRoleCodeMap[networkDeviceRoleCode]
-					if !ok {
-						log.Infof("import IPDemandBaseline fail, can not find networkDeviceRoleCode: %s", networkDeviceRoleCode)
-						result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
-						return true
-					}
-					ipDemandDeviceRoleRels = append(ipDemandDeviceRoleRels, entity.IPDemandDeviceRoleRel{
-						IPDemandId:   ipDemandId,
-						DeviceRoleId: deviceRoleId,
-					})
+				originIPDemandBaseline, ok := originIPDemandMap[ipDemandBaseline.Vlan]
+				if ok {
+					ipDemandBaseline.Id = originIPDemandBaseline.Id
+					updateIPDemandBaselines = append(updateIPDemandBaselines, ipDemandBaseline)
+					delete(originIPDemandMap, ipDemandBaseline.Vlan)
+				} else {
+					insertIPDemandBaselines = append(insertIPDemandBaselines, ipDemandBaseline)
 				}
 			}
-			if len(ipDemandDeviceRoleRels) > 0 {
-				if err := BatchCreateIPDemandDeviceRoleRel(ipDemandDeviceRoleRels); err != nil {
-					log.Error(err)
+			if err := BatchCreateIPDemandBaseline(insertIPDemandBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if err := UpdateIPDemandBaseline(updateIPDemandBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if len(originIPDemandMap) > 0 {
+				var deleteIPDemandBaselines []entity.IPDemandBaseline
+				for _, originIPDemandBaseline := range originIPDemandMap {
+					deleteIPDemandBaselines = append(deleteIPDemandBaselines, originIPDemandBaseline)
+				}
+				if err := DeleteIPDemandBaseline(deleteIPDemandBaselines); err != nil {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
 			}
+		} else {
+			if err := BatchCreateIPDemandBaseline(ipDemandBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			return HandleIPDemandDeviceRoleRel(context, ipDemandBaselines, networkDeviceRoleBaselines, ipDemandBaselineExcelList)
 		}
+	}
+	return false
+}
+
+func HandleIPDemandDeviceRoleRel(context *gin.Context, ipDemandBaselines []entity.IPDemandBaseline, networkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline, ipDemandBaselineExcelList []IPDemandBaselineExcel) bool {
+	ipDemandBaselineMap := make(map[string]int64)
+	for _, ipDemandBaseline := range ipDemandBaselines {
+		ipDemandBaselineMap[ipDemandBaseline.Vlan] = ipDemandBaseline.Id
+	}
+	networkDeviceRoleCodeMap := make(map[string]int64)
+	for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
+		networkDeviceRoleCodeMap[networkDeviceRoleBaseline.FuncCompoCode] = networkDeviceRoleBaseline.Id
+	}
+	var ipDemandDeviceRoleRels []entity.IPDemandDeviceRoleRel
+	for _, ipDemandBaselineExcel := range ipDemandBaselineExcelList {
+		ipDemandId := ipDemandBaselineMap[ipDemandBaselineExcel.Vlan]
+		for _, networkDeviceRoleCode := range ipDemandBaselineExcel.NetworkDeviceRoleCodes {
+			deviceRoleId, ok := networkDeviceRoleCodeMap[networkDeviceRoleCode]
+			if !ok {
+				log.Infof("import IPDemandBaseline fail, can not find networkDeviceRoleCode: %s", networkDeviceRoleCode)
+				result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+				return true
+			}
+			ipDemandDeviceRoleRels = append(ipDemandDeviceRoleRels, entity.IPDemandDeviceRoleRel{
+				IPDemandId:   ipDemandId,
+				DeviceRoleId: deviceRoleId,
+			})
+		}
+	}
+	if err := BatchCreateIPDemandDeviceRoleRel(ipDemandDeviceRoleRels); err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return true
 	}
 	return false
 }

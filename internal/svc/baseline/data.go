@@ -207,6 +207,9 @@ func QueryIPDemandBaselineByVersionId(versionId int64) ([]entity.IPDemandBaselin
 }
 
 func BatchCreateIPDemandBaseline(ipDemandBaselines []entity.IPDemandBaseline) error {
+	if len(ipDemandBaselines) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.IPDemandBaselineTable).Create(&ipDemandBaselines).Scan(&ipDemandBaselines).Error; err != nil {
 		log.Errorf("batch insert ipDemandBaseline error: %v", err)
 		return err
@@ -215,6 +218,9 @@ func BatchCreateIPDemandBaseline(ipDemandBaselines []entity.IPDemandBaseline) er
 }
 
 func BatchCreateIPDemandDeviceRoleRel(ipDemandDeviceRoleRels []entity.IPDemandDeviceRoleRel) error {
+	if len(ipDemandDeviceRoleRels) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.IPDemandDeviceRoleRelTable).Create(&ipDemandDeviceRoleRels).Scan(&ipDemandDeviceRoleRels).Error; err != nil {
 		log.Errorf("batch insert ipDemandDeviceRoleRel error: %v", err)
 		return err
@@ -431,6 +437,36 @@ func DeleteNetworkDeviceBaseline(networkDeviceBaselines []entity.NetworkDeviceBa
 func DeleteNetworkDeviceRoleRel() error {
 	if err := data.DB.Table(entity.NetworkDeviceRoleRelTable).Delete(&entity.NetworkDeviceRoleRel{}).Error; err != nil {
 		log.Errorf("delete networkDeviceRoleRel error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func UpdateIPDemandBaseline(ipDemandBaselines []entity.IPDemandBaseline) error {
+	if len(ipDemandBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.IPDemandBaselineTable).Updates(&ipDemandBaselines).Error; err != nil {
+		log.Errorf("update ipDemandBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteIPDemandBaseline(ipDemandBaselines []entity.IPDemandBaseline) error {
+	if len(ipDemandBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.IPDemandBaselineTable).Delete(&ipDemandBaselines).Error; err != nil {
+		log.Errorf("delete ipDemandBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteIPDemandDeviceRoleRel() error {
+	if err := data.DB.Table(entity.IPDemandDeviceRoleRelTable).Delete(&entity.IPDemandDeviceRoleRel{}).Error; err != nil {
+		log.Errorf("batch insert ipDemandDeviceRoleRel error: %v", err)
 		return err
 	}
 	return nil
