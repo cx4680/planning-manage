@@ -152,8 +152,6 @@ func Router(engine *gin.Engine) {
 			serverGroup.GET("/cpu/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.CpuTypeList)
 			// 查询容量规划列表
 			serverGroup.GET("/capacity/list", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "queryServerCapacityList", middleware.LIST, middleware.INFO)), server.CapacityList)
-			// 查询当前可用机型
-			//serverGroup.GET("/model/list", middleware.OperatorLog(DefaultEventOpInfo("查询当前可用机型", "queryServerModelList", middleware.LIST, middleware.INFO)), server.ModelList)
 			// 下载服务器规划清单
 			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.LIST, middleware.INFO)), server.Download)
 		}

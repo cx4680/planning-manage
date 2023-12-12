@@ -100,6 +100,7 @@ func CapacityList(c *gin.Context) {
 	}
 	if request.PlanId == 0 {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+		return
 	}
 	list, err := ListServerCapacity(request)
 	if err != nil {
@@ -126,25 +127,6 @@ func Download(c *gin.Context) {
 	_ = excel.NormalDownLoad(fileName, "服务器规划清单", "", false, response, c.Writer)
 	result.Success(c, nil)
 }
-
-//func ModelList(c *gin.Context) {
-//	request := &Request{}
-//	if err := c.ShouldBindQuery(&request); err != nil {
-//		log.Errorf("list server arch bind param error: ", err)
-//		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
-//		return
-//	}
-//	if request.PlanId == 0 {
-//		result.Failure(c, "planId参数为空", http.StatusBadRequest)
-//	}
-//	list, err := ListServerModel(request)
-//	if err != nil {
-//		log.Errorf("list server arch error: ", err)
-//		result.Failure(c, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//	result.Success(c, list)
-//}
 
 func checkRequest(request *Request, isCreate bool) error {
 	if request.PlanId == 0 {

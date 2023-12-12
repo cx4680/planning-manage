@@ -406,6 +406,7 @@ CREATE TABLE `cloud_product_planning`
     `id`           bigint(20) NOT NULL AUTO_INCREMENT COMMENT '配置id',
     `plan_id`      bigint(20) DEFAULT NULL COMMENT '方案id',
     `product_id`   bigint(20) DEFAULT NULL COMMENT '云产品id',
+    `version_id`   bigint(20) DEFAULT NULL COMMENT '基线版本id',
     `sell_spec`    varchar(60) DEFAULT NULL COMMENT '售卖规格',
     `service_year` int(1) DEFAULT NULL COMMENT '维保年限',
     `update_time`  datetime    DEFAULT NULL COMMENT '更新时间',
