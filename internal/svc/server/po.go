@@ -17,17 +17,6 @@ type RequestServer struct {
 	OpenDpdk         int   `form:"openDpdk"`
 }
 
-type ResponseCapacity struct {
-	Id              int64  `json:"id"`
-	ProductId       int64  `json:"productId"`
-	ProductName     string `json:"productName"`
-	CapacitySpecs   string `json:"capacitySpecs"`
-	SalesSpecs      string `json:"salesSpecs"`
-	OverbookingRate string `json:"overbookingRate"`
-	Number          string `json:"number"`
-	Unit            string `json:"unit"`
-}
-
 type ResponseDownloadServer struct {
 	NodeRole   string `json:"nodeRole" excel:"nodeRole:角色;index:0"`
 	ServerType string `json:"serverType" excel:"serverType:设备类型;index:1"`
