@@ -237,6 +237,9 @@ func QueryCapConvertBaselineByVersionId(versionId int64) ([]entity.CapConvertBas
 }
 
 func BatchCreateCapConvertBaseline(capConvertBaselines []entity.CapConvertBaseline) error {
+	if len(capConvertBaselines) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.CapConvertBaselineTable).Create(&capConvertBaselines).Scan(&capConvertBaselines).Error; err != nil {
 		log.Errorf("batch insert capConvertBaseline error: %v", err)
 		return err
@@ -467,6 +470,28 @@ func DeleteIPDemandBaseline(ipDemandBaselines []entity.IPDemandBaseline) error {
 func DeleteIPDemandDeviceRoleRel() error {
 	if err := data.DB.Table(entity.IPDemandDeviceRoleRelTable).Delete(&entity.IPDemandDeviceRoleRel{}).Error; err != nil {
 		log.Errorf("batch insert ipDemandDeviceRoleRel error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func UpdateCapConvertBaseline(capConvertBaselines []entity.CapConvertBaseline) error {
+	if len(capConvertBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CapConvertBaselineTable).Updates(&capConvertBaselines).Error; err != nil {
+		log.Errorf("update capConvertBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteCapConvertBaseline(capConvertBaselines []entity.CapConvertBaseline) error {
+	if len(capConvertBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CapConvertBaselineTable).Delete(&capConvertBaselines).Error; err != nil {
+		log.Errorf("delete capConvertBaseline error: %v", err)
 		return err
 	}
 	return nil

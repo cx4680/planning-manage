@@ -747,17 +747,17 @@ func HandleNetworkModelRole(context *gin.Context, nodeRoleBaselines []entity.Nod
 		twoNetworkIsos := networkDeviceRoleBaselineExcel.TwoNetworkIsos
 		threeNetworkIsos := networkDeviceRoleBaselineExcel.ThreeNetworkIsos
 		triplePlays := networkDeviceRoleBaselineExcel.TriplePlays
-		networkModelRoleRels, err := HandleNetworkModelRoleRels(networkDeviceRoleId, twoNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, 2)
+		networkModelRoleRels, err := HandleNetworkModelRoleRels(networkDeviceRoleId, twoNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, constant.SEPARATION_OF_TWO_NETWORKS)
 		if err != nil {
 			result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
 			return true
 		}
-		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, threeNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, 3)
+		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, threeNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, constant.TRIPLE_NETWORK_SEPARATION)
 		if err != nil {
 			result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
 			return true
 		}
-		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, triplePlays, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, 1)
+		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, triplePlays, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, constant.TRIPLE_PLAY)
 		if err != nil {
 			result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
 			return true
@@ -1094,10 +1094,44 @@ func ImportCapConvertBaseline(context *gin.Context, versionId int64, f *excelize
 			return true
 		}
 		if len(originCapConvertBaselines) > 0 {
-			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
+			originCapConvertMap := make(map[string]entity.CapConvertBaseline)
+			var insertCapConvertBaselines []entity.CapConvertBaseline
+			var updateCapConvertBaselines []entity.CapConvertBaseline
+			for _, originCapConvertBaseline := range originCapConvertBaselines {
+				key := originCapConvertBaseline.ProductCode + originCapConvertBaseline.SellSpecs + originCapConvertBaseline.CapPlanningInput + originCapConvertBaseline.Features
+				originCapConvertMap[key] = originCapConvertBaseline
+			}
+			for _, capConvertBaseline := range capConvertBaselines {
+				key := capConvertBaseline.ProductCode + capConvertBaseline.SellSpecs + capConvertBaseline.CapPlanningInput + capConvertBaseline.Features
+				originCapConvertBaseline, ok := originCapConvertMap[key]
+				if ok {
+					capConvertBaseline.Id = originCapConvertBaseline.Id
+					updateCapConvertBaselines = append(updateCapConvertBaselines, capConvertBaseline)
+					delete(originCapConvertMap, key)
+				} else {
+					insertCapConvertBaselines = append(insertCapConvertBaselines, capConvertBaseline)
+				}
+			}
+			if err := BatchCreateCapConvertBaseline(insertCapConvertBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if err := UpdateCapConvertBaseline(updateCapConvertBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if len(originCapConvertMap) > 0 {
+				var deleteCapConvertBaselines []entity.CapConvertBaseline
+				for _, originCapConvertBaseline := range originCapConvertMap {
+					deleteCapConvertBaselines = append(deleteCapConvertBaselines, originCapConvertBaseline)
+				}
+				if err := DeleteCapConvertBaseline(deleteCapConvertBaselines); err != nil {
+					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+					return true
+				}
+			}
 		} else {
 			if err := BatchCreateCapConvertBaseline(capConvertBaselines); err != nil {
-				log.Error(err)
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -1152,7 +1186,6 @@ func ImportCapActualResBaseline(context *gin.Context, versionId int64, f *exceli
 			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
 		} else {
 			if err := BatchCreateCapActualResBaseline(capActualResBaselines); err != nil {
-				log.Error(err)
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -1202,7 +1235,6 @@ func ImportCapServerCalcBaseline(context *gin.Context, versionId int64, f *excel
 			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
 		} else {
 			if err := BatchCreateCapServerCalcBaseline(capServerCalcBaselines); err != nil {
-				log.Error(err)
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}

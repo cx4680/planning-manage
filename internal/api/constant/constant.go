@@ -18,37 +18,8 @@ const (
 )
 
 const (
-	StateDeleted = "deleted"
-	StateNormal  = "normal"
-	StateEnable  = "enable"
-	StateDisable = "disable"
-	Manual       = "manual" // 手动
-	Auto         = "auto"   // 自动
-	Waiting      = "Waiting"
-	Running      = "Running"
-	Succeed      = "Succeed"     // 成功
-	Failed       = "Failed"      // 失败
-	Timeout      = "Timeout"     // 超时
-	PartSucceed  = "PartSucceed" // 超时
-)
-
-const (
 	True  = "true"
 	False = "false"
-)
-
-const (
-	QuestionMarkCorn = "?"
-	SpaceCorn        = " "
-	StarCorn         = "*"
-	CommaCorn        = ","
-	LeftSlash        = "/"
-)
-
-const (
-	Hour  = "h"
-	Day   = "d"
-	Month = "m"
 )
 
 const (
@@ -59,61 +30,11 @@ const (
 )
 
 const (
-	CronjobPeriod = "period"      // 周期
-	CronjobTiming = "timing"      // 定时
-	Immediately   = "Immediately" // 实时
-)
-
-const (
-	NameSpace = "ccos-ops-app"
+	NameSpace = "planning-manage"
 )
 
 const (
 	UserSecretPrivateKeyPath = "/app/secret/userSecretPrivateKey"
-)
-
-const (
-	LogResourceDisplayName = "resourceDisplayName"
-	LogResourceType        = "resourceType"
-	LogResourceID          = "resourceId"
-	LogResourceTypeID      = "resourceTypeId"
-	LogServiceCode         = "serviceCode"
-)
-
-const (
-	SystemAtom    = "SystemAtom"
-	CustomAtom    = "CustomAtom"
-	SystemCompose = "SystemCompose"
-	CustomCompose = "CustomCompose"
-)
-
-const (
-	Shell  = "Shell"
-	Python = "Python"
-	Bat    = "Bat"
-)
-
-const (
-	Readonly = "readonly"
-	Editable = "editable"
-)
-
-const (
-	Atom    = "atom"
-	Compose = "compose"
-)
-
-const (
-	ReportTopic      = "cell-agent-task-topic_repord"
-	ExecTopic        = "cell-agent-task-topic_exec"
-	KafkaBroken      = "KAFKA_BROKEN"
-	JOB_REPORT_GROUP = "jobm_report_group"
-)
-
-const (
-	LogLine = "0"
-	LogFull = "1"
-	LogNo   = "-1"
 )
 
 const (
