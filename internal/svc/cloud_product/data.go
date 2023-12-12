@@ -76,6 +76,7 @@ func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId
 		cloudProductPlanning := entity.CloudProductPlanning{
 			PlanId:      request.PlanId,
 			ProductId:   cloudProduct.ProductId,
+			VersionId:   request.VersionId,
 			SellSpec:    cloudProduct.SellSpec,
 			ServiceYear: request.ServiceYear,
 			CreateTime:  time.Now(),
