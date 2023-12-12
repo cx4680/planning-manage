@@ -59,6 +59,8 @@ spec:
               value: ldap://10.32.97.78:389
             - name: LDAPUSERNAME
               value: cn=admin,dc=mylitboy,dc=com
+            - name: SESSION_AGE
+              value: 86400
           livenessProbe:	#健康检查
             httpGet:   # tcpSocket,exec
               path: /health
