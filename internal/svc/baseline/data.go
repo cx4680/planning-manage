@@ -158,6 +158,9 @@ func BatchCreateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.Ne
 }
 
 func BatchCreateNetworkModelRoleRel(networkModelRoleRels []entity.NetworkModelRoleRel) error {
+	if len(networkModelRoleRels) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.NetworkModelRoleRelTable).Create(&networkModelRoleRels).Scan(&networkModelRoleRels).Error; err != nil {
 		log.Errorf("batch insert networkModelRoleRel error: %v", err)
 		return err
@@ -354,6 +357,44 @@ func DeleteServerBaseline(serverBaselines []entity.ServerBaseline) error {
 	}
 	if err := data.DB.Table(entity.ServerBaselineTable).Delete(&serverBaselines).Error; err != nil {
 		log.Errorf("delete serverBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteServerNodeRoleRel() error {
+	if err := data.DB.Table(entity.ServerNodeRoleRelTable).Delete(&entity.ServerNodeRoleRel{}).Error; err != nil {
+		log.Errorf("delete serverNodeRoleRel error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func UpdateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline) error {
+	if len(networkDeviceRoleBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Updates(&networkDeviceRoleBaselines).Error; err != nil {
+		log.Errorf("update networkDeviceRoleBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteNetworkModelRoleRel() error {
+	if err := data.DB.Table(entity.NetworkModelRoleRelTable).Delete(&entity.NetworkModelRoleRel{}).Error; err != nil {
+		log.Errorf("delete networkModelRoleRel error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline) error {
+	if len(networkDeviceRoleBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Delete(&networkDeviceRoleBaselines).Error; err != nil {
+		log.Errorf("delete networkDeviceRoleBaseline error: %v", err)
 		return err
 	}
 	return nil

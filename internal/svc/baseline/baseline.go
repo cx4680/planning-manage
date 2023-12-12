@@ -522,6 +522,10 @@ func ImportServerBaseline(context *gin.Context, versionId int64, f *excelize.Fil
 			originServerMap := make(map[string]entity.ServerBaseline)
 			var insertServerBaselines []entity.ServerBaseline
 			var updateServerBaselines []entity.ServerBaseline
+			if err := DeleteServerNodeRoleRel(); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
 			for _, originServerBaseline := range originServerBaselines {
 				originServerMap[originServerBaseline.BomCode] = originServerBaseline
 			}
@@ -530,6 +534,7 @@ func ImportServerBaseline(context *gin.Context, versionId int64, f *excelize.Fil
 				if ok {
 					serverBaseline.Id = originServerBaseline.Id
 					updateServerBaselines = append(updateServerBaselines, serverBaseline)
+					delete(originServerMap, serverBaseline.BomCode)
 				} else {
 					insertServerBaselines = append(insertServerBaselines, serverBaseline)
 				}
@@ -676,51 +681,92 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, versionId int64, f *e
 			return true
 		}
 		if len(originNetworkDeviceRoleBaselines) > 0 {
-			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
-		} else {
-			if err := BatchCreateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines); err != nil {
-				log.Error(err)
+			originNetworkDeviceRoleMap := make(map[string]entity.NetworkDeviceRoleBaseline)
+			var insertNetworkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline
+			var updateNetworkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline
+			if err := DeleteNetworkModelRoleRel(); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			nodeRoleCodeMap := make(map[string]int64)
-			for _, nodeRoleBaseline := range nodeRoleBaselines {
-				nodeRoleCodeMap[nodeRoleBaseline.NodeRoleCode] = nodeRoleBaseline.Id
+			for _, originNetworkDeviceRoleBaseline := range originNetworkDeviceRoleBaselines {
+				originNetworkDeviceRoleMap[originNetworkDeviceRoleBaseline.FuncCompoCode] = originNetworkDeviceRoleBaseline
 			}
-			networkDeviceRoleCodeMap := make(map[string]int64)
 			for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
-				networkDeviceRoleCodeMap[networkDeviceRoleBaseline.FuncCompoCode] = networkDeviceRoleBaseline.Id
-			}
-			var networkModelRoleRels []entity.NetworkModelRoleRel
-			for _, networkDeviceRoleBaselineExcel := range networkDeviceRoleBaselineExcelList {
-				networkDeviceRoleId := networkDeviceRoleCodeMap[networkDeviceRoleBaselineExcel.FuncCompoCode]
-				twoNetworkIsos := networkDeviceRoleBaselineExcel.TwoNetworkIsos
-				threeNetworkIsos := networkDeviceRoleBaselineExcel.ThreeNetworkIsos
-				triplePlays := networkDeviceRoleBaselineExcel.TriplePlays
-				networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, twoNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, 2)
-				if err != nil {
-					result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
-					return true
-				}
-				networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, threeNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, 3)
-				if err != nil {
-					result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
-					return true
-				}
-				networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, triplePlays, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, 1)
-				if err != nil {
-					result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
-					return true
+				originNetworkDeviceRoleBaseline, ok := originNetworkDeviceRoleMap[networkDeviceRoleBaseline.FuncCompoCode]
+				if ok {
+					networkDeviceRoleBaseline.Id = originNetworkDeviceRoleBaseline.Id
+					updateNetworkDeviceRoleBaselines = append(updateNetworkDeviceRoleBaselines, networkDeviceRoleBaseline)
+					delete(originNetworkDeviceRoleMap, originNetworkDeviceRoleBaseline.FuncCompoCode)
+				} else {
+					insertNetworkDeviceRoleBaselines = append(insertNetworkDeviceRoleBaselines, networkDeviceRoleBaseline)
 				}
 			}
-			if len(networkModelRoleRels) > 0 {
-				if err := BatchCreateNetworkModelRoleRel(networkModelRoleRels); err != nil {
-					log.Error(err)
+			if err := BatchCreateNetworkDeviceRoleBaseline(insertNetworkDeviceRoleBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if err := UpdateNetworkDeviceRoleBaseline(updateNetworkDeviceRoleBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if len(originNetworkDeviceRoleMap) > 0 {
+				var deleteNetworkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline
+				for _, networkDeviceRoleBaseline := range originNetworkDeviceRoleMap {
+					deleteNetworkDeviceRoleBaselines = append(deleteNetworkDeviceRoleBaselines, networkDeviceRoleBaseline)
+				}
+				if err := DeleteNetworkDeviceRoleBaseline(networkDeviceRoleBaselines); err != nil {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
 			}
+			networkDeviceRoleBaselines = append(insertNetworkDeviceRoleBaselines, updateNetworkDeviceRoleBaselines...)
+			return HandleNetworkModelRole(context, nodeRoleBaselines, networkDeviceRoleBaselines, networkDeviceRoleBaselineExcelList)
+		} else {
+			if err := BatchCreateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			return HandleNetworkModelRole(context, nodeRoleBaselines, networkDeviceRoleBaselines, networkDeviceRoleBaselineExcelList)
 		}
+	}
+	return false
+}
+
+func HandleNetworkModelRole(context *gin.Context, nodeRoleBaselines []entity.NodeRoleBaseline, networkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline, networkDeviceRoleBaselineExcelList []NetworkDeviceRoleBaselineExcel) bool {
+	nodeRoleCodeMap := make(map[string]int64)
+	for _, nodeRoleBaseline := range nodeRoleBaselines {
+		nodeRoleCodeMap[nodeRoleBaseline.NodeRoleCode] = nodeRoleBaseline.Id
+	}
+	networkDeviceRoleCodeMap := make(map[string]int64)
+	for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
+		networkDeviceRoleCodeMap[networkDeviceRoleBaseline.FuncCompoCode] = networkDeviceRoleBaseline.Id
+	}
+	var networkModelRoleRels []entity.NetworkModelRoleRel
+	for _, networkDeviceRoleBaselineExcel := range networkDeviceRoleBaselineExcelList {
+		networkDeviceRoleId := networkDeviceRoleCodeMap[networkDeviceRoleBaselineExcel.FuncCompoCode]
+		twoNetworkIsos := networkDeviceRoleBaselineExcel.TwoNetworkIsos
+		threeNetworkIsos := networkDeviceRoleBaselineExcel.ThreeNetworkIsos
+		triplePlays := networkDeviceRoleBaselineExcel.TriplePlays
+		networkModelRoleRels, err := HandleNetworkModelRoleRels(networkDeviceRoleId, twoNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, 2)
+		if err != nil {
+			result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+			return true
+		}
+		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, threeNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, 3)
+		if err != nil {
+			result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+			return true
+		}
+		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, triplePlays, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, 1)
+		if err != nil {
+			result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+			return true
+		}
+	}
+	if err := BatchCreateNetworkModelRoleRel(networkModelRoleRels); err != nil {
+		log.Error(err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return true
 	}
 	return false
 }
