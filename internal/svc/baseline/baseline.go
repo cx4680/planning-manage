@@ -519,43 +519,82 @@ func ImportServerBaseline(context *gin.Context, versionId int64, f *excelize.Fil
 			return true
 		}
 		if len(originServerBaselines) > 0 {
-			// TODO 先查询服务器基线表，看看相同的版本号是否已存在数据，如果已存在，需要先删除已有数据
+			originServerMap := make(map[string]entity.ServerBaseline)
+			var insertServerBaselines []entity.ServerBaseline
+			var updateServerBaselines []entity.ServerBaseline
+			for _, originServerBaseline := range originServerBaselines {
+				originServerMap[originServerBaseline.BomCode] = originServerBaseline
+			}
+			for _, serverBaseline := range serverBaselines {
+				originServerBaseline, ok := originServerMap[serverBaseline.BomCode]
+				if ok {
+					serverBaseline.Id = originServerBaseline.Id
+					updateServerBaselines = append(updateServerBaselines, serverBaseline)
+				} else {
+					insertServerBaselines = append(insertServerBaselines, serverBaseline)
+				}
+			}
+			if err := BatchCreateServerBaseline(insertServerBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if err := UpdateServerBaseline(updateServerBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if len(originServerMap) > 0 {
+				var deleteServerBaselines []entity.ServerBaseline
+				for _, serverBaseline := range originServerMap {
+					deleteServerBaselines = append(deleteServerBaselines, serverBaseline)
+				}
+				if err := DeleteServerBaseline(deleteServerBaselines); err != nil {
+					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+					return true
+				}
+			}
+			serverBaselines = append(insertServerBaselines, updateServerBaselines...)
+			return HandleServerNodeRole(context, serverBaselines, nodeRoleBaselines, serverBaselineExcelList)
 		} else {
 			if err := BatchCreateServerBaseline(serverBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			serverModelMap := make(map[string]int64)
-			for _, serverBaseline := range serverBaselines {
-				serverModelMap[serverBaseline.BomCode] = serverBaseline.Id
-			}
-			nodeRoleCodeMap := make(map[string]int64)
-			for _, nodeRoleBaseline := range nodeRoleBaselines {
-				nodeRoleCodeMap[nodeRoleBaseline.NodeRoleCode] = nodeRoleBaseline.Id
-			}
-			for _, serverBaselineExcel := range serverBaselineExcelList {
-				// 处理节点角色
-				nodeRoleCodes := serverBaselineExcel.NodeRoleCodes
-				if len(nodeRoleCodes) > 0 {
-					var serverNodeRoleRels []entity.ServerNodeRoleRel
-					serverId := serverModelMap[serverBaselineExcel.BomCode]
-					for _, nodeRoleCode := range nodeRoleCodes {
-						nodeRoleId, ok := nodeRoleCodeMap[nodeRoleCode]
-						if !ok {
-							log.Infof("import serverBaseline fail, can not find nodeRoleCode: %s", nodeRoleCode)
-							result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
-							return true
-						}
-						serverNodeRoleRels = append(serverNodeRoleRels, entity.ServerNodeRoleRel{
-							ServerId:   serverId,
-							NodeRoleId: nodeRoleId,
-						})
-					}
-					if err := BatchCreateServerNodeRoleRel(serverNodeRoleRels); err != nil {
-						result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-						return true
-					}
+			return HandleServerNodeRole(context, serverBaselines, nodeRoleBaselines, serverBaselineExcelList)
+		}
+	}
+	return false
+}
+
+func HandleServerNodeRole(context *gin.Context, serverBaselines []entity.ServerBaseline, nodeRoleBaselines []entity.NodeRoleBaseline, serverBaselineExcelList []ServerBaselineExcel) bool {
+	serverModelMap := make(map[string]int64)
+	for _, serverBaseline := range serverBaselines {
+		serverModelMap[serverBaseline.BomCode] = serverBaseline.Id
+	}
+	nodeRoleCodeMap := make(map[string]int64)
+	for _, nodeRoleBaseline := range nodeRoleBaselines {
+		nodeRoleCodeMap[nodeRoleBaseline.NodeRoleCode] = nodeRoleBaseline.Id
+	}
+	for _, serverBaselineExcel := range serverBaselineExcelList {
+		// 处理节点角色
+		nodeRoleCodes := serverBaselineExcel.NodeRoleCodes
+		if len(nodeRoleCodes) > 0 {
+			var serverNodeRoleRels []entity.ServerNodeRoleRel
+			serverId := serverModelMap[serverBaselineExcel.BomCode]
+			for _, nodeRoleCode := range nodeRoleCodes {
+				nodeRoleId, ok := nodeRoleCodeMap[nodeRoleCode]
+				if !ok {
+					log.Infof("import serverBaseline fail, can not find nodeRoleCode: %s", nodeRoleCode)
+					result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+					return true
 				}
+				serverNodeRoleRels = append(serverNodeRoleRels, entity.ServerNodeRoleRel{
+					ServerId:   serverId,
+					NodeRoleId: nodeRoleId,
+				})
+			}
+			if err := BatchCreateServerNodeRoleRel(serverNodeRoleRels); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
 			}
 		}
 	}

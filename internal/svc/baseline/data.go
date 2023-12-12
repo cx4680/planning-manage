@@ -336,3 +336,25 @@ func DeleteCloudProductBaseline(cloudProductBaselines []entity.CloudProductBasel
 	}
 	return nil
 }
+
+func UpdateServerBaseline(serverBaselines []entity.ServerBaseline) error {
+	if len(serverBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.ServerBaselineTable).Updates(&serverBaselines).Error; err != nil {
+		log.Errorf("update serverBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteServerBaseline(serverBaselines []entity.ServerBaseline) error {
+	if len(serverBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.ServerBaselineTable).Delete(&serverBaselines).Error; err != nil {
+		log.Errorf("delete serverBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
