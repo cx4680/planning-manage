@@ -1,12 +1,14 @@
 package server
 
 type Request struct {
-	Id               int64
-	UserId           string
-	PlanId           int64            `form:"planId"`
-	NetworkInterface string           `form:"networkInterface"`
-	CpuType          string           `form:"cpuType"`
-	ServerList       []*RequestServer `form:"serverList"`
+	Id                 int64
+	UserId             string
+	PlanId             int64            `form:"planId"`
+	NetworkInterface   string           `form:"networkInterface"`
+	CpuType            string           `form:"cpuType"`
+	ServerList         []*RequestServer `form:"serverList"`
+	CapacityBaselineId int64            `form:"capacityBaselineId"`
+	Number             int64            `form:"Number"`
 }
 
 type RequestServer struct {
@@ -23,4 +25,20 @@ type ResponseDownloadServer struct {
 	BomCode    string `json:"bomCode" excel:"bomCode:机型;index:2"`
 	Spec       string `json:"spec" excel:"spec:规格;index:3"`
 	Number     string `json:"number" excel:"number:数量;index:4"`
+}
+
+type ResponseCapConvert struct {
+	VersionId        int64               `json:"versionId"`        // 版本id
+	ProductName      string              `json:"productName"`      // 产品名称
+	ProductCode      string              `json:"productCode"`      // 产品编码
+	SellSpecs        string              `json:"sellSpecs"`        // 售卖规格
+	CapPlanningInput string              `json:"capPlanningInput"` // 容量规划输入
+	Unit             string              `json:"unit"`             // 单位
+	Features         []*ResponseFeatures `json:"features"`         // 特性
+	Description      string              `json:"description"`      // 说明
+}
+
+type ResponseFeatures struct {
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
 }

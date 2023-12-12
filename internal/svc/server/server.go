@@ -111,6 +111,26 @@ func CapacityList(c *gin.Context) {
 	result.Success(c, list)
 }
 
+func SaveCapacity(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindQuery(&request); err != nil {
+		log.Errorf("save server capacity bind param error: ", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	if request.PlanId == 0 {
+		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+		return
+	}
+	err := SaveServerCapacity(request)
+	if err != nil {
+		log.Errorf("save server capacity error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, nil)
+}
+
 func Download(c *gin.Context) {
 	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	if planId == 0 {

@@ -9,7 +9,7 @@ type PlanManage struct {
 	Name             string    `gorm:"column:name" json:"name"`                            //方案名称
 	Stage            string    `gorm:"column:stage" json:"stage"`                          //方案阶段
 	Type             string    `gorm:"column:type" json:"type"`                            //方案类型
-	ProjectId        int64     `gorm:"column:project_id" json:"project_id"`                //项目id
+	ProjectId        int64     `gorm:"column:project_id" json:"projectId"`                 //项目id
 	CreateUserId     string    `gorm:"column:create_user_id" json:"createUserId"`          //创建人id
 	CreateTime       time.Time `gorm:"column:create_time" json:"createTime"`               //创建时间
 	UpdateUserId     string    `gorm:"column:update_user_id" json:"updateUserId"`          //更新人id

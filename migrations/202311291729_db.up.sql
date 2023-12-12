@@ -220,6 +220,14 @@ CREATE TABLE `server_planning`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品基线';
 
 
+CREATE TABLE `server_cap_planning`
+(
+    `plan_id`              bigint(20) NOT NULL COMMENT '方案id',
+    `capacity_baseline_id` bigint(20) NULL DEFAULT NULL COMMENT '容量指标id',
+    `number`               bigint(20) NULL DEFAULT NULL COMMENT '数量'
+) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COMMENT = '服务器容量规划表';
+
+
 CREATE TABLE `software_version`
 (
     `id`                  bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
