@@ -528,17 +528,3 @@ func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode s
 	}
 	return response, nil
 }
-
-func getVersionId(baselineVersion string, cloudPlatformType string) (int64, error) {
-	// 根据方案id查询版本id
-	softwareVersion, err := querySoftwareVersionByVersion(baselineVersion, cloudPlatformType)
-	if err != nil && err != gorm.ErrRecordNotFound {
-		log.Error("获取云产品版本异常, error %v", err)
-		return 0, err
-	}
-	versionId := softwareVersion.Id
-	if versionId == 0 {
-		return 0, errors.New(errorcodes.NotFoundVersionMsg)
-	}
-	return versionId, nil
-}
