@@ -177,6 +177,9 @@ func QueryNetworkDeviceBaselineByVersionId(versionId int64) ([]entity.NetworkDev
 }
 
 func BatchCreateNetworkDeviceBaseline(networkDeviceBaselines []entity.NetworkDeviceBaseline) error {
+	if len(networkDeviceBaselines) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.NetworkDeviceBaselineTable).Create(&networkDeviceBaselines).Scan(&networkDeviceBaselines).Error; err != nil {
 		log.Errorf("batch insert networkDeviceBaseline error: %v", err)
 		return err
@@ -185,6 +188,9 @@ func BatchCreateNetworkDeviceBaseline(networkDeviceBaselines []entity.NetworkDev
 }
 
 func BatchCreateNetworkDeviceRoleRel(networkDeviceRoleRels []entity.NetworkDeviceRoleRel) error {
+	if len(networkDeviceRoleRels) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.NetworkDeviceRoleRelTable).Create(&networkDeviceRoleRels).Scan(&networkDeviceRoleRels).Error; err != nil {
 		log.Errorf("batch insert networkDeviceRoleRel error: %v", err)
 		return err
@@ -395,6 +401,36 @@ func DeleteNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.Network
 	}
 	if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Delete(&networkDeviceRoleBaselines).Error; err != nil {
 		log.Errorf("delete networkDeviceRoleBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func UpdateNetworkDeviceBaseline(networkDeviceBaselines []entity.NetworkDeviceBaseline) error {
+	if len(networkDeviceBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.NetworkDeviceBaselineTable).Updates(&networkDeviceBaselines).Error; err != nil {
+		log.Errorf("update networkDeviceBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteNetworkDeviceBaseline(networkDeviceBaselines []entity.NetworkDeviceBaseline) error {
+	if len(networkDeviceBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.NetworkDeviceBaselineTable).Delete(&networkDeviceBaselines).Error; err != nil {
+		log.Errorf("delete networkDeviceBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteNetworkDeviceRoleRel() error {
+	if err := data.DB.Table(entity.NetworkDeviceRoleRelTable).Delete(&entity.NetworkDeviceRoleRel{}).Error; err != nil {
+		log.Errorf("delete networkDeviceRoleRel error: %v", err)
 		return err
 	}
 	return nil
