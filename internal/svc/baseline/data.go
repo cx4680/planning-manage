@@ -69,6 +69,9 @@ func QueryServiceBaselineById(id int64) (*entity.ServerBaseline, error) {
 }
 
 func BatchCreateNodeRoleMixedDeploy(nodeRoleMixedDeploys []entity.NodeRoleMixedDeploy) error {
+	if len(nodeRoleMixedDeploys) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.NodeRoleMixedDeployTable).Create(&nodeRoleMixedDeploys).Scan(&nodeRoleMixedDeploys).Error; err != nil {
 		log.Errorf("batch insert nodeRoleMixedDeploy error: %v", err)
 		return err
@@ -247,6 +250,44 @@ func QueryCapServerCalcBaselineByVersionId(versionId int64) ([]entity.CapServerC
 func BatchCreateCapServerCalcBaseline(capServerCalcBaselines []entity.CapServerCalcBaseline) error {
 	if err := data.DB.Table(entity.CapServerCalcBaselineTable).Create(&capServerCalcBaselines).Scan(&capServerCalcBaselines).Error; err != nil {
 		log.Errorf("batch insert capServerCalcBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteNodeRoleBaseline(nodeRoleBaselines []entity.NodeRoleBaseline) error {
+	if len(nodeRoleBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.NodeRoleBaselineTable).Delete(&nodeRoleBaselines).Error; err != nil {
+		log.Errorf("delete nodeRoleBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteNodeRoleMixedDeploy() error {
+	if err := data.DB.Table(entity.NodeRoleMixedDeployTable).Delete(&entity.NodeRoleMixedDeploy{}).Error; err != nil {
+		log.Errorf("delete nodeRoleMixedDeploy error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func QueryNodeRoleMixedDeployByNodeRoleIds(nodeRoleIds []int64) ([]entity.NodeRoleMixedDeploy, error) {
+	var nodeRoleMixedDeploys []entity.NodeRoleMixedDeploy
+	if err := data.DB.Table(entity.NodeRoleMixedDeployTable).Where("node_role_id in (?) ", nodeRoleIds).Find(&nodeRoleMixedDeploys).Error; err != nil {
+		return nodeRoleMixedDeploys, err
+	}
+	return nodeRoleMixedDeploys, nil
+}
+
+func UpdateNodeRoleBaseline(nodeRoleBaselines []entity.NodeRoleBaseline) error {
+	if len(nodeRoleBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.NodeRoleBaselineTable).Updates(&nodeRoleBaselines).Error; err != nil {
+		log.Errorf("update nodeRoleBaseline error: %v", err)
 		return err
 	}
 	return nil

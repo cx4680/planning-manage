@@ -335,42 +335,84 @@ func ImportNodeRoleBaseline(context *gin.Context, versionId int64, f *excelize.F
 		}
 		if len(originNodeRoleBaselines) > 0 {
 			// 识别出新增、修改、删除的数据
-
-		} else {
-			if err := BatchCreateNodeRoleBaseline(nodeRoleBaselines); err != nil {
-				log.Error(err)
+			originNodeRoleMap := make(map[string]entity.NodeRoleBaseline)
+			var updateNodeRoleBaselines []entity.NodeRoleBaseline
+			var insertNodeRoleBaselines []entity.NodeRoleBaseline
+			for _, originNodeRoleBaseline := range originNodeRoleBaselines {
+				originNodeRoleMap[originNodeRoleBaseline.NodeRoleCode] = originNodeRoleBaseline
+			}
+			if err := DeleteNodeRoleMixedDeploy(); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			nodeRoleCodeMap := make(map[string]int64)
-			for _, nodeRoleBaseline := range nodeRoleBaselines {
-				nodeRoleCodeMap[nodeRoleBaseline.NodeRoleCode] = nodeRoleBaseline.Id
-			}
-			for _, nodeRoleBaselineExcel := range nodeRoleBaselineExcelList {
-				nodeRoleCode := nodeRoleBaselineExcel.NodeRoleCode
-				mixedDeploys := nodeRoleBaselineExcel.MixedDeploys
-				nodeRoleId := nodeRoleCodeMap[nodeRoleCode]
-				if len(mixedDeploys) > 0 {
-					var mixedNodeRoles []entity.NodeRoleMixedDeploy
-					for _, mixedDeploy := range mixedDeploys {
-						mixDeployNodeRoleId, ok := nodeRoleCodeMap[mixedDeploy]
-						if !ok {
-							log.Infof("import nodeRoleBaseline fail, can not find mixDeployNodeRoleCode: %s", mixedDeploy)
-							result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
-							return true
-						}
-						mixedNodeRoles = append(mixedNodeRoles, entity.NodeRoleMixedDeploy{
-							NodeRoleId:      nodeRoleId,
-							MixedNodeRoleId: mixDeployNodeRoleId,
-						})
-					}
-					if len(mixedNodeRoles) > 0 {
-						if err := BatchCreateNodeRoleMixedDeploy(mixedNodeRoles); err != nil {
-							result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-							return true
-						}
-					}
+			for i := range nodeRoleBaselines {
+				originNodeRoleBaseline, ok := originNodeRoleMap[nodeRoleBaselines[i].NodeRoleCode]
+				if ok {
+					nodeRoleBaselines[i].Id = originNodeRoleBaseline.Id
+					updateNodeRoleBaselines = append(updateNodeRoleBaselines, nodeRoleBaselines[i])
+					delete(originNodeRoleMap, nodeRoleBaselines[i].NodeRoleCode)
+				} else {
+					insertNodeRoleBaselines = append(insertNodeRoleBaselines, nodeRoleBaselines[i])
 				}
+			}
+			if err := BatchCreateNodeRoleBaseline(insertNodeRoleBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if err := UpdateNodeRoleBaseline(updateNodeRoleBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if len(originNodeRoleMap) > 0 {
+				// 删除数据
+				var deleteNodeRoleBaselines []entity.NodeRoleBaseline
+				for _, nodeRoleBaseline := range originNodeRoleMap {
+					deleteNodeRoleBaselines = append(deleteNodeRoleBaselines, nodeRoleBaseline)
+				}
+				if err := DeleteNodeRoleBaseline(deleteNodeRoleBaselines); err != nil {
+					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+					return true
+				}
+			}
+			nodeRoleBaselines = append(insertNodeRoleBaselines, updateNodeRoleBaselines...)
+			return HandleNodeRoleMixedDeploy(context, nodeRoleBaselines, nodeRoleBaselineExcelList)
+		} else {
+			if err := BatchCreateNodeRoleBaseline(nodeRoleBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			return HandleNodeRoleMixedDeploy(context, nodeRoleBaselines, nodeRoleBaselineExcelList)
+		}
+	}
+	return false
+}
+
+func HandleNodeRoleMixedDeploy(context *gin.Context, nodeRoleBaselines []entity.NodeRoleBaseline, nodeRoleBaselineExcelList []NodeRoleBaselineExcel) bool {
+	nodeRoleCodeMap := make(map[string]int64)
+	for _, nodeRoleBaseline := range nodeRoleBaselines {
+		nodeRoleCodeMap[nodeRoleBaseline.NodeRoleCode] = nodeRoleBaseline.Id
+	}
+	for _, nodeRoleBaselineExcel := range nodeRoleBaselineExcelList {
+		nodeRoleCode := nodeRoleBaselineExcel.NodeRoleCode
+		mixedDeploys := nodeRoleBaselineExcel.MixedDeploys
+		nodeRoleId := nodeRoleCodeMap[nodeRoleCode]
+		if len(mixedDeploys) > 0 {
+			var mixedNodeRoles []entity.NodeRoleMixedDeploy
+			for _, mixedDeploy := range mixedDeploys {
+				mixDeployNodeRoleId, ok := nodeRoleCodeMap[mixedDeploy]
+				if !ok {
+					log.Infof("import nodeRoleBaseline fail, can not find mixDeployNodeRoleCode: %s", mixedDeploy)
+					result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
+					return true
+				}
+				mixedNodeRoles = append(mixedNodeRoles, entity.NodeRoleMixedDeploy{
+					NodeRoleId:      nodeRoleId,
+					MixedNodeRoleId: mixDeployNodeRoleId,
+				})
+			}
+			if err := BatchCreateNodeRoleMixedDeploy(mixedNodeRoles); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
 			}
 		}
 	}
