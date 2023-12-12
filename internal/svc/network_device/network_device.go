@@ -61,7 +61,14 @@ func GetDevicePlanByPlanId(c *gin.Context) {
 		return
 	}
 	if devicePlan.PlanId == 0 {
-		devicePlan = nil
+		//说明第一次进入，赋默认值方便前端展示
+		devicePlan.DeviceType = 0
+		devicePlan.ApplicationDispersion = "1"
+		devicePlan.AwsServerNum = 44
+		devicePlan.AwsBoxNum = 4
+		devicePlan.Ipv6 = "0"
+		devicePlan.NetworkModel = 1
+		devicePlan.TotalBoxNum = 4
 	}
 	result.Success(c, devicePlan)
 	return
