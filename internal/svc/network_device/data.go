@@ -37,7 +37,7 @@ func SaveBatch(tx *gorm.DB, networkDeviceList []*entity.NetworkDeviceList) error
 }
 
 func expireDeviceListByPlanId(tx *gorm.DB, planId int64) error {
-	if err := tx.Model(entity.NetworkDeviceList{}).Where("plan_id = ?", planId).Update("delete_state", 1).Update("update_time", time.Now().Unix()).Error; err != nil {
+	if err := tx.Model(entity.NetworkDeviceList{}).Where("plan_id = ?", planId).Update("delete_state", 1).Update("update_time", time.Now()).Error; err != nil {
 		log.Errorf("[expireDeviceListByPlanId] expire device list error, %v", err)
 		return err
 	}
