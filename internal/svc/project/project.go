@@ -19,6 +19,7 @@ func Page(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
+	request.UserId = user.GetUserId(c)
 	list, count, err := PageProject(request)
 	if err != nil {
 		log.Errorf("list project error: ", err)

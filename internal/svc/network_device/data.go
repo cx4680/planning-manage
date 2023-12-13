@@ -19,8 +19,8 @@ func searchDevicePlanByPlanId(planId int64) (*entity.NetworkDevicePlanning, erro
 	return &devicePlan, nil
 }
 
-func searchDeviceListByPlanId(planId int64) ([]entity.NetworkDevicePlanning, error) {
-	var deviceList []entity.NetworkDevicePlanning
+func searchDeviceListByPlanId(planId int64) ([]entity.NetworkDeviceList, error) {
+	var deviceList []entity.NetworkDeviceList
 	if err := data.DB.Table(entity.NetworkDeviceListTable).Where("plan_id=? and delete_state = 0", planId).Scan(&deviceList).Error; err != nil {
 		log.Errorf("[searchDeviceListByPlanId] query device list error, %v", err)
 		return nil, err
@@ -37,7 +37,7 @@ func SaveBatch(tx *gorm.DB, networkDeviceList []*entity.NetworkDeviceList) error
 }
 
 func expireDeviceListByPlanId(tx *gorm.DB, planId int64) error {
-	if err := tx.Model(entity.NetworkDeviceList{}).Where("plan_id = ?", planId).Update("delete_state", 1).Update("update_time", time.Now().Unix()).Error; err != nil {
+	if err := tx.Model(entity.NetworkDeviceList{}).Where("plan_id = ?", planId).Update("delete_state", 1).Update("update_time", time.Now()).Error; err != nil {
 		log.Errorf("[expireDeviceListByPlanId] expire device list error, %v", err)
 		return err
 	}

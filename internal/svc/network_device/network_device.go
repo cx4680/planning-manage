@@ -134,17 +134,18 @@ func ListNetworkDevices(c *gin.Context) {
 		result.FailureWithMsg(c, errorcodes.InvalidParam, http.StatusBadRequest, err.Error())
 		return
 	}
+	// 入参获取版本ID
+	versionId := request.VersionId
 	var finalResponse NetworkDevicesResponse
 	var response []NetworkDevices
 	// 根据方案ID查询网络设备规划表 没有则保存，有则更新
 	planId := request.PlanId
-	devicePlan, err := searchDevicePlanByPlanId(planId)
+	deviceList, err := searchDeviceListByPlanId(planId)
 	if err != nil {
+		log.Errorf("[searchDeviceListByPlanId] search device list by planId error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	// 根据云产品版本和云平台类型查询版本ID
-	versionId := request.VersionId
 	// 根据方案id查询服务器规划
 	serverPlanningList, err := server.QueryServerPlanningListByPlanId(planId)
 	if err != nil {
@@ -156,11 +157,6 @@ func ListNetworkDevices(c *gin.Context) {
 		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.ServerPlanningListEmpty)
 		return
 	}
-	// 服务器规划数据转为map
-	var nodeRoleServerNumMap = make(map[int64]int)
-	for _, value := range serverPlanningList {
-		nodeRoleServerNumMap[value.NodeRoleId] = value.Number
-	}
 	// 根据服务器基线id查询服务器基线表获取网络接口
 	serviceBaselineId := serverPlanningList[0].ServerBaselineId
 	serverBaseline, err := baseline.QueryServiceBaselineById(serviceBaselineId)
@@ -170,6 +166,36 @@ func ListNetworkDevices(c *gin.Context) {
 		return
 	}
 	networkInterface := serverBaseline.NetworkInterface
+	if len(deviceList) > 0 || !request.EditFlag {
+		//不是第一次进入并且也不是编辑网络设备规划 那就不需要重新计算 直接从库里拿
+		for _, device := range deviceList {
+			networkDevice := NetworkDevices{
+				NetworkDeviceRole:     device.NetworkDeviceRole,
+				NetworkDeviceRoleName: device.NetworkDeviceRoleName,
+				NetworkDeviceRoleId:   device.NetworkDeviceRoleId,
+				LogicalGrouping:       device.LogicalGrouping,
+				DeviceId:              device.DeviceId,
+				Brand:                 device.Brand,
+				DeviceModel:           device.DeviceModel,
+				ConfOverview:          device.ConfOverview,
+			}
+			//单独处理下型号列表
+			deviceModels, _ := getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId, networkInterface, device.NetworkDeviceRoleId, request.Brand, request.DeviceType)
+			networkDevice.DeviceModels = deviceModels
+			response = append(response, networkDevice)
+		}
+		//计算网络设备总数
+		count := len(response)
+		finalResponse.Total = count
+		finalResponse.NetworkDeviceList = response
+		result.Success(c, finalResponse)
+		return
+	}
+	// 服务器规划数据转为map
+	var nodeRoleServerNumMap = make(map[int64]int)
+	for _, value := range serverPlanningList {
+		nodeRoleServerNumMap[value.NodeRoleId] = value.Number
+	}
 	// 根据版本号查询出网络设备角色基线数据
 	deviceRoleBaseline, err := searchDeviceRoleBaselineByVersionId(versionId)
 	if err != nil {
@@ -191,6 +217,11 @@ func ListNetworkDevices(c *gin.Context) {
 	total := len(response)
 	finalResponse.Total = total
 	finalResponse.NetworkDeviceList = response
+	devicePlan, err := searchDevicePlanByPlanId(planId)
+	if err != nil {
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
 	if devicePlan.Id == 0 {
 		err = createDevicePlan(request)
 	} else {
