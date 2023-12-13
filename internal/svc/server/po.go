@@ -20,7 +20,7 @@ type RequestServer struct {
 
 type RequestServerCapacity struct {
 	Id     int64 `form:"id"`
-	Number int64 `form:"Number"`
+	Number int   `form:"number"`
 }
 
 type ResponseDownloadServer struct {
@@ -31,6 +31,11 @@ type ResponseDownloadServer struct {
 	Number     string `json:"number" excel:"number:数量;index:4"`
 }
 
+type ResponseCapClassification struct {
+	Classification string                `json:"classification"` // 分类
+	CapConvert     []*ResponseCapConvert `json:"capConvert"`
+}
+
 type ResponseCapConvert struct {
 	VersionId        int64               `json:"versionId"`        // 版本id
 	ProductName      string              `json:"productName"`      // 产品名称
@@ -38,6 +43,7 @@ type ResponseCapConvert struct {
 	SellSpecs        string              `json:"sellSpecs"`        // 售卖规格
 	CapPlanningInput string              `json:"capPlanningInput"` // 容量规划输入
 	Unit             string              `json:"unit"`             // 单位
+	FeatureType      string              `json:"featureType"`      // 特性类型
 	Features         []*ResponseFeatures `json:"features"`         // 特性
 	Description      string              `json:"description"`      // 说明
 }
@@ -46,3 +52,5 @@ type ResponseFeatures struct {
 	Id   int64  `json:"id"`
 	Name string `json:"name"`
 }
+
+var FeatureMap = map[string]string{"超分": "超分比", "三副本": "副本模式", "EC纠删码": "副本模式"}
