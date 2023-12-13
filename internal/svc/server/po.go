@@ -3,12 +3,11 @@ package server
 type Request struct {
 	Id                 int64
 	UserId             string
-	PlanId             int64            `form:"planId"`
-	NetworkInterface   string           `form:"networkInterface"`
-	CpuType            string           `form:"cpuType"`
-	ServerList         []*RequestServer `form:"serverList"`
-	CapacityBaselineId int64            `form:"capacityBaselineId"`
-	Number             int64            `form:"Number"`
+	PlanId             int64                    `form:"planId"`
+	NetworkInterface   string                   `form:"networkInterface"`
+	CpuType            string                   `form:"cpuType"`
+	ServerList         []*RequestServer         `form:"serverList"`
+	ServerCapacityList []*RequestServerCapacity `form:"serverCapacityList"`
 }
 
 type RequestServer struct {
@@ -17,6 +16,11 @@ type RequestServer struct {
 	ServerBaselineId int64 `form:"serverBaselineId"`
 	Number           int   `form:"number"`
 	OpenDpdk         int   `form:"openDpdk"`
+}
+
+type RequestServerCapacity struct {
+	Id     int64 `form:"id"`
+	Number int64 `form:"Number"`
 }
 
 type ResponseDownloadServer struct {

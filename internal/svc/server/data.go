@@ -259,44 +259,92 @@ func ListServerCapacity(request *Request) ([]*ResponseCapConvert, error) {
 }
 
 func SaveServerCapacity(request *Request) error {
-	var serverCapPlanning = &entity.ServerCapPlanning{
-		PlanId:             request.PlanId,
-		CapacityBaselineId: request.CapacityBaselineId,
-		Number:             request.Number,
-	}
+	var serverCapPlanningList []*entity.ServerCapPlanning
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		//查询服务器容量数据
-		var capConvertBaselineList []*entity.CapConvertBaseline
-		if err := tx.Where("id = ?", request.CapacityBaselineId).Find(&capConvertBaselineList).Error; err != nil {
-			return err
-		}
-		if len(capConvertBaselineList) == 0 {
-			return errors.New("服务器容量规划指标不存在")
-		}
-		capConvertBaseline := capConvertBaselineList[0]
-		var capActualResBaselineList []*entity.CapActualResBaseline
-		if err := tx.Where("version_id = ? AND product_code = ? AND sell_specs = ? AND sell_unit = ? AND features = ?",
-			capConvertBaseline.VersionId, capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features).
-			Find(&capActualResBaselineList).Error; err != nil {
-			return err
-		}
-		if len(capActualResBaselineList) == 0 {
-			return errors.New("服务器容量规划特性不存在")
-		}
-		capActualResBaseline := capActualResBaselineList[0]
-		var capServerCalcBaselineList []*entity.CapServerCalcBaseline
-		if err := tx.Where("expend_res_code = ?", capActualResBaseline.ExpendResCode).Find(&capServerCalcBaselineList).Error; err != nil {
-			return err
-		}
-		if len(capServerCalcBaselineList) == 0 {
-			return errors.New("服务器数量计算数据不存在")
-		}
-		//计算服务器规划数据
+		for _, v := range request.ServerCapacityList {
+			//查询服务器容量数据
+			var capConvertBaselineList []*entity.CapConvertBaseline
+			if err := tx.Where("id = )", v.Id).Find(&capConvertBaselineList).Error; err != nil {
+				return err
+			}
+			if len(capConvertBaselineList) == 0 {
+				return errors.New("服务器容量规划指标不存在")
+			}
+			capConvertBaseline := capConvertBaselineList[0]
+			//查询容量实际资源消耗表
+			var capActualResBaselineList []*entity.CapActualResBaseline
+			if err := tx.Where("version_id = ? AND product_code = ? AND sell_specs = ? AND sell_unit = ? AND features = ?",
+				capConvertBaseline.VersionId, capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features).
+				Find(&capActualResBaselineList).Error; err != nil {
+				return err
+			}
+			if len(capActualResBaselineList) == 0 {
+				return errors.New("服务器容量规划特性不存在")
+			}
+			capActualResBaseline := capActualResBaselineList[0]
+			//查询容量服务器数量计算
+			var capServerCalcBaselineList []*entity.CapServerCalcBaseline
+			if err := tx.Where("version_id = ? AND expend_res_code = ?", capConvertBaseline.VersionId, capActualResBaseline.ExpendResCode).Find(&capServerCalcBaselineList).Error; err != nil {
+				return err
+			}
+			if len(capServerCalcBaselineList) == 0 {
+				return errors.New("服务器数量计算数据不存在")
+			}
+			capServerCalcBaseline := capServerCalcBaselineList[0]
+			//查询服务器规划是否有已保存数据
+			var nodeRoleBaselineList []*entity.NodeRoleBaseline
+			if err := tx.Where("version_id = ? AND node_role_code = ?", capConvertBaseline.VersionId, capServerCalcBaseline.ExpendNodeRoleCode).Find(&nodeRoleBaselineList).Error; err != nil {
+				return err
+			}
+			if len(nodeRoleBaselineList) == 0 {
+				return errors.New("节点角色数据不存在")
+			}
+			var serverPlanningList []*entity.ServerPlanning
+			if err := tx.Where("plan_id = ? AND node_role_id = ?", request.PlanId, nodeRoleBaselineList[0].Id).Find(&serverPlanningList).Error; err != nil {
+				return err
+			}
+			//查询服务器基线数据
+			var serverBaselineList []*entity.ServerBaseline
+			if len(serverPlanningList) != 0 {
+				if err := tx.Where("id = ?", serverPlanningList[0].ServerBaselineId).Find(&serverBaselineList).Error; err != nil {
+					return err
+				}
+			} else {
+				var serverNodeRoleRelList []*entity.ServerNodeRoleRel
+				if err := tx.Where("node_role_id = ?", nodeRoleBaselineList[0].Id).Find(&serverNodeRoleRelList).Error; err != nil {
+					return err
+				}
+				if len(serverNodeRoleRelList) == 0 {
+					return errors.New("服务器和节点角色关联数据不存在")
+				}
+				var serverBaselineIdList []int64
+				for _, serverNodeRoleRel := range serverNodeRoleRelList {
+					serverBaselineIdList = append(serverBaselineIdList, serverNodeRoleRel.ServerId)
+				}
+				if err := tx.Where("id IN (?) AND network_interface = ? AND cpu_type = ?", serverBaselineIdList, request.NetworkInterface, request.CpuType).Find(&serverBaselineList).Error; err != nil {
+					return err
+				}
+			}
+			if len(serverBaselineList) == 0 {
+				return errors.New("服务器基线数据不存在")
+			}
+			//serverBaseline := serverBaselineList[0]
+			//计算服务器规划数据
+			if capActualResBaseline.OccRatioNumerator == "N" {
 
+			}
+			//构建服务器规划数据
+
+			//构建服务器容量规划
+			serverCapPlanningList = append(serverCapPlanningList, &entity.ServerCapPlanning{
+				PlanId:             request.PlanId,
+				CapacityBaselineId: v.Id,
+				Number:             v.Number,
+			})
+		}
 		//保存服务器规划数据
-
 		//保存服务器容量规划
-		if err := tx.Create(&serverCapPlanning).Error; err != nil {
+		if err := tx.Create(&serverCapPlanningList).Error; err != nil {
 			return err
 		}
 		return nil
