@@ -38,7 +38,7 @@ func CreateSoftwareVersion(softwareVersion *entity.SoftwareVersion) error {
 }
 
 func UpdateSoftwareVersion(softwareVersion entity.SoftwareVersion) error {
-	if err := data.DB.Table(entity.SoftwareVersionTable).Updates(&softwareVersion).Error; err != nil {
+	if err := data.DB.Table(entity.SoftwareVersionTable).Save(&softwareVersion).Error; err != nil {
 		log.Errorf("update software error: %v", err)
 		return err
 	}
@@ -331,7 +331,7 @@ func QueryNodeRoleMixedDeployByNodeRoleIds(nodeRoleIds []int64) ([]entity.NodeRo
 
 func UpdateNodeRoleBaseline(nodeRoleBaselines []entity.NodeRoleBaseline) error {
 	for _, nodeRoleBaseline := range nodeRoleBaselines {
-		if err := data.DB.Table(entity.NodeRoleBaselineTable).Updates(&nodeRoleBaseline).Error; err != nil {
+		if err := data.DB.Table(entity.NodeRoleBaselineTable).Save(&nodeRoleBaseline).Error; err != nil {
 			log.Errorf("update nodeRoleBaseline error: %v", err)
 			return err
 		}
@@ -341,7 +341,7 @@ func UpdateNodeRoleBaseline(nodeRoleBaselines []entity.NodeRoleBaseline) error {
 
 func UpdateCloudProductBaseline(cloudProductBaselines []entity.CloudProductBaseline) error {
 	for _, cloudProductBaseline := range cloudProductBaselines {
-		if err := data.DB.Table(entity.CloudProductBaselineTable).Updates(&cloudProductBaseline).Error; err != nil {
+		if err := data.DB.Table(entity.CloudProductBaselineTable).Save(&cloudProductBaseline).Error; err != nil {
 			log.Errorf("update cloudProductBaseline error: %v", err)
 			return err
 		}
@@ -378,7 +378,7 @@ func DeleteCloudProductBaseline(cloudProductBaselines []entity.CloudProductBasel
 
 func UpdateServerBaseline(serverBaselines []entity.ServerBaseline) error {
 	for _, serverBaseline := range serverBaselines {
-		if err := data.DB.Table(entity.ServerBaselineTable).Updates(&serverBaseline).Error; err != nil {
+		if err := data.DB.Table(entity.ServerBaselineTable).Save(&serverBaseline).Error; err != nil {
 			log.Errorf("update serverBaseline error: %v", err)
 			return err
 		}
@@ -407,7 +407,7 @@ func DeleteServerNodeRoleRel() error {
 
 func UpdateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline) error {
 	for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
-		if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Updates(&networkDeviceRoleBaseline).Error; err != nil {
+		if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Save(&networkDeviceRoleBaseline).Error; err != nil {
 			log.Errorf("update networkDeviceRoleBaseline error: %v", err)
 			return err
 		}
@@ -436,7 +436,7 @@ func DeleteNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.Network
 
 func UpdateNetworkDeviceBaseline(networkDeviceBaselines []entity.NetworkDeviceBaseline) error {
 	for _, networkDeviceBaseline := range networkDeviceBaselines {
-		if err := data.DB.Table(entity.NetworkDeviceBaselineTable).Updates(&networkDeviceBaseline).Error; err != nil {
+		if err := data.DB.Table(entity.NetworkDeviceBaselineTable).Save(&networkDeviceBaseline).Error; err != nil {
 			log.Errorf("update networkDeviceBaseline error: %v", err)
 			return err
 		}
@@ -465,7 +465,7 @@ func DeleteNetworkDeviceRoleRel() error {
 
 func UpdateIPDemandBaseline(ipDemandBaselines []entity.IPDemandBaseline) error {
 	for _, ipDemandBaseline := range ipDemandBaselines {
-		if err := data.DB.Table(entity.IPDemandBaselineTable).Updates(&ipDemandBaseline).Error; err != nil {
+		if err := data.DB.Table(entity.IPDemandBaselineTable).Save(&ipDemandBaseline).Error; err != nil {
 			log.Errorf("update ipDemandBaseline error: %v", err)
 			return err
 		}
@@ -494,7 +494,7 @@ func DeleteIPDemandDeviceRoleRel() error {
 
 func UpdateCapConvertBaseline(capConvertBaselines []entity.CapConvertBaseline) error {
 	for _, capConvertBaseline := range capConvertBaselines {
-		if err := data.DB.Table(entity.CapConvertBaselineTable).Updates(&capConvertBaseline).Error; err != nil {
+		if err := data.DB.Table(entity.CapConvertBaselineTable).Save(&capConvertBaseline).Error; err != nil {
 			log.Errorf("update capConvertBaseline error: %v", err)
 			return err
 		}
@@ -515,7 +515,7 @@ func DeleteCapConvertBaseline(capConvertBaselines []entity.CapConvertBaseline) e
 
 func UpdateCapActualResBaseline(capActualResBaselines []entity.CapActualResBaseline) error {
 	for _, capActualResBaseline := range capActualResBaselines {
-		if err := data.DB.Table(entity.CapActualResBaselineTable).Updates(&capActualResBaseline).Error; err != nil {
+		if err := data.DB.Table(entity.CapActualResBaselineTable).Save(&capActualResBaseline).Error; err != nil {
 			log.Errorf("update capActualResBaseline error: %v", err)
 			return err
 		}
@@ -536,7 +536,7 @@ func DeleteCapActualResBaseline(capActualResBaselines []entity.CapActualResBasel
 
 func UpdateCapServerCalcBaseline(capServerCalcBaselines []entity.CapServerCalcBaseline) error {
 	for _, capServerCalcBaseline := range capServerCalcBaselines {
-		if err := data.DB.Table(entity.CapServerCalcBaselineTable).Updates(&capServerCalcBaseline).Error; err != nil {
+		if err := data.DB.Table(entity.CapServerCalcBaselineTable).Save(&capServerCalcBaseline).Error; err != nil {
 			log.Errorf("update capServerCalcBaseline error: %v", err)
 			return err
 		}
