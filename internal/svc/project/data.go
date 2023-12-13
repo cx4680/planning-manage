@@ -10,6 +10,8 @@ import (
 )
 
 func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
+	//缓存预编译 会话模式
+	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " update_time "
 	if request.Id != 0 {
 		screenSql += " AND id = ? "
@@ -18,6 +20,17 @@ func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 	if request.CustomerId != 0 {
 		screenSql += " AND customer_id = ? "
 		screenParams = append(screenParams, request.CustomerId)
+	} else {
+		//查询账号下关联的所有客户，客户接口人和项目成员
+		customerIdList, err := getCustomerIdList(db, request)
+		if err != nil {
+			return nil, 0, err
+		}
+		if len(customerIdList) == 0 {
+			return nil, 0, nil
+		}
+		screenSql += " AND customer_id IN (?) "
+		screenParams = append(screenParams, customerIdList)
 	}
 	if util.IsNotBlank(request.Name) {
 		screenSql += " AND name LIKE CONCAT('%',?,'%') "
@@ -305,4 +318,23 @@ func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error
 		}
 	}
 	return list, nil
+}
+
+func getCustomerIdList(db *gorm.DB, request *Request) ([]int64, error) {
+	var customerManageList []*entity.CustomerManage
+	if err := db.Where("leader_id = ?", request.UserId).Find(&customerManageList).Error; err != nil {
+		return nil, err
+	}
+	var permissionsManageList []*entity.PermissionsManage
+	if err := db.Where("user_id = ?", request.UserId).Find(&permissionsManageList).Error; err != nil {
+		return nil, err
+	}
+	var customerIdList []int64
+	for _, v := range customerManageList {
+		customerIdList = append(customerIdList, v.ID)
+	}
+	for _, v := range permissionsManageList {
+		customerIdList = append(customerIdList, v.CustomerId)
+	}
+	return customerIdList, nil
 }
