@@ -335,11 +335,9 @@ func HandleCloudProductDependAndNodeRole(context *gin.Context, cloudProductBasel
 				})
 			}
 		}
-		if len(cloudProductNodeRoleRels) > 0 {
-			if err := BatchCreateCloudProductNodeRoleRel(cloudProductNodeRoleRels); err != nil {
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
-			}
+		if err := BatchCreateCloudProductNodeRoleRel(cloudProductNodeRoleRels); err != nil {
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return true
 		}
 	}
 	return false

@@ -1,6 +1,8 @@
 package baseline
 
 import (
+	"fmt"
+
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
@@ -28,7 +30,7 @@ func QuerySoftwareVersionByVersion(version string, cloudPlatformType string) (en
 }
 
 func CreateSoftwareVersion(softwareVersion *entity.SoftwareVersion) error {
-	if err := data.DB.Table(entity.SoftwareVersionTable).Create(softwareVersion).Scan(softwareVersion).Error; err != nil {
+	if err := data.DB.Table(entity.SoftwareVersionTable).Create(softwareVersion).Error; err != nil {
 		log.Errorf("insert software version error: %v", err)
 		return err
 	}
@@ -55,7 +57,7 @@ func BatchCreateNodeRoleBaseline(nodeRoleBaselines []entity.NodeRoleBaseline) er
 	if len(nodeRoleBaselines) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.NodeRoleBaselineTable).Create(&nodeRoleBaselines).Scan(&nodeRoleBaselines).Error; err != nil {
+	if err := data.DB.Table(entity.NodeRoleBaselineTable).Create(&nodeRoleBaselines).Error; err != nil {
 		log.Errorf("batch insert nodeRoleBaseline error: %v", err)
 		return err
 	}
@@ -75,7 +77,7 @@ func BatchCreateNodeRoleMixedDeploy(nodeRoleMixedDeploys []entity.NodeRoleMixedD
 	if len(nodeRoleMixedDeploys) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.NodeRoleMixedDeployTable).Create(&nodeRoleMixedDeploys).Scan(&nodeRoleMixedDeploys).Error; err != nil {
+	if err := data.DB.Table(entity.NodeRoleMixedDeployTable).Create(&nodeRoleMixedDeploys).Error; err != nil {
 		log.Errorf("batch insert nodeRoleMixedDeploy error: %v", err)
 		return err
 	}
@@ -86,7 +88,7 @@ func BatchCreateCloudProductBaseline(cloudProductBaselines []entity.CloudProduct
 	if len(cloudProductBaselines) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.CloudProductBaselineTable).Create(&cloudProductBaselines).Scan(&cloudProductBaselines).Error; err != nil {
+	if err := data.DB.Table(entity.CloudProductBaselineTable).Create(&cloudProductBaselines).Error; err != nil {
 		log.Errorf("batch insert cloudProductBaseline error: %v", err)
 		return err
 	}
@@ -102,7 +104,10 @@ func QueryCloudProductBaselineByVersionId(versionId int64) ([]entity.CloudProduc
 }
 
 func BatchCreateCloudProductDependRel(cloudProductDependRels []entity.CloudProductDependRel) error {
-	if err := data.DB.Table(entity.CloudProductDependRelTable).Create(&cloudProductDependRels).Scan(&cloudProductDependRels).Error; err != nil {
+	if len(cloudProductDependRels) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CloudProductDependRelTable).Create(&cloudProductDependRels).Error; err != nil {
 		log.Errorf("batch insert cloudProductDependRel error: %v", err)
 		return err
 	}
@@ -110,7 +115,10 @@ func BatchCreateCloudProductDependRel(cloudProductDependRels []entity.CloudProdu
 }
 
 func BatchCreateCloudProductNodeRoleRel(cloudProductNodeRoleRels []entity.CloudProductNodeRoleRel) error {
-	if err := data.DB.Table(entity.CloudProductNodeRoleTable).Create(&cloudProductNodeRoleRels).Scan(&cloudProductNodeRoleRels).Error; err != nil {
+	if len(cloudProductNodeRoleRels) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CloudProductNodeRoleTable).Create(&cloudProductNodeRoleRels).Error; err != nil {
 		log.Errorf("batch insert cloudProductNodeRoleRel error: %v", err)
 		return err
 	}
@@ -126,7 +134,10 @@ func QueryServerBaselineByVersionId(versionId int64) ([]entity.ServerBaseline, e
 }
 
 func BatchCreateServerBaseline(serverBaselines []entity.ServerBaseline) error {
-	if err := data.DB.Table(entity.ServerBaselineTable).Create(&serverBaselines).Scan(&serverBaselines).Error; err != nil {
+	if len(serverBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.ServerBaselineTable).Create(&serverBaselines).Error; err != nil {
 		log.Errorf("batch insert serverBaseline error: %v", err)
 		return err
 	}
@@ -134,7 +145,10 @@ func BatchCreateServerBaseline(serverBaselines []entity.ServerBaseline) error {
 }
 
 func BatchCreateServerNodeRoleRel(serverNodeRoleRels []entity.ServerNodeRoleRel) error {
-	if err := data.DB.Table(entity.ServerNodeRoleRelTable).Create(&serverNodeRoleRels).Scan(&serverNodeRoleRels).Error; err != nil {
+	if len(serverNodeRoleRels) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.ServerNodeRoleRelTable).Create(&serverNodeRoleRels).Error; err != nil {
 		log.Errorf("batch insert serverNodeRoleRel error: %v", err)
 		return err
 	}
@@ -150,7 +164,10 @@ func QueryNetworkDeviceRoleBaselineByVersionId(versionId int64) ([]entity.Networ
 }
 
 func BatchCreateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline) error {
-	if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Create(&networkDeviceRoleBaselines).Scan(&networkDeviceRoleBaselines).Error; err != nil {
+	if len(networkDeviceRoleBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Create(&networkDeviceRoleBaselines).Error; err != nil {
 		log.Errorf("batch insert networkDeviceRoleBaseline error: %v", err)
 		return err
 	}
@@ -161,7 +178,7 @@ func BatchCreateNetworkModelRoleRel(networkModelRoleRels []entity.NetworkModelRo
 	if len(networkModelRoleRels) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.NetworkModelRoleRelTable).Create(&networkModelRoleRels).Scan(&networkModelRoleRels).Error; err != nil {
+	if err := data.DB.Table(entity.NetworkModelRoleRelTable).Create(&networkModelRoleRels).Error; err != nil {
 		log.Errorf("batch insert networkModelRoleRel error: %v", err)
 		return err
 	}
@@ -180,7 +197,7 @@ func BatchCreateNetworkDeviceBaseline(networkDeviceBaselines []entity.NetworkDev
 	if len(networkDeviceBaselines) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.NetworkDeviceBaselineTable).Create(&networkDeviceBaselines).Scan(&networkDeviceBaselines).Error; err != nil {
+	if err := data.DB.Table(entity.NetworkDeviceBaselineTable).Create(&networkDeviceBaselines).Error; err != nil {
 		log.Errorf("batch insert networkDeviceBaseline error: %v", err)
 		return err
 	}
@@ -191,7 +208,7 @@ func BatchCreateNetworkDeviceRoleRel(networkDeviceRoleRels []entity.NetworkDevic
 	if len(networkDeviceRoleRels) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.NetworkDeviceRoleRelTable).Create(&networkDeviceRoleRels).Scan(&networkDeviceRoleRels).Error; err != nil {
+	if err := data.DB.Table(entity.NetworkDeviceRoleRelTable).Create(&networkDeviceRoleRels).Error; err != nil {
 		log.Errorf("batch insert networkDeviceRoleRel error: %v", err)
 		return err
 	}
@@ -210,7 +227,7 @@ func BatchCreateIPDemandBaseline(ipDemandBaselines []entity.IPDemandBaseline) er
 	if len(ipDemandBaselines) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.IPDemandBaselineTable).Create(&ipDemandBaselines).Scan(&ipDemandBaselines).Error; err != nil {
+	if err := data.DB.Table(entity.IPDemandBaselineTable).Create(&ipDemandBaselines).Error; err != nil {
 		log.Errorf("batch insert ipDemandBaseline error: %v", err)
 		return err
 	}
@@ -221,7 +238,7 @@ func BatchCreateIPDemandDeviceRoleRel(ipDemandDeviceRoleRels []entity.IPDemandDe
 	if len(ipDemandDeviceRoleRels) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.IPDemandDeviceRoleRelTable).Create(&ipDemandDeviceRoleRels).Scan(&ipDemandDeviceRoleRels).Error; err != nil {
+	if err := data.DB.Table(entity.IPDemandDeviceRoleRelTable).Create(&ipDemandDeviceRoleRels).Error; err != nil {
 		log.Errorf("batch insert ipDemandDeviceRoleRel error: %v", err)
 		return err
 	}
@@ -240,7 +257,7 @@ func BatchCreateCapConvertBaseline(capConvertBaselines []entity.CapConvertBaseli
 	if len(capConvertBaselines) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.CapConvertBaselineTable).Create(&capConvertBaselines).Scan(&capConvertBaselines).Error; err != nil {
+	if err := data.DB.Table(entity.CapConvertBaselineTable).Create(&capConvertBaselines).Error; err != nil {
 		log.Errorf("batch insert capConvertBaseline error: %v", err)
 		return err
 	}
@@ -259,7 +276,7 @@ func BatchCreateCapActualResBaseline(capActualResBaselines []entity.CapActualRes
 	if len(capActualResBaselines) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.CapActualResBaselineTable).Create(&capActualResBaselines).Scan(&capActualResBaselines).Error; err != nil {
+	if err := data.DB.Table(entity.CapActualResBaselineTable).Create(&capActualResBaselines).Error; err != nil {
 		log.Errorf("batch insert capActualResBaseline error: %v", err)
 		return err
 	}
@@ -278,7 +295,7 @@ func BatchCreateCapServerCalcBaseline(capServerCalcBaselines []entity.CapServerC
 	if len(capServerCalcBaselines) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.CapServerCalcBaselineTable).Create(&capServerCalcBaselines).Scan(&capServerCalcBaselines).Error; err != nil {
+	if err := data.DB.Table(entity.CapServerCalcBaselineTable).Create(&capServerCalcBaselines).Error; err != nil {
 		log.Errorf("batch insert capServerCalcBaseline error: %v", err)
 		return err
 	}
@@ -297,7 +314,7 @@ func DeleteNodeRoleBaseline(nodeRoleBaselines []entity.NodeRoleBaseline) error {
 }
 
 func DeleteNodeRoleMixedDeploy() error {
-	if err := data.DB.Table(entity.NodeRoleMixedDeployTable).Delete(&entity.NodeRoleMixedDeploy{}).Error; err != nil {
+	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.NodeRoleMixedDeployTable)).Error; err != nil {
 		log.Errorf("delete nodeRoleMixedDeploy error: %v", err)
 		return err
 	}
@@ -313,29 +330,27 @@ func QueryNodeRoleMixedDeployByNodeRoleIds(nodeRoleIds []int64) ([]entity.NodeRo
 }
 
 func UpdateNodeRoleBaseline(nodeRoleBaselines []entity.NodeRoleBaseline) error {
-	if len(nodeRoleBaselines) == 0 {
-		return nil
-	}
-	if err := data.DB.Table(entity.NodeRoleBaselineTable).Updates(&nodeRoleBaselines).Error; err != nil {
-		log.Errorf("update nodeRoleBaseline error: %v", err)
-		return err
+	for _, nodeRoleBaseline := range nodeRoleBaselines {
+		if err := data.DB.Table(entity.NodeRoleBaselineTable).Updates(&nodeRoleBaseline).Error; err != nil {
+			log.Errorf("update nodeRoleBaseline error: %v", err)
+			return err
+		}
 	}
 	return nil
 }
 
 func UpdateCloudProductBaseline(cloudProductBaselines []entity.CloudProductBaseline) error {
-	if len(cloudProductBaselines) == 0 {
-		return nil
-	}
-	if err := data.DB.Table(entity.CloudProductBaselineTable).Updates(&cloudProductBaselines).Error; err != nil {
-		log.Errorf("update cloudProductBaseline error: %v", err)
-		return err
+	for _, cloudProductBaseline := range cloudProductBaselines {
+		if err := data.DB.Table(entity.CloudProductBaselineTable).Updates(&cloudProductBaseline).Error; err != nil {
+			log.Errorf("update cloudProductBaseline error: %v", err)
+			return err
+		}
 	}
 	return nil
 }
 
 func DeleteCloudProductDependRel() error {
-	if err := data.DB.Table(entity.CloudProductDependRelTable).Delete(&entity.CloudProductDependRel{}).Error; err != nil {
+	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.CloudProductDependRelTable)).Error; err != nil {
 		log.Errorf("delete cloudProductDependRel error: %v", err)
 		return err
 	}
@@ -343,7 +358,7 @@ func DeleteCloudProductDependRel() error {
 }
 
 func DeleteCloudProductNodeRoleRel() error {
-	if err := data.DB.Table(entity.CloudProductNodeRoleTable).Delete(&entity.CloudProductNodeRoleRel{}).Error; err != nil {
+	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.CloudProductNodeRoleTable)).Error; err != nil {
 		log.Errorf("delete cloudProductNodeRoleRel error: %v", err)
 		return err
 	}
@@ -362,12 +377,11 @@ func DeleteCloudProductBaseline(cloudProductBaselines []entity.CloudProductBasel
 }
 
 func UpdateServerBaseline(serverBaselines []entity.ServerBaseline) error {
-	if len(serverBaselines) == 0 {
-		return nil
-	}
-	if err := data.DB.Table(entity.ServerBaselineTable).Updates(&serverBaselines).Error; err != nil {
-		log.Errorf("update serverBaseline error: %v", err)
-		return err
+	for _, serverBaseline := range serverBaselines {
+		if err := data.DB.Table(entity.ServerBaselineTable).Updates(&serverBaseline).Error; err != nil {
+			log.Errorf("update serverBaseline error: %v", err)
+			return err
+		}
 	}
 	return nil
 }
@@ -384,7 +398,7 @@ func DeleteServerBaseline(serverBaselines []entity.ServerBaseline) error {
 }
 
 func DeleteServerNodeRoleRel() error {
-	if err := data.DB.Table(entity.ServerNodeRoleRelTable).Delete(&entity.ServerNodeRoleRel{}).Error; err != nil {
+	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.ServerNodeRoleRelTable)).Error; err != nil {
 		log.Errorf("delete serverNodeRoleRel error: %v", err)
 		return err
 	}
@@ -392,18 +406,17 @@ func DeleteServerNodeRoleRel() error {
 }
 
 func UpdateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline) error {
-	if len(networkDeviceRoleBaselines) == 0 {
-		return nil
-	}
-	if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Updates(&networkDeviceRoleBaselines).Error; err != nil {
-		log.Errorf("update networkDeviceRoleBaseline error: %v", err)
-		return err
+	for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
+		if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Updates(&networkDeviceRoleBaseline).Error; err != nil {
+			log.Errorf("update networkDeviceRoleBaseline error: %v", err)
+			return err
+		}
 	}
 	return nil
 }
 
 func DeleteNetworkModelRoleRel() error {
-	if err := data.DB.Table(entity.NetworkModelRoleRelTable).Delete(&entity.NetworkModelRoleRel{}).Error; err != nil {
+	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.NetworkModelRoleRelTable)).Error; err != nil {
 		log.Errorf("delete networkModelRoleRel error: %v", err)
 		return err
 	}
@@ -422,12 +435,11 @@ func DeleteNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.Network
 }
 
 func UpdateNetworkDeviceBaseline(networkDeviceBaselines []entity.NetworkDeviceBaseline) error {
-	if len(networkDeviceBaselines) == 0 {
-		return nil
-	}
-	if err := data.DB.Table(entity.NetworkDeviceBaselineTable).Updates(&networkDeviceBaselines).Error; err != nil {
-		log.Errorf("update networkDeviceBaseline error: %v", err)
-		return err
+	for _, networkDeviceBaseline := range networkDeviceBaselines {
+		if err := data.DB.Table(entity.NetworkDeviceBaselineTable).Updates(&networkDeviceBaseline).Error; err != nil {
+			log.Errorf("update networkDeviceBaseline error: %v", err)
+			return err
+		}
 	}
 	return nil
 }
@@ -444,7 +456,7 @@ func DeleteNetworkDeviceBaseline(networkDeviceBaselines []entity.NetworkDeviceBa
 }
 
 func DeleteNetworkDeviceRoleRel() error {
-	if err := data.DB.Table(entity.NetworkDeviceRoleRelTable).Delete(&entity.NetworkDeviceRoleRel{}).Error; err != nil {
+	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.NetworkDeviceRoleRelTable)).Error; err != nil {
 		log.Errorf("delete networkDeviceRoleRel error: %v", err)
 		return err
 	}
@@ -452,12 +464,11 @@ func DeleteNetworkDeviceRoleRel() error {
 }
 
 func UpdateIPDemandBaseline(ipDemandBaselines []entity.IPDemandBaseline) error {
-	if len(ipDemandBaselines) == 0 {
-		return nil
-	}
-	if err := data.DB.Table(entity.IPDemandBaselineTable).Updates(&ipDemandBaselines).Error; err != nil {
-		log.Errorf("update ipDemandBaseline error: %v", err)
-		return err
+	for _, ipDemandBaseline := range ipDemandBaselines {
+		if err := data.DB.Table(entity.IPDemandBaselineTable).Updates(&ipDemandBaseline).Error; err != nil {
+			log.Errorf("update ipDemandBaseline error: %v", err)
+			return err
+		}
 	}
 	return nil
 }
@@ -474,7 +485,7 @@ func DeleteIPDemandBaseline(ipDemandBaselines []entity.IPDemandBaseline) error {
 }
 
 func DeleteIPDemandDeviceRoleRel() error {
-	if err := data.DB.Table(entity.IPDemandDeviceRoleRelTable).Delete(&entity.IPDemandDeviceRoleRel{}).Error; err != nil {
+	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.IPDemandDeviceRoleRelTable)).Error; err != nil {
 		log.Errorf("batch insert ipDemandDeviceRoleRel error: %v", err)
 		return err
 	}
@@ -482,12 +493,11 @@ func DeleteIPDemandDeviceRoleRel() error {
 }
 
 func UpdateCapConvertBaseline(capConvertBaselines []entity.CapConvertBaseline) error {
-	if len(capConvertBaselines) == 0 {
-		return nil
-	}
-	if err := data.DB.Table(entity.CapConvertBaselineTable).Updates(&capConvertBaselines).Error; err != nil {
-		log.Errorf("update capConvertBaseline error: %v", err)
-		return err
+	for _, capConvertBaseline := range capConvertBaselines {
+		if err := data.DB.Table(entity.CapConvertBaselineTable).Updates(&capConvertBaseline).Error; err != nil {
+			log.Errorf("update capConvertBaseline error: %v", err)
+			return err
+		}
 	}
 	return nil
 }
@@ -504,12 +514,11 @@ func DeleteCapConvertBaseline(capConvertBaselines []entity.CapConvertBaseline) e
 }
 
 func UpdateCapActualResBaseline(capActualResBaselines []entity.CapActualResBaseline) error {
-	if len(capActualResBaselines) == 0 {
-		return nil
-	}
-	if err := data.DB.Table(entity.CapActualResBaselineTable).Updates(&capActualResBaselines).Error; err != nil {
-		log.Errorf("update capActualResBaseline error: %v", err)
-		return err
+	for _, capActualResBaseline := range capActualResBaselines {
+		if err := data.DB.Table(entity.CapActualResBaselineTable).Updates(&capActualResBaseline).Error; err != nil {
+			log.Errorf("update capActualResBaseline error: %v", err)
+			return err
+		}
 	}
 	return nil
 }
@@ -526,12 +535,11 @@ func DeleteCapActualResBaseline(capActualResBaselines []entity.CapActualResBasel
 }
 
 func UpdateCapServerCalcBaseline(capServerCalcBaselines []entity.CapServerCalcBaseline) error {
-	if len(capServerCalcBaselines) == 0 {
-		return nil
-	}
-	if err := data.DB.Table(entity.CapServerCalcBaselineTable).Updates(&capServerCalcBaselines).Error; err != nil {
-		log.Errorf("update capServerCalcBaseline error: %v", err)
-		return err
+	for _, capServerCalcBaseline := range capServerCalcBaselines {
+		if err := data.DB.Table(entity.CapServerCalcBaselineTable).Updates(&capServerCalcBaseline).Error; err != nil {
+			log.Errorf("update capServerCalcBaseline error: %v", err)
+			return err
+		}
 	}
 	return nil
 }
