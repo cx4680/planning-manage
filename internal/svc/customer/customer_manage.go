@@ -86,7 +86,18 @@ func Create(context *gin.Context) {
 	}
 	if len(customerParam.CustomerName) > 30 {
 		log.Errorf("[Create] customer customerName is limited 30 character", err)
-		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, "客户名称不可超过30个字符")
+		return
+	}
+	customerExist, err := searchCustomerByName(customerParam.CustomerName)
+	if err != nil {
+		log.Errorf("[Create] customer search customer by name error", err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if customerExist.ID > 0 {
+		log.Errorf("[Create] customer customerName has exists")
+		result.FailureWithMsg(context, errorcodes.CustomerNameExistsError, http.StatusBadRequest, "客户名称重复")
 		return
 	}
 
@@ -135,7 +146,7 @@ func Update(context *gin.Context) {
 	}
 	if len(customerParam.CustomerName) > 30 {
 		log.Errorf("[Update] customer customerName is limited 30 character", err)
-		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, "客户名称不可超过30个字符")
 		return
 	}
 

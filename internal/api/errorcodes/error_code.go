@@ -11,6 +11,7 @@ const (
 	NetworkDeviceRoleMustImportFirst = "PlanningM.NetworkDeviceRoleMustImportFirst"
 
 	InvalidUserError          = "PlanningM.User.InvalidUsernameOrPassword"
+	CustomerNameExistsError   = "PlanningM.Customer.CustomerNameExistsError"
 	CloudProductDependError   = "PlanningM.CloudProduct.DependError"
 	CloudProductRequiredError = "PlanningM.CloudProduct.RequiredError"
 )

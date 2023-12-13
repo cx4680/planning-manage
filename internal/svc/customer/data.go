@@ -210,3 +210,12 @@ func searchCustomerById(customerId int64) (*entity.CustomerManage, error) {
 	}
 	return &customer, nil
 }
+
+func searchCustomerByName(customerName string) (*entity.CustomerManage, error) {
+	var customer entity.CustomerManage
+	if err := data.DB.Table(entity.CustomerManageTable).Where("customer_name=? and delete_state=0", customerName).Scan(&customer).Error; err != nil {
+		log.Errorf("[searchCustomerByName] query customer by name error, %v", err)
+		return nil, err
+	}
+	return &customer, nil
+}
