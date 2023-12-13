@@ -35,6 +35,7 @@ type Request struct {
 	DeviceType            int              `json:"deviceType" form:"deviceType"`
 	VersionId             int64            `json:"versionId" form:"versionId"`
 	Devices               []NetworkDevices `json:"devices" form:"devices"`
+	EditFlag              bool             `json:"editFlag" form:"editFlag"`
 }
 
 type NetworkDevicesResponse struct {

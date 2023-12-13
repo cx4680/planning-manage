@@ -19,8 +19,8 @@ func searchDevicePlanByPlanId(planId int64) (*entity.NetworkDevicePlanning, erro
 	return &devicePlan, nil
 }
 
-func searchDeviceListByPlanId(planId int64) ([]entity.NetworkDevicePlanning, error) {
-	var deviceList []entity.NetworkDevicePlanning
+func searchDeviceListByPlanId(planId int64) ([]entity.NetworkDeviceList, error) {
+	var deviceList []entity.NetworkDeviceList
 	if err := data.DB.Table(entity.NetworkDeviceListTable).Where("plan_id=? and delete_state = 0", planId).Scan(&deviceList).Error; err != nil {
 		log.Errorf("[searchDeviceListByPlanId] query device list error, %v", err)
 		return nil, err
