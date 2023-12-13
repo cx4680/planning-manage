@@ -95,7 +95,7 @@ func Create(context *gin.Context) {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	if customerExist.ID > 0 {
+	if len(customerExist) > 0 {
 		log.Errorf("[Create] customer customerName has exists")
 		result.FailureWithMsg(context, errorcodes.CustomerNameExistsError, http.StatusBadRequest, "客户名称重复")
 		return
