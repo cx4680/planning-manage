@@ -113,7 +113,7 @@ func CapacityList(c *gin.Context) {
 
 func SaveCapacity(c *gin.Context) {
 	request := &Request{}
-	if err := c.ShouldBindQuery(&request); err != nil {
+	if err := c.ShouldBindJSON(&request); err != nil {
 		log.Errorf("save server capacity bind param error: ", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
@@ -122,6 +122,7 @@ func SaveCapacity(c *gin.Context) {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
 		return
 	}
+	request.UserId = user.GetUserId(c)
 	err := SaveServerCapacity(request)
 	if err != nil {
 		log.Errorf("save server capacity error: ", err)

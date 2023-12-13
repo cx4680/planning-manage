@@ -153,7 +153,7 @@ func Router(engine *gin.Engine) {
 			// 查询容量规划列表
 			serverGroup.GET("/capacity/list", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "queryServerCapacityList", middleware.LIST, middleware.INFO)), server.CapacityList)
 			// 保存容量规划
-			serverGroup.GET("/capacity/save", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "saveServerCapacityList", middleware.LIST, middleware.INFO)), server.SaveCapacity)
+			serverGroup.POST("/capacity/save", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "saveServerCapacityList", middleware.LIST, middleware.INFO)), server.SaveCapacity)
 			// 下载服务器规划清单
 			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.LIST, middleware.INFO)), server.Download)
 		}

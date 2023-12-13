@@ -6,6 +6,7 @@ type ServerCapPlanning struct {
 	PlanId             int64 `gorm:"column:plan_id" json:"planId"`                          // 方案id
 	CapacityBaselineId int64 `gorm:"column:capacity_baseline_id" json:"capacityBaselineId"` // 容量指标id
 	Number             int   `gorm:"column:number" json:"number"`                           // 数量
+	FeatureNumber      int   `gorm:"column:feature_number" json:"featureNumber"`            // 特性数量
 }
 
 func (entity *ServerCapPlanning) TableName() string {
