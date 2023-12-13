@@ -1183,7 +1183,42 @@ func ImportCapActualResBaseline(context *gin.Context, versionId int64, f *exceli
 			return true
 		}
 		if len(originCapActualResBaselines) > 0 {
-			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
+			originCapActualResMap := make(map[string]entity.CapActualResBaseline)
+			var insertCapActualResBaselines []entity.CapActualResBaseline
+			var updateCapActualResBaselines []entity.CapActualResBaseline
+			for _, originCapActualResBaseline := range originCapActualResBaselines {
+				key := originCapActualResBaseline.ProductCode + originCapActualResBaseline.SellSpecs + originCapActualResBaseline.SellUnit + originCapActualResBaseline.Features
+				originCapActualResMap[key] = originCapActualResBaseline
+			}
+			for _, capActualResBaseline := range capActualResBaselines {
+				key := capActualResBaseline.ProductCode + capActualResBaseline.SellSpecs + capActualResBaseline.SellUnit + capActualResBaseline.Features
+				originCapActualResBaseline, ok := originCapActualResMap[key]
+				if ok {
+					capActualResBaseline.Id = originCapActualResBaseline.Id
+					updateCapActualResBaselines = append(updateCapActualResBaselines, capActualResBaseline)
+					delete(originCapActualResMap, key)
+				} else {
+					insertCapActualResBaselines = append(insertCapActualResBaselines, capActualResBaseline)
+				}
+			}
+			if err := BatchCreateCapActualResBaseline(insertCapActualResBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if err := UpdateCapActualResBaseline(updateCapActualResBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if len(originCapActualResMap) > 0 {
+				var deleteCapActualResBaselines []entity.CapActualResBaseline
+				for _, originCapActualResBaseline := range originCapActualResMap {
+					deleteCapActualResBaselines = append(deleteCapActualResBaselines, originCapActualResBaseline)
+				}
+				if err := DeleteCapActualResBaseline(deleteCapActualResBaselines); err != nil {
+					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+					return true
+				}
+			}
 		} else {
 			if err := BatchCreateCapActualResBaseline(capActualResBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
@@ -1232,7 +1267,42 @@ func ImportCapServerCalcBaseline(context *gin.Context, versionId int64, f *excel
 			return true
 		}
 		if len(originCapServerCalcBaselines) > 0 {
-			// TODO 该版本之前已导入数据，需删除所有数据，范围巨大。。。必须重新导入其他所有基线
+			originCapServerCalcMap := make(map[string]entity.CapServerCalcBaseline)
+			var insertCapServerCalcBaselines []entity.CapServerCalcBaseline
+			var updateCapServerCalcBaselines []entity.CapServerCalcBaseline
+			for _, originCapServerCalcBaseline := range originCapServerCalcBaselines {
+				key := originCapServerCalcBaseline.ExpendResCode + originCapServerCalcBaseline.ExpendNodeRoleCode
+				originCapServerCalcMap[key] = originCapServerCalcBaseline
+			}
+			for _, capServerCalcBaseline := range capServerCalcBaselines {
+				key := capServerCalcBaseline.ExpendResCode + capServerCalcBaseline.ExpendNodeRoleCode
+				originCapServerCalcBaseline, ok := originCapServerCalcMap[key]
+				if ok {
+					capServerCalcBaseline.Id = originCapServerCalcBaseline.Id
+					updateCapServerCalcBaselines = append(updateCapServerCalcBaselines, capServerCalcBaseline)
+					delete(originCapServerCalcMap, key)
+				} else {
+					insertCapServerCalcBaselines = append(insertCapServerCalcBaselines, capServerCalcBaseline)
+				}
+			}
+			if err := BatchCreateCapServerCalcBaseline(insertCapServerCalcBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if err := UpdateCapServerCalcBaseline(updateCapServerCalcBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if len(originCapServerCalcMap) > 0 {
+				var deleteCapServerCalcBaselines []entity.CapServerCalcBaseline
+				for _, originCapServerCalcBaseline := range originCapServerCalcMap {
+					deleteCapServerCalcBaselines = append(deleteCapServerCalcBaselines, originCapServerCalcBaseline)
+				}
+				if err := DeleteCapServerCalcBaseline(deleteCapServerCalcBaselines); err != nil {
+					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+					return true
+				}
+			}
 		} else {
 			if err := BatchCreateCapServerCalcBaseline(capServerCalcBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)

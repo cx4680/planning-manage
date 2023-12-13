@@ -256,6 +256,9 @@ func QueryCapActualResBaselineByVersionId(versionId int64) ([]entity.CapActualRe
 }
 
 func BatchCreateCapActualResBaseline(capActualResBaselines []entity.CapActualResBaseline) error {
+	if len(capActualResBaselines) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.CapActualResBaselineTable).Create(&capActualResBaselines).Scan(&capActualResBaselines).Error; err != nil {
 		log.Errorf("batch insert capActualResBaseline error: %v", err)
 		return err
@@ -272,6 +275,9 @@ func QueryCapServerCalcBaselineByVersionId(versionId int64) ([]entity.CapServerC
 }
 
 func BatchCreateCapServerCalcBaseline(capServerCalcBaselines []entity.CapServerCalcBaseline) error {
+	if len(capServerCalcBaselines) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.CapServerCalcBaselineTable).Create(&capServerCalcBaselines).Scan(&capServerCalcBaselines).Error; err != nil {
 		log.Errorf("batch insert capServerCalcBaseline error: %v", err)
 		return err
@@ -492,6 +498,50 @@ func DeleteCapConvertBaseline(capConvertBaselines []entity.CapConvertBaseline) e
 	}
 	if err := data.DB.Table(entity.CapConvertBaselineTable).Delete(&capConvertBaselines).Error; err != nil {
 		log.Errorf("delete capConvertBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func UpdateCapActualResBaseline(capActualResBaselines []entity.CapActualResBaseline) error {
+	if len(capActualResBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CapActualResBaselineTable).Updates(&capActualResBaselines).Error; err != nil {
+		log.Errorf("update capActualResBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteCapActualResBaseline(capActualResBaselines []entity.CapActualResBaseline) error {
+	if len(capActualResBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CapActualResBaselineTable).Delete(&capActualResBaselines).Error; err != nil {
+		log.Errorf("delete capActualResBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func UpdateCapServerCalcBaseline(capServerCalcBaselines []entity.CapServerCalcBaseline) error {
+	if len(capServerCalcBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CapServerCalcBaselineTable).Updates(&capServerCalcBaselines).Error; err != nil {
+		log.Errorf("update capServerCalcBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func DeleteCapServerCalcBaseline(capServerCalcBaselines []entity.CapServerCalcBaseline) error {
+	if len(capServerCalcBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CapServerCalcBaselineTable).Delete(&capServerCalcBaselines).Error; err != nil {
+		log.Errorf("delete capServerCalcBaseline error: %v", err)
 		return err
 	}
 	return nil
