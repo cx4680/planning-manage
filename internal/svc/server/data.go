@@ -123,9 +123,9 @@ func SaveServer(request *Request) error {
 			return err
 		}
 		if err := tx.Model(entity.PlanManage{}).Where("id = ?", request.PlanId).Updates(&entity.PlanManage{
-			BusinessPanStage: constant.NETWORK_DEVICE_PLAN,
-			UpdateUserId:     request.UserId,
-			UpdateTime:       time.Now(),
+			BusinessPlanStage: constant.NETWORK_DEVICE_PLAN,
+			UpdateUserId:      request.UserId,
+			UpdateTime:        time.Now(),
 		}).Error; err != nil {
 			return err
 		}

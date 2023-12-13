@@ -111,10 +111,10 @@ func UpdatePlan(request *Request) error {
 
 func UpdatePlanStage(tx *gorm.DB, planId int64, stage string, userId string, planState int) error {
 	if err := tx.Model(entity.PlanManage{}).Where("id = ?", planId).Updates(entity.PlanManage{
-		Stage:            stage,
-		BusinessPanStage: planState,
-		UpdateUserId:     userId,
-		UpdateTime:       time.Now(),
+		Stage:             stage,
+		BusinessPlanStage: planState,
+		UpdateUserId:      userId,
+		UpdateTime:        time.Now(),
 	}).Error; err != nil {
 		log.Errorf("[UpdatePlanStage] update plan stage error, %v", err)
 		return err

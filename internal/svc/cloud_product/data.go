@@ -1,6 +1,7 @@
 package cloud_product
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
@@ -98,7 +99,7 @@ func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId
 		}
 		// 更新方案业务规划阶段
 		if err := tx.Table(entity.PlanManageTable).Where("id = ?", request.PlanId).
-			Update("business_plan_stage", 1).
+			Update("business_plan_stage", constant.SERVER_PLAN).
 			Update("stage", "planning").
 			Update("update_user_id", currentUserId).
 			Update("update_time", time.Now()).Error; err != nil {
