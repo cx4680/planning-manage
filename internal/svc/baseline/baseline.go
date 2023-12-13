@@ -740,12 +740,13 @@ func HandleNetworkModelRole(context *gin.Context, nodeRoleBaselines []entity.Nod
 		networkDeviceRoleCodeMap[networkDeviceRoleBaseline.FuncCompoCode] = networkDeviceRoleBaseline.Id
 	}
 	var networkModelRoleRels []entity.NetworkModelRoleRel
+	var err error
 	for _, networkDeviceRoleBaselineExcel := range networkDeviceRoleBaselineExcelList {
 		networkDeviceRoleId := networkDeviceRoleCodeMap[networkDeviceRoleBaselineExcel.FuncCompoCode]
 		twoNetworkIsos := networkDeviceRoleBaselineExcel.TwoNetworkIsos
 		threeNetworkIsos := networkDeviceRoleBaselineExcel.ThreeNetworkIsos
 		triplePlays := networkDeviceRoleBaselineExcel.TriplePlays
-		networkModelRoleRels, err := HandleNetworkModelRoleRels(networkDeviceRoleId, twoNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, constant.SEPARATION_OF_TWO_NETWORKS)
+		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, twoNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, constant.SEPARATION_OF_TWO_NETWORKS)
 		if err != nil {
 			result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
 			return true
@@ -761,8 +762,7 @@ func HandleNetworkModelRole(context *gin.Context, nodeRoleBaselines []entity.Nod
 			return true
 		}
 	}
-	if err := BatchCreateNetworkModelRoleRel(networkModelRoleRels); err != nil {
-		log.Error(err)
+	if err = BatchCreateNetworkModelRoleRel(networkModelRoleRels); err != nil {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return true
 	}
