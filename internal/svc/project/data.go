@@ -38,7 +38,7 @@ func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 	}
 	if util.IsNotBlank(request.CustomerName) {
 		var customerList []*entity.CustomerManage
-		if err := data.DB.Where(" AND name LIKE CONCAT('%',?,'%') ", request.CustomerName).Find(&customerList).Error; err != nil {
+		if err := db.Where(" AND name LIKE CONCAT('%',?,'%') ", request.CustomerName).Find(&customerList).Error; err != nil {
 			return nil, 0, err
 		}
 		var customerIdList []int64
@@ -71,11 +71,11 @@ func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 		orderSql += " desc "
 	}
 	var count int64
-	if err := data.DB.Model(&entity.ProjectManage{}).Where(screenSql, screenParams...).Count(&count).Error; err != nil {
+	if err := db.Model(&entity.ProjectManage{}).Where(screenSql, screenParams...).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
 	var list []*entity.ProjectManage
-	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
+	if err := db.Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
 	list, err := buildResponse(list)
