@@ -72,6 +72,7 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	db := data.DB.Table("customer_manage cm").Select("DISTINCT cm.*")
 
 	db.Where("cm.delete_state=0")
+	db.Where("pm.delete_state = 0")
 	if len(customerPageParam.CustomerName) > 0 {
 		db.Where("cm.customer_name like ?", `%`+customerPageParam.CustomerName+`%`)
 	}
