@@ -1,10 +1,11 @@
 package http
 
 import (
+	"os"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
-	"os"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/az"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cell"
@@ -17,8 +18,9 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/region"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/user"
 
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
 	"github.com/gin-gonic/gin"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 
@@ -32,10 +34,10 @@ const (
 
 func Router(engine *gin.Engine) {
 
-	v1 := engine.Group(apiPrefix)
+	api := engine.Group(apiPrefix, Auth())
 	{
 		// user
-		userGroup := v1.Group("/user")
+		userGroup := api.Group("/user")
 		{
 			// 查询操作列表
 			userGroup.POST("/login", middleware.OperatorLog(DefaultEventOpInfo("登录", "login", middleware.OPERATE, middleware.INFO)), user.Login)
@@ -45,12 +47,12 @@ func Router(engine *gin.Engine) {
 			userGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("根据关键字查询用户", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByName)
 		}
 
-		customerGroup := v1.Group("/customer")
+		customerGroup := api.Group("/customer")
 		{
 			// 分页查询客户列表
 			customerGroup.POST("/page", middleware.OperatorLog(DefaultEventOpInfo("分页查询客户列表", "queryCustomerByPage", middleware.LIST, middleware.INFO)), customer.Page)
 			// 获取客户列表
-			//customerGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("获取客户列表", "listCustomer", middleware.LIST, middleware.INFO)), customer.List)
+			// customerGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("获取客户列表", "listCustomer", middleware.LIST, middleware.INFO)), customer.List)
 			// 根据id获取客户
 			customerGroup.GET("/:id", middleware.OperatorLog(DefaultEventOpInfo("根据id获取客户", "queryCustomerById", middleware.GET, middleware.INFO)), customer.GetById)
 			// 创建客户
@@ -58,11 +60,11 @@ func Router(engine *gin.Engine) {
 			// 根据id修改客户
 			customerGroup.POST("/update", middleware.OperatorLog(DefaultEventOpInfo("根据id修改客户", "editCustomer", middleware.UPDATE, middleware.INFO)), customer.Update)
 			// 根据id删除客户
-			//customerGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("根据id删除客户", "deleteCustomer", middleware.DELETE, middleware.INFO)), customer.Delete)
+			// customerGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("根据id删除客户", "deleteCustomer", middleware.DELETE, middleware.INFO)), customer.Delete)
 		}
 
 		// 云平台
-		cloudPlatformGroup := v1.Group("/platform")
+		cloudPlatformGroup := api.Group("/platform")
 		{
 			// 查询云平台列表
 			cloudPlatformGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询云平台列表", "queryProjectList", middleware.LIST, middleware.INFO)), cloud_platform.List)
@@ -75,7 +77,7 @@ func Router(engine *gin.Engine) {
 		}
 
 		// region
-		regionGroup := v1.Group("/region")
+		regionGroup := api.Group("/region")
 		{
 			// 查询region列表
 			regionGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询region列表", "queryRegionList", middleware.GET, middleware.INFO)), region.List)
@@ -88,7 +90,7 @@ func Router(engine *gin.Engine) {
 		}
 
 		// az
-		azGroup := v1.Group("/az")
+		azGroup := api.Group("/az")
 		{
 			// 查询az列表
 			azGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询az列表", "queryAzList", middleware.LIST, middleware.INFO)), az.List)
@@ -101,7 +103,7 @@ func Router(engine *gin.Engine) {
 		}
 
 		// cell
-		cellGroup := v1.Group("/cell")
+		cellGroup := api.Group("/cell")
 		{
 			// 查询cell列表
 			cellGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询cell列表", "queryCellList", middleware.LIST, middleware.INFO)), cell.List)
@@ -114,7 +116,7 @@ func Router(engine *gin.Engine) {
 		}
 
 		// project
-		projectGroup := v1.Group("/project")
+		projectGroup := api.Group("/project")
 		{
 			// 分页查询项目
 			projectGroup.GET("/page", middleware.OperatorLog(DefaultEventOpInfo("分页查询项目", "queryProjectByPage", middleware.LIST, middleware.INFO)), project.Page)
@@ -127,7 +129,7 @@ func Router(engine *gin.Engine) {
 		}
 
 		// plan
-		planGroup := v1.Group("/plan")
+		planGroup := api.Group("/plan")
 		{
 			// 分页查询方案
 			planGroup.GET("/page", middleware.OperatorLog(DefaultEventOpInfo("分页查询方案", "queryPlanByPage", middleware.LIST, middleware.INFO)), plan.Page)
@@ -139,8 +141,8 @@ func Router(engine *gin.Engine) {
 			planGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除方案", "deletePlanById", middleware.DELETE, middleware.INFO)), plan.Delete)
 		}
 
-		//服务器规划
-		serverGroup := v1.Group("/server")
+		// 服务器规划
+		serverGroup := api.Group("/server")
 		{
 			// 查询服务器规划列表
 			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryServerList", middleware.LIST, middleware.INFO)), server.List)
@@ -158,18 +160,11 @@ func Router(engine *gin.Engine) {
 			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.LIST, middleware.INFO)), server.Download)
 		}
 
-		// baseline
-		baselineGroup := v1.Group("/baseline")
-		{
-			// 导入版本基线
-			baselineGroup.POST("/import", middleware.OperatorLog(DefaultEventOpInfo("导入版本基线", "importBaseline", middleware.IMPORT, middleware.INFO)), baseline.Import)
-		}
-
 		// network
-		networkGroup := v1.Group("/network")
+		networkGroup := api.Group("/network")
 		{
 			// 计算机柜数量
-			//networkGroup.GET("/box/count", middleware.OperatorLog(DefaultEventOpInfo("计算机柜数量", "getCountBoxNum", middleware.GET, middleware.INFO)), network_device.GetCountBoxNum)
+			// networkGroup.GET("/box/count", middleware.OperatorLog(DefaultEventOpInfo("计算机柜数量", "getCountBoxNum", middleware.GET, middleware.INFO)), network_device.GetCountBoxNum)
 			// 厂商列表查询
 			networkGroup.GET("/brands", middleware.OperatorLog(DefaultEventOpInfo("厂商列表查询", "getBrandsByPlanId", middleware.LIST, middleware.INFO)), network_device.GetBrandsByPlanId)
 			// 根据方案id获取网络设备规划信息
@@ -183,14 +178,14 @@ func Router(engine *gin.Engine) {
 		}
 
 		// ipDemand
-		ipDemandGroup := v1.Group("/ipDemand")
+		ipDemandGroup := api.Group("/ipDemand")
 		{
 			// 下载IP需求表
 			ipDemandGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载IP需求表", "ipDemandListDownload", middleware.EXPORT, middleware.INFO)), ip_demand.IpDemandListDownload)
 		}
 
 		// cloudProduct
-		cloudProduct := v1.Group("/cloud/product")
+		cloudProduct := api.Group("/cloud/product")
 		{
 			cloudProduct.GET("/version/list", middleware.OperatorLog(DefaultEventOpInfo("根据项目id查询云产品版本列表", "listCloudProductVersion", middleware.LIST, middleware.INFO)), cloud_product.ListVersion)
 			cloudProduct.GET("/baseline/list", middleware.OperatorLog(DefaultEventOpInfo("根据版本id查询云产品基线列表", "listCloudProductBaseline", middleware.LIST, middleware.INFO)), cloud_product.ListCloudProductBaseline)
@@ -200,8 +195,17 @@ func Router(engine *gin.Engine) {
 		}
 	}
 
+	innerApi := engine.Group(innerPrefix)
+	{
+		// baseline
+		baselineGroup := innerApi.Group("/baseline")
+		{
+			// 导入版本基线
+			baselineGroup.POST("/import", middleware.OperatorLog(DefaultEventOpInfo("导入版本基线", "importBaseline", middleware.IMPORT, middleware.INFO)), baseline.Import)
+		}
+	}
 	// 枚举配置表
-	configGroup := v1.Group("/config")
+	configGroup := api.Group("/config")
 	{
 		configGroup.GET("/:code", middleware.OperatorLog(DefaultEventOpInfo("枚举配置表", "queryConfig", middleware.LIST, middleware.INFO)), config_item.List)
 	}
@@ -219,5 +223,46 @@ func DefaultEventOpInfo(actionDisplayName string, actionCode string, actionType 
 		RequestRegion:      os.Getenv(constant.EnvRegion),
 		Extended:           "",
 		RequestDescription: "",
+	}
+}
+
+func Auth() gin.HandlerFunc {
+	return func(context *gin.Context) {
+		// userInfo := context.Request.Header.Get("user-info")
+		// if userInfo == "" {
+		// 	context.Abort()
+		// 	context.JSON(http.StatusUnauthorized, map[string]interface{}{
+		// 		"code":    http.StatusUnauthorized,
+		// 		"message": "anonymous users cannot access!",
+		// 	})
+		// 	return
+		// }
+		//
+		// userInfoStr, err := base64.StdEncoding.DecodeString(userInfo)
+		// if err != nil {
+		// 	context.Abort()
+		// 	context.JSON(http.StatusUnauthorized, map[string]interface{}{
+		// 		"code":    http.StatusUnauthorized,
+		// 		"message": "anonymous users cannot access!",
+		// 	})
+		// 	return
+		// }
+		// log.Infof(`userInfo: %s`, string(userInfoStr))
+		// userID := gjson.Get(string(userInfoStr), "staffId").String()
+		// if userID == "" {
+		// 	userID = "0"
+		// }
+		// userName := gjson.Get(string(userInfoStr), "staffName").String()
+		// if userName == "" {
+		// 	userName = "inner service"
+		// }
+		// userCode := gjson.Get(string(userInfoStr), "staffCode").String()
+		// if userCode == "" {
+		// 	userCode = "inner service"
+		// }
+		// context.Set(constant.UserName, userName)
+		// context.Set(constant.UserID, userID)
+		// context.Set(constant.UserCode, userCode)
+		// context.Next()
 	}
 }
