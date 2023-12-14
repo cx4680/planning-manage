@@ -22,12 +22,14 @@ func Page(context *gin.Context) {
 	}
 
 	session := sessions.Default(context)
-	currentUserId := session.Get("userId").(string)
-	if err != nil {
+	currentUserIdInterface := session.Get("userId")
+	var currentUserId string
+	if currentUserIdInterface == nil {
 		log.Errorf("[Page] customer bind param error", err)
-		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		result.Failure(context, errorcodes.InvalidUnauthorized, http.StatusUnauthorized)
 		return
 	}
+	currentUserId = currentUserIdInterface.(string)
 	customerList, count := pageCustomer(customerPageParam, currentUserId)
 
 	var customerResponseList []CustomerResponse

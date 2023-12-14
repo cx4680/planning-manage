@@ -4,6 +4,7 @@ const (
 	UnknownError                     = "PlanningM.UnknownError"
 	InvalidData                      = "PlanningM.InvalidData"
 	InvalidParam                     = "PlanningM.InvalidParam"
+	InvalidUnauthorized              = "PlanningM.InvalidUnauthorized"
 	NotFound                         = "PlanningM.NotFound"
 	ReadOnly                         = "PlanningM.ReadOnly"
 	SystemError                      = "PlanningM.SystemError"
