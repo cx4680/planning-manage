@@ -23,6 +23,11 @@ func Page(context *gin.Context) {
 
 	session := sessions.Default(context)
 	currentUserId := session.Get("userId").(string)
+	if err != nil {
+		log.Errorf("[Page] customer bind param error", err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
 	customerList, count := pageCustomer(customerPageParam, currentUserId)
 
 	var customerResponseList []CustomerResponse

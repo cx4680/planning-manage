@@ -51,7 +51,7 @@ func Login(context *gin.Context) {
 	//设置session有效期为1天
 	sessionAgeStr := os.Getenv("SESSION_AGE")
 	sessionAge, _ := strconv.Atoi(sessionAgeStr)
-	session.Options(sessions.Options{MaxAge: sessionAge})
+	session.Options(sessions.Options{MaxAge: sessionAge, Path: "/"})
 	log.Debugf("session userId:%s", session.Get("userId"))
 	session.Set("userId", userInfo.UserId)
 	session.Save()
