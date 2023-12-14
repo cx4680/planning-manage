@@ -166,7 +166,7 @@ func ListNetworkDevices(c *gin.Context) {
 		return
 	}
 	networkInterface := serverBaseline.NetworkInterface
-	if len(deviceList) > 0 || !request.EditFlag {
+	if len(deviceList) > 0 && !request.EditFlag {
 		//不是第一次进入并且也不是编辑网络设备规划 那就不需要重新计算 直接从库里拿
 		for _, device := range deviceList {
 			networkDevice := NetworkDevices{
