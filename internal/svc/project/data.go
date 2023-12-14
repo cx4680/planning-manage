@@ -38,7 +38,7 @@ func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 	}
 	if util.IsNotBlank(request.CustomerName) {
 		var customerList []*entity.CustomerManage
-		if err := db.Where(" AND name LIKE CONCAT('%',?,'%') ", request.CustomerName).Find(&customerList).Error; err != nil {
+		if err := db.Where("customer_name LIKE CONCAT('%',?,'%')", request.CustomerName).Find(&customerList).Error; err != nil {
 			return nil, 0, err
 		}
 		var customerIdList []int64

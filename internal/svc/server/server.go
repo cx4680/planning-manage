@@ -19,6 +19,7 @@ func List(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
+	log.Info(request)
 	if request.PlanId == 0 {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
 		return

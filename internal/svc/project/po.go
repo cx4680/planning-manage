@@ -4,7 +4,7 @@ type Request struct {
 	UserId            string
 	Id                int64  `form:"id"`
 	Name              string `form:"name"`
-	CustomerName      string `form:"CustomerName"`
+	CustomerName      string `form:"customerName"`
 	Type              string `form:"type"`
 	Stage             string `form:"stage"`
 	CloudPlatformId   int64  `form:"cloudPlatformId"`
