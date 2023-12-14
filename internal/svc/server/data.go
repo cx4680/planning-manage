@@ -258,10 +258,6 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 				Description:      v.Description,
 			}
 			responseCapConvert.FeatureId = v.Id
-			if serverCapPlanningMap[v.Id] != nil {
-				responseCapConvert.Number = serverCapPlanningMap[v.Id].Number
-				responseCapConvert.FeatureNumber = serverCapPlanningMap[v.Id].FeatureNumber
-			}
 			responseCapConvertList = append(responseCapConvertList, responseCapConvert)
 		}
 		responseFeatures := &ResponseFeatures{
@@ -270,13 +266,24 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		}
 		capConvertBaselineMap[key] = append(capConvertBaselineMap[key], responseFeatures)
 	}
+	//整理容量指标的特性
 	var classificationMap = make(map[string][]*ResponseCapConvert)
 	for i, v := range responseCapConvertList {
 		key := v.ProductCode + v.SellSpecs + v.CapPlanningInput
 		responseCapConvertList[i].Features = capConvertBaselineMap[key]
+		//回显容量规划数据
+		for _, feature := range capConvertBaselineMap[key] {
+			if serverCapPlanningMap[feature.Id] != nil {
+				responseCapConvertList[i].FeatureId = feature.Id
+				responseCapConvertList[i].Number = serverCapPlanningMap[feature.Id].Number
+				responseCapConvertList[i].FeatureNumber = serverCapPlanningMap[feature.Id].FeatureNumber
+			}
+		}
+
 		classification := fmt.Sprintf("%s-%s", v.ProductName, v.SellSpecs)
 		classificationMap[classification] = append(classificationMap[classification], v)
 	}
+	//按产品分类
 	var response []*ResponseCapClassification
 	for k, v := range classificationMap {
 		response = append(response, &ResponseCapClassification{
