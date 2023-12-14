@@ -427,7 +427,7 @@ func SaveServerCapacity(request *Request) error {
 	return nil
 }
 
-func DownloadServer(planId int64) ([]*ResponseDownloadServer, string, error) {
+func DownloadServer(planId int64) ([]ResponseDownloadServer, string, error) {
 	//查询服务器规划列表
 	var serverList []*entity.ServerPlanning
 	if err := data.DB.Where("plan_id = ?", planId).Find(&serverList).Error; err != nil {
@@ -456,10 +456,10 @@ func DownloadServer(planId int64) ([]*ResponseDownloadServer, string, error) {
 		serverBaselineMap[v.Id] = v
 	}
 	//构建返回体
-	var response []*ResponseDownloadServer
+	var response []ResponseDownloadServer
 	var total int
 	for _, v := range serverList {
-		response = append(response, &ResponseDownloadServer{
+		response = append(response, ResponseDownloadServer{
 			NodeRole:   nodeRoleMap[v.NodeRoleId].NodeRoleName,
 			ServerType: serverBaselineMap[v.ServerBaselineId].Arch,
 			BomCode:    serverBaselineMap[v.ServerBaselineId].BomCode,
@@ -468,19 +468,22 @@ func DownloadServer(planId int64) ([]*ResponseDownloadServer, string, error) {
 		})
 		total += v.Number
 	}
-	response = append(response, &ResponseDownloadServer{
+	response = append(response, ResponseDownloadServer{
 		Number: "总计：" + strconv.Itoa(total) + "台",
 	})
 	//构建文件名称
-	var planManage = &entity.PlanManage{}
-	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).First(&planManage).Error; err != nil {
+	var planManageList []*entity.PlanManage
+	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManageList).Error; err != nil {
 		return nil, "", err
+	}
+	if len(planManageList) == 0 {
+		return nil, "", errors.New("方案不存在")
 	}
 	var projectManage = &entity.ProjectManage{}
-	if err := data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
+	if err := data.DB.Where("id = ? AND delete_state = ?", planManageList[0].ProjectId, 0).First(&projectManage).Error; err != nil {
 		return nil, "", err
 	}
-	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器规划清单"
+	fileName := projectManage.Name + "-" + planManageList[0].Name + "-" + "服务器规划清单"
 	return response, fileName, nil
 }
 

@@ -25,11 +25,11 @@ type RequestServerCapacity struct {
 }
 
 type ResponseDownloadServer struct {
-	NodeRole   string `json:"nodeRole" excel:"nodeRole:角色;index:0"`
-	ServerType string `json:"serverType" excel:"serverType:设备类型;index:1"`
-	BomCode    string `json:"bomCode" excel:"bomCode:机型;index:2"`
-	Spec       string `json:"spec" excel:"spec:规格;index:3"`
-	Number     string `json:"number" excel:"number:数量;index:4"`
+	NodeRole   string `json:"nodeRole" excel:"name:角色;index:0"`
+	ServerType string `json:"serverType" excel:"name:设备类型;index:1"`
+	BomCode    string `json:"bomCode" excel:"name:机型;index:2"`
+	Spec       string `json:"spec" excel:"name:规格;index:3"`
+	Number     string `json:"number" excel:"name:数量;index:4"`
 }
 
 type ResponseCapClassification struct {

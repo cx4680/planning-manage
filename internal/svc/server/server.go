@@ -135,8 +135,7 @@ func SaveCapacity(c *gin.Context) {
 func Download(c *gin.Context) {
 	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	if planId == 0 {
-		log.Errorf("list server download bind param error: ")
-		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		result.Failure(c, "planId参数为空", http.StatusBadRequest)
 		return
 	}
 	response, fileName, err := DownloadServer(planId)
@@ -145,7 +144,13 @@ func Download(c *gin.Context) {
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	_ = excel.NormalDownLoad(fileName, "服务器规划清单", "", false, response, c.Writer)
+	log.Info(fileName)
+	for _, v := range response {
+		log.Info(v)
+	}
+	if err = excel.NormalDownLoad(fileName, "服务器规划清单", "", false, response, c.Writer); err != nil {
+		log.Errorf("导出错误：", err)
+	}
 	result.Success(c, nil)
 }
 
