@@ -45,6 +45,7 @@ type ResponseCapConvert struct {
 	CapPlanningInput string              `json:"capPlanningInput"` // 容量规划输入
 	Number           int                 `json:"number"`           // 数量
 	Unit             string              `json:"unit"`             // 单位
+	FeatureId        int64               `json:"featureId"`        // 特性id
 	FeatureType      string              `json:"featureType"`      // 特性类型
 	Features         []*ResponseFeatures `json:"features"`         // 特性
 	Description      string              `json:"description"`      // 说明

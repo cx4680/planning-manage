@@ -258,6 +258,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 				Description:      v.Description,
 			}
 			if serverCapPlanningMap[v.Id] != nil {
+				responseCapConvert.FeatureId = v.Id
 				responseCapConvert.Number = serverCapPlanningMap[v.Id].Number
 			}
 			responseCapConvertList = append(responseCapConvertList, responseCapConvert)

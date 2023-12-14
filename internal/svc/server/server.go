@@ -144,10 +144,6 @@ func Download(c *gin.Context) {
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Info(fileName)
-	for _, v := range response {
-		log.Info(v)
-	}
 	if err = excel.NormalDownLoad(fileName, "服务器规划清单", "", false, response, c.Writer); err != nil {
 		log.Errorf("导出错误：", err)
 	}
