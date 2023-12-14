@@ -47,14 +47,14 @@ type ResponseCapConvert struct {
 	Unit             string              `json:"unit"`             // 单位
 	FeatureId        int64               `json:"featureId"`        // 特性id
 	FeatureType      string              `json:"featureType"`      // 特性类型
-	Features         []*ResponseFeatures `json:"features"`         // 特性
+	FeatureNumber    int                 `json:"featureNumber"`    // 特性数量
+	Features         []*ResponseFeatures `json:"features"`         // 特性选项
 	Description      string              `json:"description"`      // 说明
 }
 
 type ResponseFeatures struct {
-	Id     int64  `json:"id"`
-	Name   string `json:"name"`
-	Number int    `json:"number"`
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
 }
 
 var FeatureMap = map[string]string{"超分": "超分比", "三副本": "副本模式", "EC纠删码": "副本模式"}

@@ -257,18 +257,16 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 				FeatureType:      FeatureMap[v.Features],
 				Description:      v.Description,
 			}
+			responseCapConvert.FeatureId = v.Id
 			if serverCapPlanningMap[v.Id] != nil {
-				responseCapConvert.FeatureId = v.Id
 				responseCapConvert.Number = serverCapPlanningMap[v.Id].Number
+				responseCapConvert.FeatureNumber = serverCapPlanningMap[v.Id].FeatureNumber
 			}
 			responseCapConvertList = append(responseCapConvertList, responseCapConvert)
 		}
 		responseFeatures := &ResponseFeatures{
 			Id:   v.Id,
 			Name: v.Features,
-		}
-		if serverCapPlanningMap[v.Id] != nil {
-			responseFeatures.Number = serverCapPlanningMap[v.Id].FeatureNumber
 		}
 		capConvertBaselineMap[key] = append(capConvertBaselineMap[key], responseFeatures)
 	}
