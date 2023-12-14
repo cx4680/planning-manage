@@ -34,7 +34,7 @@ func GetIpDemandBaselineByVersionId(versionId int64) ([]*IpDemandBaselineDto, er
 }
 
 func SaveBatch(tx *gorm.DB, demandPlannings []*entity.IPDemandPlanning) error {
-	if err := tx.Table(entity.IPDemandPlanningTable).Create(&demandPlannings).Scan(&demandPlannings).Error; err != nil {
+	if err := tx.Table(entity.IPDemandPlanningTable).Create(&demandPlannings).Error; err != nil {
 		log.Errorf("batch insert demandPlannings error: ", err)
 		return err
 	}

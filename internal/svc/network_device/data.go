@@ -29,7 +29,7 @@ func searchDeviceListByPlanId(planId int64) ([]entity.NetworkDeviceList, error) 
 }
 
 func SaveBatch(tx *gorm.DB, networkDeviceList []*entity.NetworkDeviceList) error {
-	if err := tx.Table(entity.NetworkDeviceListTable).Create(&networkDeviceList).Scan(&networkDeviceList).Error; err != nil {
+	if err := tx.Table(entity.NetworkDeviceListTable).Create(&networkDeviceList).Error; err != nil {
 		log.Errorf("batch insert networkDeviceList error: ", err)
 		return err
 	}
