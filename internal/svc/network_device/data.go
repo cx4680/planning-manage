@@ -120,7 +120,7 @@ func updateDevicePlan(request *Request, devicePlanning entity.NetworkDevicePlann
 	devicePlanning.NetworkModel = request.NetworkModel
 	devicePlanning.DeviceType = request.DeviceType
 	devicePlanning.ApplicationDispersion = request.ApplicationDispersion
-	if err := data.DB.Table(entity.NetworkDevicePlanningTable).Updates(&devicePlanning).Error; err != nil {
+	if err := data.DB.Table(entity.NetworkDevicePlanningTable).Save(&devicePlanning).Error; err != nil {
 		log.Errorf("[updateDevicePlan] update device planning error, %v", err)
 		return err
 	}
