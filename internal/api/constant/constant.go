@@ -1,7 +1,8 @@
 package constant
 
 const (
-	XRequestID = "x-request-id"
+	XRequestID    = "x-request-id"
+	CurrentUserId = "currentUserId"
 )
 
 const (

@@ -1,10 +1,10 @@
 package cloud_product
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"net/http"
@@ -91,9 +91,8 @@ func Save(context *gin.Context) {
 			}
 		}
 	}
-	session := sessions.Default(context)
-	currentUserId := session.Get("userId").(string)
-	err = saveCloudProductPlanning(request, currentUserId)
+
+	err = saveCloudProductPlanning(request, context.GetString(constant.CurrentUserId))
 	if err != nil {
 		log.Errorf("[Save] cloudProductPlanning error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)

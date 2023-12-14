@@ -1,11 +1,11 @@
 package customer
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/user"
 	"encoding/json"
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"net/http"
@@ -21,16 +21,7 @@ func Page(context *gin.Context) {
 		return
 	}
 
-	session := sessions.Default(context)
-	currentUserIdInterface := session.Get("userId")
-	var currentUserId string
-	if currentUserIdInterface == nil {
-		log.Errorf("[Page] customer bind param error", err)
-		result.Failure(context, errorcodes.InvalidUnauthorized, http.StatusUnauthorized)
-		return
-	}
-	currentUserId = currentUserIdInterface.(string)
-	customerList, count := pageCustomer(customerPageParam, currentUserId)
+	customerList, count := pageCustomer(customerPageParam, context.GetString(constant.CurrentUserId))
 
 	var customerResponseList []CustomerResponse
 	marshal, err := json.Marshal(customerList)
@@ -108,8 +99,7 @@ func Create(context *gin.Context) {
 		return
 	}
 
-	session := sessions.Default(context)
-	currentUserId := session.Get("userId").(string)
+	currentUserId := context.GetString(constant.CurrentUserId)
 	leaderId := customerParam.LeaderId
 	if leaderId == "" {
 		leaderId = currentUserId
@@ -157,9 +147,7 @@ func Update(context *gin.Context) {
 		return
 	}
 
-	session := sessions.Default(context)
-	currentUserId := session.Get("userId").(string)
-	updateCustomer(customerParam, currentUserId)
+	updateCustomer(customerParam, context.GetString(constant.CurrentUserId))
 
 	result.Success(context, nil)
 	return

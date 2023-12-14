@@ -3,9 +3,14 @@ package http
 import (
 	"os"
 
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
+	"github.com/gin-contrib/sessions"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"net/http"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/az"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cell"
@@ -37,7 +42,7 @@ func Router(engine *gin.Engine) {
 	api := engine.Group(apiPrefix, Auth())
 	{
 		// user
-		userGroup := api.Group("/user")
+		userGroup := engine.Group(apiPrefix + "/user")
 		{
 			// 查询操作列表
 			userGroup.POST("/login", middleware.OperatorLog(DefaultEventOpInfo("登录", "login", middleware.OPERATE, middleware.INFO)), user.Login)
@@ -228,41 +233,13 @@ func DefaultEventOpInfo(actionDisplayName string, actionCode string, actionType 
 
 func Auth() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		// userInfo := context.Request.Header.Get("user-info")
-		// if userInfo == "" {
-		// 	context.Abort()
-		// 	context.JSON(http.StatusUnauthorized, map[string]interface{}{
-		// 		"code":    http.StatusUnauthorized,
-		// 		"message": "anonymous users cannot access!",
-		// 	})
-		// 	return
-		// }
-		//
-		// userInfoStr, err := base64.StdEncoding.DecodeString(userInfo)
-		// if err != nil {
-		// 	context.Abort()
-		// 	context.JSON(http.StatusUnauthorized, map[string]interface{}{
-		// 		"code":    http.StatusUnauthorized,
-		// 		"message": "anonymous users cannot access!",
-		// 	})
-		// 	return
-		// }
-		// log.Infof(`userInfo: %s`, string(userInfoStr))
-		// userID := gjson.Get(string(userInfoStr), "staffId").String()
-		// if userID == "" {
-		// 	userID = "0"
-		// }
-		// userName := gjson.Get(string(userInfoStr), "staffName").String()
-		// if userName == "" {
-		// 	userName = "inner service"
-		// }
-		// userCode := gjson.Get(string(userInfoStr), "staffCode").String()
-		// if userCode == "" {
-		// 	userCode = "inner service"
-		// }
-		// context.Set(constant.UserName, userName)
-		// context.Set(constant.UserID, userID)
-		// context.Set(constant.UserCode, userCode)
-		// context.Next()
+		session := sessions.Default(context)
+		currentUserIdInterface := session.Get("userId")
+		if currentUserIdInterface == nil {
+			log.Errorf("[Auth] invalid authorized")
+			result.Failure(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized)
+			return
+		}
+		context.Set(constant.CurrentUserId, currentUserIdInterface.(string))
 	}
 }

@@ -2,7 +2,7 @@ package user
 
 import (
 	"code.cestc.cn/ccos/cnm/ops-base/utils/userutils"
-	"github.com/gin-contrib/sessions"
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 )
@@ -19,5 +19,5 @@ func GetUserInfo(context *gin.Context) (owner string) {
 }
 
 func GetUserId(context *gin.Context) (userId string) {
-	return sessions.Default(context).Get("userId").(string)
+	return context.GetString(constant.CurrentUserId)
 }
