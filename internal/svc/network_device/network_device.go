@@ -20,7 +20,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/ip_demand"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
@@ -100,21 +99,8 @@ func GetBrandsByPlanId(c *gin.Context) {
 		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.ServerPlanningListEmpty)
 		return
 	}
-	serverBaselineId := serverPlanningList[0].ServerBaselineId
-	// 根据服务器基线ID查询服务器基线表 获取网络版本
-	serverBaseline, err := baseline.QueryServiceBaselineById(serverBaselineId)
-	if err != nil {
-		log.Errorf("[QueryServiceBaselineById] search baseline by id error, %v", err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	if serverBaseline.Id == 0 {
-		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.ServerBaselineEmpty)
-		return
-	}
-	networkVersion := serverBaseline.NetworkInterface
-	// 根据服务版本id和网络版本查询网络设备基线表查厂商  去重
-	brands, err := getBrandsByVersionIdAndNetworkVersion(versionId, networkVersion)
+	// 根据服务版本id查询网络设备基线表查厂商  去重
+	brands, err := getBrandsByVersionId(versionId)
 	if err != nil {
 		log.Errorf("[getBrandsByPlanId] search brands by planId error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -158,15 +144,6 @@ func ListNetworkDevices(c *gin.Context) {
 		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.ServerPlanningListEmpty)
 		return
 	}
-	// 根据服务器基线id查询服务器基线表获取网络接口
-	serviceBaselineId := serverPlanningList[0].ServerBaselineId
-	serverBaseline, err := baseline.QueryServiceBaselineById(serviceBaselineId)
-	if err != nil {
-		log.Errorf("[QueryServiceBaselineById] search baseline by id error, %v", err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	networkInterface := serverBaseline.NetworkInterface
 	if len(deviceList) > 0 && !request.EditFlag {
 		//不是第一次进入并且也不是编辑网络设备规划 那就不需要重新计算 直接从库里拿
 		for _, device := range deviceList {
@@ -181,7 +158,7 @@ func ListNetworkDevices(c *gin.Context) {
 				ConfOverview:          device.ConfOverview,
 			}
 			//单独处理下型号列表
-			deviceModels, _ := getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId, networkInterface, device.NetworkDeviceRoleId, request.Brand, request.DeviceType)
+			deviceModels, _ := getModelsByVersionIdAndRoleAndBrand(versionId, device.NetworkDeviceRoleId, request.Brand, request.DeviceType)
 			networkDevice.DeviceModels = deviceModels
 			response = append(response, networkDevice)
 		}
@@ -208,7 +185,7 @@ func ListNetworkDevices(c *gin.Context) {
 		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.NetworkDeviceRoleBaselineEmpty)
 		return
 	}
-	response, err = transformNetworkDeviceList(versionId, networkInterface, request, deviceRoleBaseline, nodeRoleServerNumMap)
+	response, err = transformNetworkDeviceList(versionId, request, deviceRoleBaseline, nodeRoleServerNumMap)
 	if err != nil {
 		log.Errorf("[transformNetworkDeviceList] error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -424,7 +401,7 @@ func checkRequest(request *Request) error {
 }
 
 // 匹配组网模型处理网络设备清单数据
-func transformNetworkDeviceList(versionId int64, networkInterface string, request *Request, roleBaseLine []entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int) ([]NetworkDevices, error) {
+func transformNetworkDeviceList(versionId int64, request *Request, roleBaseLine []entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int) ([]NetworkDevices, error) {
 	var response []NetworkDevices
 	networkModel := request.NetworkModel
 	/**
@@ -450,7 +427,7 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 			// 三网合一
 			model = deviceRole.TriplePlay
 		}
-		networkDevices, err := dealNetworkModel(versionId, networkInterface, request, model, deviceRole, nodeRoleServerNumMap, aswNum)
+		networkDevices, err := dealNetworkModel(versionId, request, model, deviceRole, nodeRoleServerNumMap, aswNum)
 		if err != nil {
 			return nil, err
 		}
@@ -462,7 +439,7 @@ func transformNetworkDeviceList(versionId int64, networkInterface string, reques
 }
 
 // 根据网络设备角色基线计算数据
-func dealNetworkModel(versionId int64, networkInterface string, request *Request, networkModel int, roleBaseLine entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int, aswNum map[int64]int) ([]NetworkDevices, error) {
+func dealNetworkModel(versionId int64, request *Request, networkModel int, roleBaseLine entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int, aswNum map[int64]int) ([]NetworkDevices, error) {
 	if constant.NetworkModelNo == networkModel {
 		return nil, nil
 	}
@@ -473,7 +450,7 @@ func dealNetworkModel(versionId int64, networkInterface string, request *Request
 	awsServerNum := request.AwsServerNum
 	deviceType := request.DeviceType
 	var response []NetworkDevices
-	deviceModels, _ := getModelsByVersionIdAndRoleAndBrandAndNetworkConfig(versionId, networkInterface, id, brand, deviceType)
+	deviceModels, _ := getModelsByVersionIdAndRoleAndBrand(versionId, id, brand, deviceType)
 	var deviceModel string
 	var confOverview string
 	if len(deviceModels) == 0 {
