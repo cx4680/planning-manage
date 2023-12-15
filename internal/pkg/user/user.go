@@ -14,7 +14,6 @@ func GetUserInfo(context *gin.Context) (owner string) {
 		return "--"
 	}
 	log.Info("userInfo ", owner)
-
 	return owner
 }
 

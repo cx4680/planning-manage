@@ -70,7 +70,7 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 	for _, v := range nodeRoleBaselineList {
 		serverPlanning := &entity.ServerPlanning{}
 		//若服务器规划有保存过，则加载已保存的数据
-		if _, ok := nodeRoleServerPlanningMap[v.Id]; ok {
+		if nodeRoleServerPlanningMap[v.Id] != nil && util.IsBlank(request.NetworkInterface) && util.IsBlank(request.CpuType) {
 			serverPlanning = nodeRoleServerPlanningMap[v.Id]
 			serverPlanning.ServerBomCode = serverBaselineMap[serverPlanning.ServerBaselineId].BomCode
 			serverPlanning.ServerArch = serverBaselineMap[serverPlanning.ServerBaselineId].Arch
@@ -114,6 +114,8 @@ func SaveServer(request *Request) error {
 				ServerBaselineId: v.ServerBaselineId,
 				Number:           v.Number,
 				OpenDpdk:         v.OpenDpdk,
+				NetworkInterface: request.NetworkInterface,
+				CpuType:          request.CpuType,
 				CreateUserId:     request.UserId,
 				CreateTime:       now,
 				UpdateUserId:     request.UserId,
@@ -139,29 +141,18 @@ func SaveServer(request *Request) error {
 }
 
 func ListServerNetworkType(request *Request) ([]string, error) {
-	//查询云产品规划表
-	var cloudProductPlanningList []*entity.CloudProductPlanning
-	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanningList).Error; err != nil {
-		return nil, err
-	}
-	if len(cloudProductPlanningList) == 0 {
-		return nil, errors.New("云产品规划不存在")
-	}
-	//查询云产品基线表
-	var cloudProductBaselineList []*entity.CloudProductBaseline
-	if err := data.DB.Where("id = ?", cloudProductPlanningList[0].ProductId).Find(&cloudProductBaselineList).Error; err != nil {
-		return nil, err
-	}
-	if len(cloudProductPlanningList) == 0 {
-		return nil, errors.New("云产品基线不存在")
-	}
-	//查询服务器基线表
-	var serverBaselineList []*entity.ServerBaseline
-	if err := data.DB.Where("version_id = ?", cloudProductBaselineList[0].VersionId).Find(&serverBaselineList).Error; err != nil {
+	//缓存预编译 会话模式
+	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
+	serverBaselineList, serverPlanningList, err := getServerType(db, request)
+	if err != nil {
 		return nil, err
 	}
 	var networkTypeMap = make(map[string]interface{})
 	var networkTypeList []string
+	if len(serverPlanningList) != 0 {
+		networkTypeMap[serverPlanningList[0].NetworkInterface] = struct{}{}
+		networkTypeList = append(networkTypeList, serverPlanningList[0].NetworkInterface)
+	}
 	for _, v := range serverBaselineList {
 		if _, ok := networkTypeMap[v.NetworkInterface]; !ok {
 			networkTypeMap[v.NetworkInterface] = struct{}{}
@@ -172,29 +163,18 @@ func ListServerNetworkType(request *Request) ([]string, error) {
 }
 
 func ListServerCpuType(request *Request) ([]string, error) {
-	//查询云产品规划表
-	var cloudProductPlanningList []*entity.CloudProductPlanning
-	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanningList).Error; err != nil {
-		return nil, err
-	}
-	if len(cloudProductPlanningList) == 0 {
-		return nil, errors.New("云产品规划不存在")
-	}
-	//查询云产品基线表
-	var cloudProductBaselineList []*entity.CloudProductBaseline
-	if err := data.DB.Where("id = ?", cloudProductPlanningList[0].ProductId).Find(&cloudProductBaselineList).Error; err != nil {
-		return nil, err
-	}
-	if len(cloudProductPlanningList) == 0 {
-		return nil, errors.New("云产品基线不存在")
-	}
-	//查询服务器基线表
-	var serverBaselineList []*entity.ServerBaseline
-	if err := data.DB.Where("version_id = ?", cloudProductBaselineList[0].VersionId).Find(&serverBaselineList).Error; err != nil {
+	//缓存预编译 会话模式
+	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
+	serverBaselineList, serverPlanningList, err := getServerType(db, request)
+	if err != nil {
 		return nil, err
 	}
 	var cpuTypeMap = make(map[string]interface{})
 	var cpuTypeList []string
+	if len(serverPlanningList) != 0 {
+		cpuTypeMap[serverPlanningList[0].CpuType] = struct{}{}
+		cpuTypeList = append(cpuTypeList, serverPlanningList[0].CpuType)
+	}
 	for _, v := range serverBaselineList {
 		if _, ok := cpuTypeMap[v.CpuType]; !ok {
 			cpuTypeMap[v.CpuType] = struct{}{}
@@ -202,6 +182,36 @@ func ListServerCpuType(request *Request) ([]string, error) {
 		}
 	}
 	return cpuTypeList, nil
+}
+
+func getServerType(db *gorm.DB, request *Request) ([]*entity.ServerBaseline, []*entity.ServerPlanning, error) {
+	//查询云产品规划表
+	var cloudProductPlanningList []*entity.CloudProductPlanning
+	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanningList).Error; err != nil {
+		return nil, nil, err
+	}
+	if len(cloudProductPlanningList) == 0 {
+		return nil, nil, errors.New("云产品规划不存在")
+	}
+	//查询云产品基线表
+	var cloudProductBaselineList []*entity.CloudProductBaseline
+	if err := data.DB.Where("id = ?", cloudProductPlanningList[0].ProductId).Find(&cloudProductBaselineList).Error; err != nil {
+		return nil, nil, err
+	}
+	if len(cloudProductPlanningList) == 0 {
+		return nil, nil, errors.New("云产品基线不存在")
+	}
+	//查询服务器基线表
+	var serverBaselineList []*entity.ServerBaseline
+	if err := data.DB.Where("version_id = ?", cloudProductBaselineList[0].VersionId).Find(&serverBaselineList).Error; err != nil {
+		return nil, nil, err
+	}
+	//查询是否有已保存的方案
+	var serverPlanningList []*entity.ServerPlanning
+	if err := db.Where("plan_id = ?", request.PlanId).Find(&serverPlanningList).Error; err != nil {
+		return nil, nil, err
+	}
+	return serverBaselineList, serverPlanningList, nil
 }
 
 func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) {
@@ -401,6 +411,8 @@ func SaveServerCapacity(request *Request) error {
 					NodeRoleId:       nodeRoleBaseline.Id,
 					MixedNodeRoleId:  nodeRoleBaseline.Id,
 					ServerBaselineId: serverBaseline.Id,
+					NetworkInterface: request.NetworkInterface,
+					CpuType:          request.CpuType,
 					CreateUserId:     request.UserId,
 					CreateTime:       now,
 					UpdateUserId:     request.UserId,
