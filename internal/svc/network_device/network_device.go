@@ -2,6 +2,7 @@ package network_device
 
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"errors"
 	"fmt"
 	"net/http"
@@ -295,8 +296,7 @@ func SaveDeviceList(c *gin.Context) {
 	// 转ip基线ID Map
 	ipBaselineIdMap := util.ListToMaps(ipDemandBaselines, "ID")
 	log.Infof("IP需求基线表转为map后的数据=%v", ipBaselineIdMap)
-	//userId := user.GetUserId(c)
-	userId := "1"
+	userId := user.GetUserId(c)
 	err = data.DB.Transaction(func(tx *gorm.DB) error {
 		if len(deviceList) > 0 {
 			// 失效库里保存的
@@ -346,7 +346,7 @@ func SaveDeviceList(c *gin.Context) {
 				ipDemandPlanning.Vlan = dto.Vlan
 				assignNum, _ := utils.String2Float(dto.AssignNum)
 				cNum := assignNum * float64(num)
-				ipDemandPlanning.Cnum = fmt.Sprintf("%f", cNum)
+				ipDemandPlanning.Cnum = fmt.Sprintf("%g", cNum)
 				ipDemandPlanning.Describe = dto.Description
 				ipDemandPlanning.AddressPlanning = dto.IpSuggestion
 				ipDemandPlanning.CreateTime = now
