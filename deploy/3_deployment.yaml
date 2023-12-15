@@ -60,7 +60,7 @@ spec:
             - name: LDAPUSERNAME
               value: cn=admin,dc=mylitboy,dc=com
             - name: SESSION_AGE
-              value: 86400
+              value: 1800
           livenessProbe:	#健康检查
             httpGet:   # tcpSocket,exec
               path: /health
