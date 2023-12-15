@@ -8,6 +8,7 @@ import (
 	"errors"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
+	"strings"
 	"time"
 )
 
@@ -30,8 +31,9 @@ func PagePlan(request *Request) ([]*entity.PlanManage, int64, error) {
 		screenParams = append(screenParams, request.Type)
 	}
 	if util.IsNotBlank(request.Stage) {
-		screenSql += " AND stage = ? "
-		screenParams = append(screenParams, request.Stage)
+		stageSplit := strings.Split(request.Stage, ",")
+		screenSql += " AND stage IN (?) "
+		screenParams = append(screenParams, stageSplit)
 	}
 	switch request.SortField {
 	case "createTime":
