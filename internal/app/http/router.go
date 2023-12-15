@@ -2,6 +2,7 @@ package http
 
 import (
 	"os"
+	"strconv"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
@@ -240,6 +241,10 @@ func Auth() gin.HandlerFunc {
 			result.Failure(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized)
 			return
 		}
+		sessionAgeStr := os.Getenv("SESSION_AGE")
+		sessionAge, _ := strconv.Atoi(sessionAgeStr)
+		session.Options(sessions.Options{MaxAge: sessionAge, Path: "/"})
+		session.Save()
 		context.Set(constant.CurrentUserId, currentUserIdInterface.(string))
 	}
 }
