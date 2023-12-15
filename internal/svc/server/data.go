@@ -399,6 +399,7 @@ func SaveServerCapacity(request *Request) error {
 				serverPlanning = &entity.ServerPlanning{
 					PlanId:           request.PlanId,
 					NodeRoleId:       nodeRoleBaseline.Id,
+					MixedNodeRoleId:  nodeRoleBaseline.Id,
 					ServerBaselineId: serverBaseline.Id,
 					CreateUserId:     request.UserId,
 					CreateTime:       now,
