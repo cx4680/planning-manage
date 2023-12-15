@@ -87,6 +87,11 @@ func Create(context *gin.Context) {
 		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, "客户名称不可超过30个字符")
 		return
 	}
+	if len(customerParam.LeaderId) < 1 || len(customerParam.LeaderName) < 1 || len(customerParam.MembersId) < 1 || len(customerParam.MembersName) < 1 {
+		log.Errorf("[Create] customer membersId or membersName can not be nil", err)
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, "客户接口人及项目成员必选")
+		return
+	}
 	customerExist, err := searchCustomerByName(customerParam.CustomerName)
 	if err != nil {
 		log.Errorf("[Create] customer search customer by name error", err)
