@@ -322,11 +322,11 @@ func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error
 
 func getCustomerIdList(db *gorm.DB, request *Request) ([]int64, error) {
 	var customerManageList []*entity.CustomerManage
-	if err := db.Where("leader_id = ?", request.UserId).Find(&customerManageList).Error; err != nil {
+	if err := db.Where("leader_id = ? AND delete_state = ?", request.UserId, 0).Find(&customerManageList).Error; err != nil {
 		return nil, err
 	}
 	var permissionsManageList []*entity.PermissionsManage
-	if err := db.Where("user_id = ?", request.UserId).Find(&permissionsManageList).Error; err != nil {
+	if err := db.Where("user_id = ? AND delete_state = ?", request.UserId, 0).Find(&permissionsManageList).Error; err != nil {
 		return nil, err
 	}
 	var customerIdList []int64
