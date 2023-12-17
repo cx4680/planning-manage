@@ -65,6 +65,11 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 	for _, v := range serverPlanningList {
 		nodeRoleServerPlanningMap[v.NodeRoleId] = v
 	}
+	// 计算已保存的容量规划指标
+	nodeRoleCapMap, err := getNodeRoleCapMap(db, request, nodeRoleServerBaselineListMap)
+	if err != nil {
+		return nil, err
+	}
 	//构建返回体
 	var list []*entity.ServerPlanning
 	for _, v := range nodeRoleBaselineList {
@@ -78,6 +83,9 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 			serverPlanning.PlanId = request.PlanId
 			serverPlanning.NodeRoleId = v.Id
 			serverPlanning.Number = v.MinimumNum
+			if nodeRoleCapMap[v.Id] != 0 {
+				serverPlanning.Number = nodeRoleCapMap[v.Id]
+			}
 			//列表加载查询的可用机型
 			serverBaselineList := screenNodeRoleServerBaselineListMap[v.Id]
 			if len(serverBaselineList) != 0 {
@@ -305,9 +313,11 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 }
 
 func SaveServerCapacity(request *Request) error {
+	//缓存预编译 会话模式
+	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	var serverCapPlanningList []*entity.ServerCapPlanning
 	var nodeRoleBaselineMap = make(map[int64]float64)
-	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+	if err := db.Transaction(func(tx *gorm.DB) error {
 		for _, v := range request.ServerCapacityList {
 			//查询服务器容量数据
 			var capConvertBaselineList []*entity.CapConvertBaseline
@@ -427,9 +437,12 @@ func SaveServerCapacity(request *Request) error {
 			//构建服务器容量规划
 			serverCapPlanningList = append(serverCapPlanningList, &entity.ServerCapPlanning{
 				PlanId:             request.PlanId,
+				NodeRoleId:         nodeRoleBaseline.Id,
 				CapacityBaselineId: v.Id,
 				Number:             v.Number,
 				FeatureNumber:      v.FeatureNumber,
+				CapacityNumber:     strconv.FormatFloat(capacityNumber, 'f', 3, 64),
+				ExpendResCode:      capActualResBaseline.ExpendResCode,
 			})
 		}
 		//保存服务器容量规划
@@ -599,6 +612,7 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 					Id:                serverBaseline.Id,
 					BomCode:           serverBaseline.BomCode,
 					NetworkInterface:  serverBaseline.NetworkInterface,
+					Cpu:               serverBaseline.Cpu,
 					CpuType:           serverBaseline.CpuType,
 					Arch:              serverBaseline.Arch,
 					ConfigurationInfo: serverBaseline.ConfigurationInfo,
@@ -610,4 +624,53 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 		}
 	}
 	return serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineListMap, nil
+}
+
+func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineListMap map[int64][]*entity.ServerPlanningBaseline) (map[int64]int, error) {
+	var serverCapPlanningList []*entity.ServerCapPlanning
+	if err := db.Where("plan_id = ?", request.PlanId).Find(&serverCapPlanningList).Error; err != nil {
+		return nil, err
+	}
+	var nodeRoleCapMap = make(map[int64]int)
+	if len(serverCapPlanningList) != 0 {
+		var capPlanningNodeRoleIdList []int64
+		var expendResCodeList []string
+		for _, v := range serverCapPlanningList {
+			capPlanningNodeRoleIdList = append(capPlanningNodeRoleIdList, v.NodeRoleId)
+			expendResCodeList = append(expendResCodeList, v.ExpendResCode)
+		}
+		//查询服务器和角色关联表
+		var capPlanningNodeRoleRelList []*entity.ServerNodeRoleRel
+		if err := db.Where("node_role_id IN (?)", capPlanningNodeRoleIdList).Find(&capPlanningNodeRoleRelList).Error; err != nil {
+			return nil, err
+		}
+		//查询容量计算表
+		var capServerCalcBaselineList []*entity.CapServerCalcBaseline
+		if err := db.Where("expend_res_code IN (?)", expendResCodeList).Find(&capServerCalcBaselineList).Error; err != nil {
+			return nil, err
+		}
+		var capServerCalcBaselineMap = make(map[string]*entity.CapServerCalcBaseline)
+		for _, v := range capServerCalcBaselineList {
+			capServerCalcBaselineMap[v.ExpendResCode] = v
+		}
+		for _, v := range serverCapPlanningList {
+			for _, serverBaseline := range nodeRoleServerBaselineListMap[v.NodeRoleId] {
+				if serverBaseline.CpuType == request.CpuType {
+					capServerCalcBaseline := capServerCalcBaselineMap[v.ExpendResCode]
+					capacityNumber, _ := strconv.ParseFloat(v.CapacityNumber, 64)
+					nodeWastage, _ := strconv.ParseFloat(capServerCalcBaseline.NodeWastage, 64)
+					waterLevel, _ := strconv.ParseFloat(capServerCalcBaseline.WaterLevel, 64)
+					var consumeNumber float64
+					if capServerCalcBaseline.NodeWastageCalcType == 1 {
+						consumeNumber = (float64(serverBaseline.Cpu) - nodeWastage) * waterLevel
+					} else {
+						consumeNumber = (float64(serverBaseline.Cpu) * (1 - nodeWastage)) * waterLevel
+					}
+					serverNumber := math.Ceil(capacityNumber / consumeNumber)
+					nodeRoleCapMap[v.NodeRoleId] = int(serverNumber)
+				}
+			}
+		}
+	}
+	return nodeRoleCapMap, nil
 }
