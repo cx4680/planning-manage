@@ -248,7 +248,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	}
 	//查询容量换算表
 	var capConvertBaselineList []*entity.CapConvertBaseline
-	if err := db.Where("product_code IN (?)", cloudProductCodeList).Find(&capConvertBaselineList).Error; err != nil {
+	if err := db.Where("product_code IN (?) AND version_id = ?", cloudProductCodeList, cloudProductPlanningList[0].VersionId).Find(&capConvertBaselineList).Error; err != nil {
 		return nil, err
 	}
 	//查询是否已有保存容量规划
