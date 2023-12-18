@@ -495,7 +495,7 @@ func DownloadServer(planId int64) ([]ResponseDownloadServer, string, error) {
 			NodeRole:   nodeRoleMap[v.NodeRoleId].NodeRoleName,
 			ServerType: serverBaselineMap[v.ServerBaselineId].Arch,
 			BomCode:    serverBaselineMap[v.ServerBaselineId].BomCode,
-			Spec:       serverBaselineMap[v.ServerBaselineId].Spec,
+			Spec:       serverBaselineMap[v.ServerBaselineId].ConfigurationInfo,
 			Number:     strconv.Itoa(v.Number),
 		})
 		total += v.Number

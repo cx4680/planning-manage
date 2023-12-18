@@ -141,7 +141,7 @@ func Download(c *gin.Context) {
 	}
 	response, fileName, err := DownloadServer(planId)
 	if err != nil {
-		log.Errorf("list server download error: ", err)
+		log.Errorf("download server error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
