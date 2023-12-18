@@ -163,7 +163,7 @@ func Router(engine *gin.Engine) {
 			// 保存容量规划
 			serverGroup.POST("/capacity/save", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "saveServerCapacityList", middleware.LIST, middleware.INFO)), server.SaveCapacity)
 			// 下载服务器规划清单
-			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.LIST, middleware.INFO)), server.Download)
+			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.EXPORT, middleware.INFO)), server.Download)
 		}
 
 		// network
