@@ -148,7 +148,7 @@ func Download(c *gin.Context) {
 	if err = excel.NormalDownLoad(fileName, "服务器规划清单", "", false, response, c.Writer); err != nil {
 		log.Errorf("导出错误：", err)
 	}
-	result.Success(c, nil)
+	return
 }
 
 func checkRequest(request *Request, isCreate bool) error {
