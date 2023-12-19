@@ -5,6 +5,7 @@ type Request struct {
 	UserId    string
 	Name      string `form:"name"`
 	AzId      int64  `form:"azId"`
+	Type      string `form:"type"`
 	SortField string `form:"sortField"`
 	Sort      string `form:"sort"`
 }

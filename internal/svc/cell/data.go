@@ -38,6 +38,7 @@ func CreateCell(request *Request) error {
 	cellEntity := &entity.CellManage{
 		Name:         request.Name,
 		AzId:         request.AzId,
+		Type:         request.Type,
 		CreateUserId: request.UserId,
 		CreateTime:   now,
 		UpdateUserId: request.UserId,
@@ -58,6 +59,7 @@ func UpdateCell(request *Request) error {
 	cellEntity := &entity.CellManage{
 		Id:           request.Id,
 		Name:         request.Name,
+		Type:         request.Type,
 		UpdateUserId: request.UserId,
 		UpdateTime:   now,
 	}
