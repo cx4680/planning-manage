@@ -33,6 +33,25 @@ func ListCloudPlatform(request *Request) ([]*entity.CloudPlatformManage, error) 
 	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Find(&list).Error; err != nil {
 		return nil, err
 	}
+	//查询负责人名称
+	var customerIdList []int64
+	for _, v := range list {
+		customerIdList = append(customerIdList, v.CustomerId)
+	}
+	var customerList []*entity.CustomerManage
+	if err := data.DB.Where("id IN (?)", customerIdList).Find(&customerList).Error; err != nil {
+		return nil, err
+	}
+	var customerMap = make(map[int64]*entity.CustomerManage)
+	for _, v := range customerList {
+		customerMap[v.ID] = v
+	}
+	for i, v := range list {
+		if customerMap[v.CustomerId] != nil {
+			list[i].LeaderId = customerMap[v.CustomerId].LeaderId
+			list[i].LeaderName = customerMap[v.CustomerId].LeaderName
+		}
+	}
 	return list, nil
 }
 

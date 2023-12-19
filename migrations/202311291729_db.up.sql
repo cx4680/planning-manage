@@ -100,6 +100,7 @@ CREATE TABLE `cell_manage`
     `id`             bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'cell Id',
     `name`           varchar(255) DEFAULT NULL COMMENT 'cell名称',
     `az_id`          bigint(20) NULL DEFAULT NULL COMMENT 'azId',
+    `type`           varchar(50)  DEFAULT NULL COMMENT 'cell类型',
     `create_user_id` varchar(255) DEFAULT NULL COMMENT '创建人id',
     `create_time`    datetime NULL DEFAULT NULL COMMENT '创建时间',
     `update_user_id` varchar(255) NULL DEFAULT NULL COMMENT '更新人id',

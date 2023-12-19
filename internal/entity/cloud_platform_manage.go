@@ -15,6 +15,8 @@ type CloudPlatformManage struct {
 	UpdateTime   time.Time       `gorm:"column:update_time" json:"updateTime"`      //更新时间
 	DeleteState  int             `gorm:"column:delete_state" json:"-"`              //作废状态：1，作废；0，正常
 	RegionList   []*RegionManage `gorm:"-" json:"regionList"`
+	LeaderId     string          `gorm:"-" json:"leaderId"`
+	LeaderName   string          `gorm:"-" json:"leaderName" `
 }
 
 func (entity *CloudPlatformManage) TableName() string {
