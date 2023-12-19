@@ -103,7 +103,7 @@ func ListByName(context *gin.Context) {
 	//log.Infof("Referrals:%v, Controls:%v", searchResult.Referrals, searchResult.Controls)
 	var ldapUserList []entity.UserManage
 	for _, item := range searchResult.Entries {
-		log.Infof("%v", item)
+		log.Debugf("dn:%v", item.DN)
 		for _, attribute := range item.Attributes {
 			log.Infof("%v:%v", attribute.Name, attribute.Values)
 		}

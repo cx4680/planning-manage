@@ -47,9 +47,7 @@ func Dn2Department(dn string) (string, string) {
 	var officeName string
 	for i := len(dnInfoList) - 1; i >= 0; i-- {
 		if strings.Contains(dnInfoList[i], "ou=") {
-			if i == len(dnInfoList)-1 {
-				officeName = strings.Trim(dnInfoList[i], "ou=")
-			}
+			officeName = strings.Trim(dnInfoList[i], "ou=")
 			departList = append(departList, strings.Trim(dnInfoList[i], "ou="))
 		}
 	}
