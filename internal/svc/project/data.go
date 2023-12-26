@@ -306,6 +306,7 @@ func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error
 		}
 		if cloudPlatformMap[v.CloudPlatformId] != nil {
 			list[i].CloudPlatformName = cloudPlatformMap[v.CloudPlatformId].Name
+			list[i].CloudPlatformType = cloudPlatformMap[v.CloudPlatformId].Type
 		}
 		if regionMap[v.RegionId] != nil {
 			list[i].RegionName = regionMap[v.RegionId].Name

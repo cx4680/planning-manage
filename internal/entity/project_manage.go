@@ -21,6 +21,7 @@ type ProjectManage struct {
 	DeleteState       int       `gorm:"column:delete_state" json:"-"`                    //作废状态：1，作废；0，正常
 	CustomerName      string    `gorm:"-" json:"customerName"`                           //客户名称
 	CloudPlatformName string    `gorm:"-" json:"cloudPlatformName"`                      //云平台名称
+	CloudPlatformType string    `gorm:"-" json:"cloudPlatformType"`                      //云平台类型
 	RegionName        string    `gorm:"-" json:"regionName"`                             //region名称
 	AzCode            string    `gorm:"-" json:"azCode"`                                 //az编码
 	CellName          string    `gorm:"-" json:"cellName"`                               //cell名称
