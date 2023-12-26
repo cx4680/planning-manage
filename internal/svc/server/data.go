@@ -151,15 +151,15 @@ func SaveServer(request *Request) error {
 func ListServerNetworkType(request *Request) ([]string, error) {
 	//缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
-	serverBaselineList, serverPlanningList, err := getServerType(db, request)
+	serverBaselineList, serverPlanning, err := getServerType(db, request)
 	if err != nil {
 		return nil, err
 	}
 	var networkTypeMap = make(map[string]interface{})
 	var networkTypeList []string
-	if len(serverPlanningList) != 0 {
-		networkTypeMap[serverPlanningList[0].NetworkInterface] = struct{}{}
-		networkTypeList = append(networkTypeList, serverPlanningList[0].NetworkInterface)
+	if serverPlanning.Id != 0 {
+		networkTypeMap[serverPlanning.NetworkInterface] = struct{}{}
+		networkTypeList = append(networkTypeList, serverPlanning.NetworkInterface)
 	}
 	for _, v := range serverBaselineList {
 		if _, ok := networkTypeMap[v.NetworkInterface]; !ok {
@@ -173,15 +173,15 @@ func ListServerNetworkType(request *Request) ([]string, error) {
 func ListServerCpuType(request *Request) ([]string, error) {
 	//缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
-	serverBaselineList, serverPlanningList, err := getServerType(db, request)
+	serverBaselineList, serverPlanning, err := getServerType(db, request)
 	if err != nil {
 		return nil, err
 	}
 	var cpuTypeMap = make(map[string]interface{})
 	var cpuTypeList []string
-	if len(serverPlanningList) != 0 {
-		cpuTypeMap[serverPlanningList[0].CpuType] = struct{}{}
-		cpuTypeList = append(cpuTypeList, serverPlanningList[0].CpuType)
+	if serverPlanning.Id != 0 {
+		cpuTypeMap[serverPlanning.CpuType] = struct{}{}
+		cpuTypeList = append(cpuTypeList, serverPlanning.CpuType)
 	}
 	for _, v := range serverBaselineList {
 		if _, ok := cpuTypeMap[v.CpuType]; !ok {
@@ -192,34 +192,34 @@ func ListServerCpuType(request *Request) ([]string, error) {
 	return cpuTypeList, nil
 }
 
-func getServerType(db *gorm.DB, request *Request) ([]*entity.ServerBaseline, []*entity.ServerPlanning, error) {
+func getServerType(db *gorm.DB, request *Request) ([]*entity.ServerBaseline, *entity.ServerPlanning, error) {
 	//查询云产品规划表
-	var cloudProductPlanningList []*entity.CloudProductPlanning
-	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanningList).Error; err != nil {
+	var cloudProductPlanning = &entity.CloudProductPlanning{}
+	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanning).Error; err != nil {
 		return nil, nil, err
 	}
-	if len(cloudProductPlanningList) == 0 {
+	if cloudProductPlanning.Id == 0 {
 		return nil, nil, errors.New("云产品规划不存在")
 	}
 	//查询云产品基线表
-	var cloudProductBaselineList []*entity.CloudProductBaseline
-	if err := data.DB.Where("id = ?", cloudProductPlanningList[0].ProductId).Find(&cloudProductBaselineList).Error; err != nil {
+	var cloudProductBaseline = &entity.CloudProductBaseline{}
+	if err := data.DB.Where("id = ?", cloudProductPlanning.ProductId).Find(&cloudProductBaseline).Error; err != nil {
 		return nil, nil, err
 	}
-	if len(cloudProductPlanningList) == 0 {
+	if cloudProductBaseline.Id == 0 {
 		return nil, nil, errors.New("云产品基线不存在")
 	}
 	//查询服务器基线表
 	var serverBaselineList []*entity.ServerBaseline
-	if err := data.DB.Where("version_id = ?", cloudProductBaselineList[0].VersionId).Find(&serverBaselineList).Error; err != nil {
+	if err := data.DB.Where("version_id = ?", cloudProductBaseline.VersionId).Find(&serverBaselineList).Error; err != nil {
 		return nil, nil, err
 	}
 	//查询是否有已保存的方案
-	var serverPlanningList []*entity.ServerPlanning
-	if err := db.Where("plan_id = ?", request.PlanId).Find(&serverPlanningList).Error; err != nil {
+	var serverPlanning = &entity.ServerPlanning{}
+	if err := db.Where("plan_id = ?", request.PlanId).Find(&serverPlanning).Error; err != nil {
 		return nil, nil, err
 	}
-	return serverBaselineList, serverPlanningList, nil
+	return serverBaselineList, serverPlanning, nil
 }
 
 func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) {
@@ -239,7 +239,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	}
 	//查询云产品基线表
 	var cloudProductBaselineList []*entity.CloudProductBaseline
-	if err := db.Where("id IN (?) AND version_id = ?", cloudProductIdList, cloudProductPlanningList[0].VersionId).Find(&cloudProductBaselineList).Error; err != nil {
+	if err := db.Where("id IN (?)", cloudProductIdList).Find(&cloudProductBaselineList).Error; err != nil {
 		return nil, err
 	}
 	var cloudProductCodeList []string
@@ -317,61 +317,64 @@ func SaveServerCapacity(request *Request) error {
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	var serverCapPlanningList []*entity.ServerCapPlanning
 	var nodeRoleBaselineMap = make(map[int64]float64)
+	//查询服务器容量数据map
+	var serverCapacityIdList []int64
+	for _, v := range request.ServerCapacityList {
+		serverCapacityIdList = append(serverCapacityIdList, v.Id)
+	}
+	var capConvertBaselineList []*entity.CapConvertBaseline
+	if err := db.Where("id IN ?", serverCapacityIdList).Find(&capConvertBaselineList).Error; err != nil {
+		return err
+	}
+	if len(capConvertBaselineList) == 0 {
+		return errors.New("服务器容量规划指标不存在")
+	}
+	var capConvertBaselineMap = make(map[int64]*entity.CapConvertBaseline)
+	for _, v := range capConvertBaselineList {
+		capConvertBaselineMap[v.Id] = v
+	}
 	if err := db.Transaction(func(tx *gorm.DB) error {
 		for _, v := range request.ServerCapacityList {
-			//查询服务器容量数据
-			var capConvertBaselineList []*entity.CapConvertBaseline
-			if err := tx.Where("id = ?", v.Id).Find(&capConvertBaselineList).Error; err != nil {
-				return err
-			}
-			if len(capConvertBaselineList) == 0 {
-				return errors.New("服务器容量规划指标不存在")
-			}
-			capConvertBaseline := capConvertBaselineList[0]
+			capConvertBaseline := capConvertBaselineMap[v.Id]
 			//查询容量实际资源消耗表
-			var capActualResBaselineList []*entity.CapActualResBaseline
+			var capActualResBaseline = &entity.CapActualResBaseline{}
 			if err := tx.Where("version_id = ? AND product_code = ? AND sell_specs = ? AND sell_unit = ? AND features = ?",
 				capConvertBaseline.VersionId, capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features).
-				Find(&capActualResBaselineList).Error; err != nil {
+				Find(&capActualResBaseline).Error; err != nil {
 				return err
 			}
-			if len(capActualResBaselineList) == 0 {
+			if capActualResBaseline.Id == 0 {
 				return errors.New("服务器容量规划特性不存在")
 			}
-			capActualResBaseline := capActualResBaselineList[0]
 			//查询容量服务器数量计算
-			var capServerCalcBaselineList []*entity.CapServerCalcBaseline
-			if err := tx.Where("version_id = ? AND expend_res_code = ?", capConvertBaseline.VersionId, capActualResBaseline.ExpendResCode).Find(&capServerCalcBaselineList).Error; err != nil {
+			var capServerCalcBaseline = &entity.CapServerCalcBaseline{}
+			if err := tx.Where("version_id = ? AND expend_res_code = ?", capConvertBaseline.VersionId, capActualResBaseline.ExpendResCode).Find(&capServerCalcBaseline).Error; err != nil {
 				return err
 			}
-			if len(capServerCalcBaselineList) == 0 {
+			if capServerCalcBaseline.Id == 0 {
 				return errors.New("服务器数量计算数据不存在")
 			}
-			capServerCalcBaseline := capServerCalcBaselineList[0]
 			//查询服务器规划是否有已保存数据
-			var nodeRoleBaselineList []*entity.NodeRoleBaseline
-			if err := tx.Where("version_id = ? AND node_role_code = ?", capConvertBaseline.VersionId, capServerCalcBaseline.ExpendNodeRoleCode).Find(&nodeRoleBaselineList).Error; err != nil {
+			var nodeRoleBaseline = &entity.NodeRoleBaseline{}
+			if err := tx.Where("version_id = ? AND node_role_code = ?", capConvertBaseline.VersionId, capServerCalcBaseline.ExpendNodeRoleCode).Find(&nodeRoleBaseline).Error; err != nil {
 				return err
 			}
-			if len(nodeRoleBaselineList) == 0 {
+			if nodeRoleBaseline.Id == 0 {
 				return errors.New("节点角色数据不存在")
 			}
-			nodeRoleBaseline := nodeRoleBaselineList[0]
-			var serverPlanningList []*entity.ServerPlanning
-			if err := tx.Where("plan_id = ? AND node_role_id = ?", request.PlanId, nodeRoleBaseline.Id).Find(&serverPlanningList).Error; err != nil {
+			var serverPlanning = &entity.ServerPlanning{}
+			if err := tx.Where("plan_id = ? AND node_role_id = ?", request.PlanId, nodeRoleBaseline.Id).Find(&serverPlanning).Error; err != nil {
 				return err
 			}
 			//查询服务器基线数据
-			var serverBaselineList []*entity.ServerBaseline
-			var serverPlanning *entity.ServerPlanning
-			if len(serverPlanningList) != 0 {
-				if err := tx.Where("id = ?", serverPlanningList[0].ServerBaselineId).Find(&serverBaselineList).Error; err != nil {
+			var serverBaseline = &entity.ServerBaseline{}
+			if serverPlanning.Id != 0 {
+				if err := tx.Where("id = ?", serverPlanning.ServerBaselineId).Find(&serverBaseline).Error; err != nil {
 					return err
 				}
-				serverPlanning = serverPlanningList[0]
 			} else {
 				var serverNodeRoleRelList []*entity.ServerNodeRoleRel
-				if err := tx.Where("node_role_id = ?", nodeRoleBaselineList[0].Id).Find(&serverNodeRoleRelList).Error; err != nil {
+				if err := tx.Where("node_role_id = ?", nodeRoleBaseline.Id).Find(&serverNodeRoleRelList).Error; err != nil {
 					return err
 				}
 				if len(serverNodeRoleRelList) == 0 {
@@ -381,14 +384,13 @@ func SaveServerCapacity(request *Request) error {
 				for _, serverNodeRoleRel := range serverNodeRoleRelList {
 					serverBaselineIdList = append(serverBaselineIdList, serverNodeRoleRel.ServerId)
 				}
-				if err := tx.Where("id IN (?) AND network_interface = ? AND cpu_type = ?", serverBaselineIdList, request.NetworkInterface, request.CpuType).Find(&serverBaselineList).Error; err != nil {
+				if err := tx.Where("id IN (?) AND network_interface = ? AND cpu_type = ?", serverBaselineIdList, request.NetworkInterface, request.CpuType).Find(&serverBaseline).Error; err != nil {
 					return err
 				}
 			}
-			if len(serverBaselineList) == 0 {
+			if serverBaseline.Id == 0 {
 				return errors.New("服务器基线数据不存在")
 			}
-			serverBaseline := serverBaselineList[0]
 			//计算服务器规划数据
 			numerator, _ := strconv.ParseFloat(capActualResBaseline.OccRatioNumerator, 64)
 			if numerator == 0 {
@@ -414,7 +416,7 @@ func SaveServerCapacity(request *Request) error {
 			if nodeRoleBaselineMap[nodeRoleBaseline.Id] < serverNumber {
 				nodeRoleBaselineMap[nodeRoleBaseline.Id] = serverNumber
 			}
-			if serverPlanning == nil {
+			if serverPlanning.Id != 0 {
 				now := datetime.GetNow()
 				serverPlanning = &entity.ServerPlanning{
 					PlanId:           request.PlanId,
@@ -504,18 +506,18 @@ func DownloadServer(planId int64) ([]ResponseDownloadServer, string, error) {
 		Number: "总计：" + strconv.Itoa(total) + "台",
 	})
 	//构建文件名称
-	var planManageList []*entity.PlanManage
-	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManageList).Error; err != nil {
+	var planManage = &entity.PlanManage{}
+	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManage).Error; err != nil {
 		return nil, "", err
 	}
-	if len(planManageList) == 0 {
+	if planManage.Id == 0 {
 		return nil, "", errors.New("方案不存在")
 	}
 	var projectManage = &entity.ProjectManage{}
-	if err := data.DB.Where("id = ? AND delete_state = ?", planManageList[0].ProjectId, 0).First(&projectManage).Error; err != nil {
+	if err := data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
 		return nil, "", err
 	}
-	fileName := projectManage.Name + "-" + planManageList[0].Name + "-" + "服务器规划清单"
+	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器规划清单"
 	return response, fileName, nil
 }
 

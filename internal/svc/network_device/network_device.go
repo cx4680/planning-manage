@@ -536,3 +536,10 @@ func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode s
 	}
 	return response, nil
 }
+
+func Test(c *gin.Context) {
+	response, err := getNetworkDeviceListByPlanIdAndRoleId(2, 1)
+	log.Error(err)
+	result.Success(c, response)
+	return
+}
