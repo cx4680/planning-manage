@@ -1,6 +1,6 @@
 package entity
 
-const CloudProductNodeRoleTable = "cloud_product_node_role_rel"
+const CloudProductNodeRoleRelTable = "cloud_product_node_role_rel"
 
 type CloudProductNodeRoleRel struct {
 	ProductId    int64 `gorm:"column:product_id" json:"productId"`        // 云产品id
@@ -9,5 +9,5 @@ type CloudProductNodeRoleRel struct {
 }
 
 func (entity *CloudProductNodeRoleRel) TableName() string {
-	return CloudProductNodeRoleTable
+	return CloudProductNodeRoleRelTable
 }

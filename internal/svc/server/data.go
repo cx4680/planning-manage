@@ -18,25 +18,17 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 	//缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	//查询云产品规划表
-	var cloudProductPlanningList []*entity.CloudProductPlanning
-	if err := db.Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanningList).Error; err != nil {
+	var productIdList []int64
+	if err := db.Model(&entity.CloudProductPlanning{}).Select("product_id").Where("plan_id = ?", request.PlanId).Find(&productIdList).Error; err != nil {
 		return nil, err
 	}
-	if len(cloudProductPlanningList) == 0 {
+	if len(productIdList) == 0 {
 		return nil, errors.New("该方案未找到关联产品")
 	}
-	var productIdList []int64
-	for _, v := range cloudProductPlanningList {
-		productIdList = append(productIdList, v.ProductId)
-	}
 	//查询云产品和角色关联表
-	var cloudProductNodeRoleRelList []*entity.CloudProductNodeRoleRel
-	if err := db.Where("product_id IN (?)", productIdList).Find(&cloudProductNodeRoleRelList).Error; err != nil {
-		return nil, err
-	}
 	var nodeRoleIdList []int64
-	for _, v := range cloudProductNodeRoleRelList {
-		nodeRoleIdList = append(nodeRoleIdList, v.NodeRoleId)
+	if err := db.Model(&entity.CloudProductNodeRoleRel{}).Select("node_role_id").Where("product_id IN (?)", productIdList).Find(&nodeRoleIdList).Error; err != nil {
+		return nil, err
 	}
 	//查询角色表
 	var nodeRoleBaselineList []*entity.NodeRoleBaseline
@@ -45,9 +37,6 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 	}
 	//查询角色服务器基线map
 	serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineListMap, err := getNodeRoleServerBaselineMap(db, nodeRoleIdList, request)
-	if err != nil {
-		return nil, err
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -135,7 +124,7 @@ func SaveServer(request *Request) error {
 			return err
 		}
 		if err := tx.Model(entity.PlanManage{}).Where("id = ?", request.PlanId).Updates(&entity.PlanManage{
-			BusinessPlanStage: constant.NETWORK_DEVICE_PLAN,
+			BusinessPlanStage: constant.NetworkDevicePlan,
 			UpdateUserId:      request.UserId,
 			UpdateTime:        time.Now(),
 		}).Error; err != nil {
@@ -238,13 +227,9 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		cloudProductIdList = append(cloudProductIdList, v.ProductId)
 	}
 	//查询云产品基线表
-	var cloudProductBaselineList []*entity.CloudProductBaseline
-	if err := db.Where("id IN (?)", cloudProductIdList).Find(&cloudProductBaselineList).Error; err != nil {
-		return nil, err
-	}
 	var cloudProductCodeList []string
-	for _, v := range cloudProductBaselineList {
-		cloudProductCodeList = append(cloudProductCodeList, v.ProductCode)
+	if err := db.Model(&entity.CloudProductBaseline{}).Select("product_code").Where("id IN (?)", cloudProductIdList).Find(&cloudProductCodeList).Error; err != nil {
+		return nil, err
 	}
 	//查询容量换算表
 	var capConvertBaselineList []*entity.CapConvertBaseline
@@ -519,14 +504,6 @@ func DownloadServer(planId int64) ([]ResponseDownloadServer, string, error) {
 	}
 	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器规划清单"
 	return response, fileName, nil
-}
-
-func QueryServerPlanningListByPlanId(planId int64) ([]entity.ServerPlanning, error) {
-	var serverPlanningList []entity.ServerPlanning
-	if err := data.DB.Table(entity.ServerPlanningTable).Where("plan_id = ? and delete_state = 0", planId).Find(&serverPlanningList).Error; err != nil {
-		return serverPlanningList, err
-	}
-	return serverPlanningList, nil
 }
 
 func checkBusiness(request *Request) error {

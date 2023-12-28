@@ -1,6 +1,7 @@
 package cloud_platform
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
@@ -168,6 +169,7 @@ func CreateCloudPlatformByCustomerId(request *Request) error {
 	}
 	cellEntity := &entity.CellManage{
 		Name:         "cell1",
+		Type:         constant.CellTypeControl,
 		CreateUserId: request.UserId,
 		CreateTime:   now,
 		UpdateUserId: request.UserId,

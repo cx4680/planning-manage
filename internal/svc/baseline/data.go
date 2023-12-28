@@ -118,7 +118,7 @@ func BatchCreateCloudProductNodeRoleRel(cloudProductNodeRoleRels []entity.CloudP
 	if len(cloudProductNodeRoleRels) == 0 {
 		return nil
 	}
-	if err := data.DB.Table(entity.CloudProductNodeRoleTable).Create(&cloudProductNodeRoleRels).Error; err != nil {
+	if err := data.DB.Table(entity.CloudProductNodeRoleRelTable).Create(&cloudProductNodeRoleRels).Error; err != nil {
 		log.Errorf("batch insert cloudProductNodeRoleRel error: %v", err)
 		return err
 	}
@@ -358,7 +358,7 @@ func DeleteCloudProductDependRel() error {
 }
 
 func DeleteCloudProductNodeRoleRel() error {
-	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.CloudProductNodeRoleTable)).Error; err != nil {
+	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.CloudProductNodeRoleRelTable)).Error; err != nil {
 		log.Errorf("delete cloudProductNodeRoleRel error: %v", err)
 		return err
 	}

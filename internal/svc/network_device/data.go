@@ -37,7 +37,7 @@ func SaveBatch(tx *gorm.DB, networkDeviceList []*entity.NetworkDeviceList) error
 }
 
 func expireDeviceListByPlanId(tx *gorm.DB, planId int64) error {
-	if err := tx.Model(entity.NetworkDeviceList{}).Where("plan_id = ?", planId).Updates(map[string]interface{}{"delete_state": 1, "update_time": time.Now()}).Error; err != nil {
+	if err := tx.Model(&entity.NetworkDeviceList{}).Where("plan_id = ?", planId).Updates(map[string]interface{}{"delete_state": 1, "update_time": time.Now()}).Error; err != nil {
 		log.Errorf("[expireDeviceListByPlanId] expire device list error, %v", err)
 		return err
 	}
@@ -46,7 +46,7 @@ func expireDeviceListByPlanId(tx *gorm.DB, planId int64) error {
 
 func searchDeviceRoleBaselineByVersionId(versionId int64) ([]entity.NetworkDeviceRoleBaseline, error) {
 	var deviceRoleBaselineList []entity.NetworkDeviceRoleBaseline
-	if err := data.DB.Table(entity.NetworkDeviceRoleBaselineTable).Where("version_id=?", versionId).Find(&deviceRoleBaselineList).Error; err != nil {
+	if err := data.DB.Where("version_id = ?", versionId).Find(&deviceRoleBaselineList).Error; err != nil {
 		log.Errorf("[searchDeviceRoleBaselineByVersionId] query device role baseline list error, %v", err)
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func searchDeviceRoleBaselineByVersionId(versionId int64) ([]entity.NetworkDevic
 
 func searchModelRoleRelByRoleIdAndNetworkModel(roleId int64, networkModel int) ([]entity.NetworkModelRoleRel, error) {
 	var modelRoleRel []entity.NetworkModelRoleRel
-	if err := data.DB.Where("network_device_role_id = ? and network_model=?", roleId, networkModel).Find(&modelRoleRel).Error; err != nil {
+	if err := data.DB.Where("network_device_role_id = ? AND network_model = ?", roleId, networkModel).Find(&modelRoleRel).Error; err != nil {
 		log.Errorf("[searchModelRoleRelByRoleIdAndNetworkModel] error, %v", err)
 		return nil, err
 	}
@@ -133,12 +133,12 @@ func updateDevicePlan(request *Request, devicePlanning entity.NetworkDevicePlann
 
 func exportNetworkDeviceListByPlanId(planId int64) (string, []NetworkDeviceListExportResponse, error) {
 	var planManage entity.PlanManage
-	if err := data.DB.Where("id= ? and delete_state = 0", planId).Find(&planManage).Error; err != nil {
+	if err := data.DB.Where("id = ? and delete_state = 0", planId).Find(&planManage).Error; err != nil {
 		log.Errorf("[exportNetworkDeviceListByPlanId] get planManage by id err, %v", err)
 		return "", nil, err
 	}
 	var projectManage entity.ProjectManage
-	if err := data.DB.Where("id=? and delete_state = 0", planManage.ProjectId).Find(&projectManage).Error; err != nil {
+	if err := data.DB.Where("id = ? and delete_state = 0", planManage.ProjectId).Find(&projectManage).Error; err != nil {
 		log.Errorf("[exportNetworkDeviceListByPlanId] get projectManage by id err, %v", err)
 		return "", nil, err
 	}

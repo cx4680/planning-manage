@@ -1,9 +1,11 @@
 package cell
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
 )
 
@@ -33,6 +35,9 @@ func ListCell(request *Request) ([]*entity.CellManage, error) {
 func CreateCell(request *Request) error {
 	if err := checkBusiness(request, true); err != nil {
 		return err
+	}
+	if util.IsBlank(request.Type) {
+		request.Type = constant.CellTypeControl
 	}
 	now := datetime.GetNow()
 	cellEntity := &entity.CellManage{
@@ -84,23 +89,42 @@ func DeleteCell(request *Request) error {
 }
 
 func checkBusiness(request *Request, isCreate bool) error {
-	if !isCreate {
-		//校验cellId
-		var cellCount int64
-		if err := data.DB.Model(&entity.CellManage{}).Where("id = ? AND delete_state = ?", request.Id, 0).Count(&cellCount).Error; err != nil {
+	var azManage = &entity.AzManage{}
+	if isCreate {
+		//校验azId
+		if err := data.DB.Where("id = ? AND delete_state = ?", request.AzId, 0).Find(&azManage).Error; err != nil {
 			return err
 		}
-		if cellCount == 0 {
+		if azManage.Id == 0 {
+			return errors.New("azId错误")
+		}
+	} else {
+		//校验cellId
+		var cellManage = &entity.CellManage{}
+		if err := data.DB.Where("id = ? AND delete_state = ?", request.Id, 0).Find(&cellManage).Error; err != nil {
+			return err
+		}
+		if cellManage.Id == 0 {
 			return errors.New("cell不存在")
 		}
+		//查询az
+		if err := data.DB.Where("id = ? AND delete_state = ?", cellManage.AzId, 0).Find(&azManage).Error; err != nil {
+			return err
+		}
 	}
-	//校验azId
-	var azCount int64
-	if err := data.DB.Model(&entity.AzManage{}).Where("id = ? AND delete_state = ?", request.AzId, 0).Count(&azCount).Error; err != nil {
-		return err
-	}
-	if azCount == 0 {
-		return errors.New("azId错误")
+	//校验控制集群为region下唯一
+	if request.Type == constant.CellTypeControl {
+		var azIdList []string
+		if err := data.DB.Model(&entity.AzManage{}).Select("id").Where("region_id = ? AND delete_state = ?", azManage.RegionId, 0).Find(&azIdList).Error; err != nil {
+			return err
+		}
+		var cellTypeCount int64
+		if err := data.DB.Model(&entity.CellManage{}).Where("az_id IN (?) AND type = ? AND delete_state = ?", azIdList, constant.CellTypeControl, 0).Count(&cellTypeCount).Error; err != nil {
+			return err
+		}
+		if cellTypeCount != 0 {
+			return errors.New("已存在控制集群")
+		}
 	}
 	return nil
 }

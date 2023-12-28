@@ -22,34 +22,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/ip_demand"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
 )
-
-// func GetCountBoxNum(c *gin.Context) {
-//	request := &Request{}
-//	if err := c.ShouldBindQuery(&request); err != nil {
-//		log.Errorf("get device plan bind param error: ", err)
-//		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
-//		return
-//	}
-//	if err := checkRequest(request); err != nil {
-//		result.Failure(c, err.Error(), http.StatusBadRequest)
-//		return
-//	}
-//	var boxCount BoxTotalResponse
-//	boxCount.Count = 8
-//	awsServerNum := request.AwsServerNum
-//	planId := request.PlanId
-//	//TODO 根据方案id查询服务器规划表
-//
-//	serverNumMap := make(map[string]int, 3)
-//	serverNumMap[MASW] = 0
-//	serverNumMap[VASW] = 0
-//	serverNumMap[StorSASW] = 0
-//	//TODO 计算机柜数量
-//	result.Success(c, boxCount)
-//	return
-// }
 
 func GetDevicePlanByPlanId(c *gin.Context) {
 	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
@@ -89,7 +62,7 @@ func GetBrandsByPlanId(c *gin.Context) {
 		return
 	}
 	// 根据方案id查询云产品规划信息  取其中一条拿服务器基线表ID
-	serverPlanningList, err := server.QueryServerPlanningListByPlanId(planId)
+	serverPlanningList, err := queryServerPlanningListByPlanId(planId)
 	if err != nil {
 		log.Errorf("[QueryServerPlanningListByPlanId] error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -134,7 +107,7 @@ func ListNetworkDevices(c *gin.Context) {
 		return
 	}
 	// 根据方案id查询服务器规划
-	serverPlanningList, err := server.QueryServerPlanningListByPlanId(planId)
+	serverPlanningList, err := queryServerPlanningListByPlanId(planId)
 	if err != nil {
 		log.Errorf("[QueryServerPlanningListByPlanId] error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -283,7 +256,7 @@ func SaveDeviceList(c *gin.Context) {
 			}
 		}
 		// 更新方案表的状态
-		err = plan.UpdatePlanStage(tx, planId, constant.PLANNED, userId, constant.BUSINESS_END)
+		err = plan.UpdatePlanStage(tx, planId, constant.Planned, userId, constant.BusinessEnd)
 		if err != nil {
 			return err
 		}
@@ -417,10 +390,10 @@ func transformNetworkDeviceList(versionId int64, request *Request, roleBaseLine 
 	aswNum := make(map[int64]int)
 	// TODO roleBaseLine把OASW这条数据移到最后处理
 	for _, deviceRole := range roleBaseLine {
-		if constant.SEPARATION_OF_TWO_NETWORKS == networkModel {
+		if constant.SeparationOfTwoNetworks == networkModel {
 			// 两网分离
 			model = deviceRole.TwoNetworkIso
-		} else if constant.TRIPLE_NETWORK_SEPARATION == networkModel {
+		} else if constant.TripleNetworkSeparation == networkModel {
 			// 三网分离
 			model = deviceRole.ThreeNetworkIso
 		} else {
@@ -535,4 +508,12 @@ func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode s
 		}
 	}
 	return response, nil
+}
+
+func queryServerPlanningListByPlanId(planId int64) ([]entity.ServerPlanning, error) {
+	var serverPlanningList []entity.ServerPlanning
+	if err := data.DB.Where("plan_id = ? AND delete_state = 0", planId).Find(&serverPlanningList).Error; err != nil {
+		return serverPlanningList, err
+	}
+	return serverPlanningList, nil
 }

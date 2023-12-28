@@ -746,17 +746,17 @@ func HandleNetworkModelRole(context *gin.Context, nodeRoleBaselines []entity.Nod
 		twoNetworkIsos := networkDeviceRoleBaselineExcel.TwoNetworkIsos
 		threeNetworkIsos := networkDeviceRoleBaselineExcel.ThreeNetworkIsos
 		triplePlays := networkDeviceRoleBaselineExcel.TriplePlays
-		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, twoNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, constant.SEPARATION_OF_TWO_NETWORKS)
+		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, twoNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, constant.SeparationOfTwoNetworks)
 		if err != nil {
 			result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
 			return true
 		}
-		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, threeNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, constant.TRIPLE_NETWORK_SEPARATION)
+		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, threeNetworkIsos, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, constant.TripleNetworkSeparation)
 		if err != nil {
 			result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
 			return true
 		}
-		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, triplePlays, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, constant.TRIPLE_PLAY)
+		networkModelRoleRels, err = HandleNetworkModelRoleRels(networkDeviceRoleId, triplePlays, nodeRoleCodeMap, networkDeviceRoleCodeMap, networkModelRoleRels, constant.TriplePlay)
 		if err != nil {
 			result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
 			return true
