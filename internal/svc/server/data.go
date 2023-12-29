@@ -401,7 +401,7 @@ func SaveServerCapacity(request *Request) error {
 			if nodeRoleBaselineMap[nodeRoleBaseline.Id] < serverNumber {
 				nodeRoleBaselineMap[nodeRoleBaseline.Id] = serverNumber
 			}
-			if serverPlanning.Id != 0 {
+			if serverPlanning.Id == 0 {
 				now := datetime.GetNow()
 				serverPlanning = &entity.ServerPlanning{
 					PlanId:           request.PlanId,
