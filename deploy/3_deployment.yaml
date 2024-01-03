@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: planning-manage
+  name: planning-manage
+  namespace: planning-manage
+spec:
+  replicas: 1  #pod副本数
+  selector:
+    matchLabels:
+      app: planning-manage
+  template:
+    metadata:
+      labels:
+        app: planning-manage
+    spec:
+#      nodeSelector:  #设置pod运行的节点
+#        nodeRole: tool
+#      tolerations:	#设置节点容忍度
+#        - key: "node-role.kubernetes.io/master"
+#          operator: "Exists"
+#          effect: "NoSchedule"
+#      hostAliases:
+#        - hostnames: #设置pod内host解析
+#            - mysql
+#          ip: 1.2.3.4
+#        - hostnames:
+#            - zookeeper
+#          ip: 1.2.3.5
+      containers:
+        - image: harbor.ceclouddyn.com/intranet/planning-manage:1700806204272
+          imagePullPolicy: IfNotPresent
+          name: planning-manage
+          env:
+            - name: LOG_LEVEL
+              value: debug
+            - name: PORT
+              value: "8080"
+            - name: GIN_MODE
+              value: debug
+            - name: HTTPS
+              value: "false"
+            - name: MYSQL_INSECURE
+              value: "false"
+            - name: MySQL_DSN
+              value: root:123456@tcp(mysql-planning-manage-svc.planning-manage:3306)/planning_manage?timeout=1s&readTimeout=1s&writeTimeout=1s&parseTime=true&loc=Local&charset=utf8mb4,utf8
+            - name: MYSQL_DSN_OPTIONS
+              value: "@tcp(mysql-planning-manage-svc.planning-manage:3306)/planning_manage?timeout=1s&readTimeout=1s&writeTimeout=1s&parseTime=true&loc=Local&charset=utf8mb4,utf8"
+            - name: MYSQL_USER
+              value: root
+            - name: MYSQL_DB_PASSWORD
+              value: "123456"
+            - name: LDAPBASE
+              value: dc=mylitboy,dc=com
+            - name: LDAPPASSWORD
+              value: Cestc&OpenLdap-0703
+            - name: LDAPURLS
+              value: ldap://10.32.97.78:389
+            - name: LDAPUSERNAME
+              value: cn=admin,dc=mylitboy,dc=com
+            - name: SESSION_AGE
+              value: 1800
+          livenessProbe:	#健康检查
+            httpGet:   # tcpSocket,exec
+              path: /health
+              port: 8080
+            initialDelaySeconds: 60	#pod初始化时间
+            timeoutSeconds: 20
+          readinessProbe:	#健康检查
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 60
+            timeoutSeconds: 20
+          resources:  #资源限制
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 200m
+              memory: 200Mi
+
+

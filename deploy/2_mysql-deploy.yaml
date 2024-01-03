@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-planning-manage-svc
+  namespace: planning-manage
+spec:
+  type: NodePort
+  ports:
+    - port: 3306
+  selector:
+    app: mysql-planning-manage
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-planning-manage
+  namespace: planning-manage
+spec:
+  serviceName: mysql-planning-manage
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql-planning-manage
+  template:
+    metadata:
+      labels:
+        app: mysql-planning-manage
+    spec:
+      containers:
+        - image: harbor.ceclouddyn.com/coc/monitor/mysql:5.7.37
+          name: mysql
+          env:
+            # Use secret in real usage
+            - name: MYSQL_ROOT_PASSWORD
+              value: "123456"
+          ports:
+            - containerPort: 3306
+              name: mysql
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: mysql-planning-manage-pv-claim
+      nodeSelector:
+        role/sys-ops: "true"
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-planning-manage-pv-volume
+  namespace: planning-manage
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/cpc"
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-planning-manage-pv-claim
+  namespace: planning-manage
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
