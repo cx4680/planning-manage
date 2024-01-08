@@ -205,8 +205,9 @@ func Router(engine *gin.Engine) {
 		// 机房规划
 		machineRoomGroup := api.Group("/machineRoom")
 		{
-			// 机柜列表查询
 			machineRoomGroup.GET("/cabinet/page", middleware.OperatorLog(DefaultEventOpInfo("机房规划机柜列表查询", "pageCabinet", middleware.LIST, middleware.INFO)), machine_room.PageCabinets)
+			machineRoomGroup.GET("/download", middleware.OperatorLog(DefaultEventOpInfo("下载机房勘察模版", "downloadCabinetTemplate", middleware.EXPORT, middleware.INFO)), machine_room.DownloadCabinetTemplate)
+			machineRoomGroup.POST("/import", middleware.OperatorLog(DefaultEventOpInfo("导入机房勘察文件", "importCabinet", middleware.IMPORT, middleware.INFO)), machine_room.ImportCabinet)
 		}
 	}
 

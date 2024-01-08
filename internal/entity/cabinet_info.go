@@ -13,7 +13,7 @@ type CabinetInfo struct {
 	CabinetNum            string    `gorm:"column:cabinet_num" json:"cabinetNum"`                         // 机柜编号
 	OriginalNum           string    `gorm:"column:original_num" json:"originalNum"`                       // 原始编号
 	CabinetType           int       `gorm:"column:cabinet_type" json:"cabinetType"`                       // 机柜类型，1：网络机柜，2：服务机柜，3：存储机柜
-	ServiceAttribute      string    `gorm:"column:service_attribute" json:"serviceAttribute"`             // 业务属性
+	BusinessAttribute     string    `gorm:"column:business_attribute" json:"businessAttribute"`           // 业务属性
 	CabinetAsw            string    `gorm:"column:cabinet_asw" json:"cabinetAsw"`                         // 机柜ASW组
 	TotalPower            int       `gorm:"column:total_power" json:"totalPower"`                         // 总功率（W）
 	ResidualPower         int       `gorm:"column:residual_power" json:"residualPower"`                   // 剩余功率（W）
@@ -24,7 +24,6 @@ type CabinetInfo struct {
 	RackServerSlot        string    `gorm:"column:rack_server_slot" json:"rackServerSlot"`                // 已上架服务器（U位）
 	ResidualRackAswPort   string    `gorm:"column:residual_rack_asw_port" json:"residualRackAswPort"`     // 剩余可上架ASW端口
 	CreateTime            time.Time `gorm:"column:create_time" json:"createTime"`                         // 创建时间
-	UpdateTime            time.Time `gorm:"column:update_time" json:"updateTime"`                         // 更新时间
 }
 
 func (entity *CabinetInfo) TableName() string {

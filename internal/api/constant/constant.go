@@ -72,4 +72,11 @@ const (
 	NodeWastageCalcTypePercent   = 2
 
 	CellTypeControl = "control"
+
+	CabinetTypeNetworkCn  = "网络机柜"
+	CabinetTypeBusinessCn = "业务机柜"
+	CabinetTypeStorageCn  = "存储机柜"
+	CabinetTypeNetwork    = 1
+	CabinetTypeBusiness   = 2
+	CabinetTypeStorage    = 3
 )
