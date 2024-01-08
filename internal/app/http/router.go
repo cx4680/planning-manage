@@ -181,8 +181,10 @@ func Router(engine *gin.Engine) {
 			networkGroup.POST("/device/save", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备清单", "saveDeviceList", middleware.CREATE, middleware.INFO)), network_device.SaveDeviceList)
 			// 下载网络设备清单
 			networkGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载网络设备清单", "networkDeviceListDownload", middleware.EXPORT, middleware.INFO)), network_device.NetworkDeviceListDownload)
-			// 查询机柜列表
-			networkGroup.GET("/cabinet/list", middleware.OperatorLog(DefaultEventOpInfo("查询机柜列表", "getCabinetList", middleware.LIST, middleware.INFO)), network_device.GetCabinetList)
+			// 查询网络设备上架列表
+			networkGroup.GET("/shelve/list", middleware.OperatorLog(DefaultEventOpInfo("查询网络设备上架信息", "getNetworkShelveList", middleware.LIST, middleware.INFO)), network_device.ListNetworkShelve)
+			// 下载网络设备上架模板
+			networkGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载网络设备上架模板", "getNetworkShelveDownload", middleware.EXPORT, middleware.INFO)), network_device.DownloadNetworkShelve)
 		}
 
 		// IP需求

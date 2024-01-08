@@ -518,11 +518,40 @@ func queryServerPlanningListByPlanId(planId int64) ([]entity.ServerPlanning, err
 	return serverPlanningList, nil
 }
 
-func GetCabinetList(c *gin.Context) {
+func ListNetworkShelve(c *gin.Context) {
 	request := &Request{}
+	if err := c.ShouldBindQuery(&request); err != nil {
+		log.Error(err)
+	}
 	if request.PlanId == 0 {
-		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		result.Failure(c, "planId不能为空", http.StatusBadRequest)
 		return
 	}
+	networkShelveList, err := getNetworkShelveList(request.PlanId)
+	if err != nil {
+		log.Errorf("ListNetworkShelve error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, networkShelveList)
+	return
+}
 
+func DownloadNetworkShelve(c *gin.Context) {
+	param := c.Param("planId")
+	planId, _ := strconv.ParseInt(param, 10, 64)
+	if planId == 0 {
+		result.Failure(c, "planId不能为空", http.StatusBadRequest)
+		return
+	}
+	response, fileName, err := getNetworkShelveDownloadList(planId)
+	if err != nil {
+		log.Errorf("ListNetworkShelve error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if err = excel.NormalDownLoad(fileName, "网络设备上架表", "", false, response, c.Writer); err != nil {
+		log.Errorf("导出错误：", err)
+	}
+	return
 }
