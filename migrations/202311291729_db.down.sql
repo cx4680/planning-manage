@@ -33,4 +33,3 @@ DROP TABLE IF EXISTS `network_model_role_rel`;
 DROP TABLE IF EXISTS `cap_convert_baseline`;
 DROP TABLE IF EXISTS `cap_actual_res_baseline`;
 DROP TABLE IF EXISTS `cap_server_calc_baseline`;
-DROP TABLE IF EXISTS `network_device_shelve`;

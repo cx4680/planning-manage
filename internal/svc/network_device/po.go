@@ -72,6 +72,4 @@ type NetworkDeviceShelveDownload struct {
 	CabinetNumber     time.Time `json:"cabinetNumber" excel:"name:机柜编号;"`
 	SlotPosition      time.Time `json:"slotPosition" excel:"name:槽位;"`
 	UNumber           int       `json:"uNumber" excel:"name:U数;"`
-	CreateUserId      string    `json:"createUserId" excel:"name:创建人id;"`
-	CreateTime        time.Time `json:"createTime" excel:"name:创建时间;"`
 }
