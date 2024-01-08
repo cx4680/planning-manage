@@ -96,20 +96,20 @@ func UpdateCloudPlatform(request *Request) error {
 }
 
 func TreeCloudPlatform(request *Request) ([]*entity.RegionManage, error) {
+	//缓存预编译 会话模式
+	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	//查询region
 	var RegionList []*entity.RegionManage
-	if err := data.DB.Model(&entity.RegionManage{}).Where(" delete_state = ? AND cloud_platform_id = ?", 0, request.CloudPlatformId).Find(&RegionList).Error; err != nil {
+	if err := db.Model(&entity.RegionManage{}).Where(" delete_state = ? AND cloud_platform_id = ?", 0, request.CloudPlatformId).Find(&RegionList).Error; err != nil {
 		return nil, err
 	}
-	var cloudPlatformRegionMap = make(map[int64][]*entity.RegionManage)
 	var regionIdList []int64
 	for _, v := range RegionList {
-		cloudPlatformRegionMap[v.CloudPlatformId] = append(cloudPlatformRegionMap[v.CloudPlatformId], v)
 		regionIdList = append(regionIdList, v.Id)
 	}
 	//查询az
 	var azList []*entity.AzManage
-	if err := data.DB.Model(&entity.AzManage{}).Where(" delete_state = ? AND region_id IN (?)", 0, regionIdList).Find(&azList).Error; err != nil {
+	if err := db.Model(&entity.AzManage{}).Where(" delete_state = ? AND region_id IN (?)", 0, regionIdList).Find(&azList).Error; err != nil {
 		return nil, err
 	}
 	var regionAzMap = make(map[int64][]*entity.AzManage)
@@ -118,21 +118,32 @@ func TreeCloudPlatform(request *Request) ([]*entity.RegionManage, error) {
 		regionAzMap[v.RegionId] = append(regionAzMap[v.RegionId], v)
 		azIdList = append(azIdList, v.Id)
 	}
+	for i, v := range RegionList {
+		RegionList[i].AzList = regionAzMap[v.Id]
+	}
+	//查询机房信息
+	var machineRoomList []*entity.MachineRoom
+	if err := db.Model(&entity.MachineRoom{}).Where("az_id IN (?)", azIdList).Find(&machineRoomList).Error; err != nil {
+		return nil, err
+	}
+	var machineRoomMap = make(map[int64][]*entity.MachineRoom)
+	for _, v := range machineRoomList {
+		machineRoomMap[v.AzId] = append(machineRoomMap[v.AzId], v)
+	}
+	for i, v := range azList {
+		azList[i].MachineRoomList = machineRoomMap[v.Id]
+	}
 	//查询cell
 	var cellList []*entity.CellManage
-	if err := data.DB.Model(&entity.CellManage{}).Where(" delete_state = ? AND az_id IN (?)", 0, azIdList).Find(&cellList).Error; err != nil {
+	if err := db.Model(&entity.CellManage{}).Where(" delete_state = ? AND az_id IN (?)", 0, azIdList).Find(&cellList).Error; err != nil {
 		return nil, err
 	}
 	var azCellMap = make(map[int64][]*entity.CellManage)
 	for _, v := range cellList {
 		azCellMap[v.AzId] = append(azCellMap[v.AzId], v)
 	}
-	//构建返回体
-	for i, region := range RegionList {
-		RegionList[i].AzList = regionAzMap[region.Id]
-		for i1, az := range regionAzMap[region.Id] {
-			RegionList[i].AzList[i1].CellList = azCellMap[az.Id]
-		}
+	for i, v := range azList {
+		azList[i].CellList = azCellMap[v.Id]
 	}
 	return RegionList, nil
 }

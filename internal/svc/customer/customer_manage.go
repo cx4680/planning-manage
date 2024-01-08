@@ -152,7 +152,9 @@ func Update(context *gin.Context) {
 		return
 	}
 
-	updateCustomer(customerParam, context.GetString(constant.CurrentUserId))
+	if err = updateCustomer(customerParam, context.GetString(constant.CurrentUserId)); err != nil {
+		log.Errorf("[Update] customer updateCustomer: ", err)
+	}
 
 	result.Success(context, nil)
 	return

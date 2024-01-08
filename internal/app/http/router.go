@@ -121,7 +121,7 @@ func Router(engine *gin.Engine) {
 			cellGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除cell", "deleteCell", middleware.UPDATE, middleware.INFO)), cell.Delete)
 		}
 
-		// project
+		// 项目管理
 		projectGroup := api.Group("/project")
 		{
 			// 分页查询项目
@@ -134,7 +134,7 @@ func Router(engine *gin.Engine) {
 			projectGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除项目", "deleteProject", middleware.DELETE, middleware.INFO)), project.Delete)
 		}
 
-		// plan
+		// 方案管理
 		planGroup := api.Group("/plan")
 		{
 			// 分页查询方案
@@ -166,7 +166,7 @@ func Router(engine *gin.Engine) {
 			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.EXPORT, middleware.INFO)), server.Download)
 		}
 
-		// network
+		// 网络规划
 		networkGroup := api.Group("/network")
 		{
 			// 厂商列表查询
@@ -179,16 +179,18 @@ func Router(engine *gin.Engine) {
 			networkGroup.POST("/device/save", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备清单", "saveDeviceList", middleware.CREATE, middleware.INFO)), network_device.SaveDeviceList)
 			// 下载网络设备清单
 			networkGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载网络设备清单", "networkDeviceListDownload", middleware.EXPORT, middleware.INFO)), network_device.NetworkDeviceListDownload)
+			// 查询机柜列表
+			networkGroup.GET("/cabinet/list", middleware.OperatorLog(DefaultEventOpInfo("查询机柜列表", "getCabinetList", middleware.LIST, middleware.INFO)), network_device.GetCabinetList)
 		}
 
-		// ipDemand
+		// IP需求
 		ipDemandGroup := api.Group("/ipDemand")
 		{
 			// 下载IP需求表
 			ipDemandGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载IP需求表", "ipDemandListDownload", middleware.EXPORT, middleware.INFO)), ip_demand.IpDemandListDownload)
 		}
 
-		// cloudProduct
+		// 云产品
 		cloudProduct := api.Group("/cloud/product")
 		{
 			cloudProduct.GET("/version/list", middleware.OperatorLog(DefaultEventOpInfo("根据项目id查询云产品版本列表", "listCloudProductVersion", middleware.LIST, middleware.INFO)), cloud_product.ListVersion)
@@ -211,7 +213,7 @@ func Router(engine *gin.Engine) {
 	// 枚举配置表
 	configGroup := api.Group("/config")
 	{
-		configGroup.GET("/:code", middleware.OperatorLog(DefaultEventOpInfo("枚举配置表", "queryConfig", middleware.LIST, middleware.INFO)), config_item.List)
+		configGroup.GET("/:code", middleware.OperatorLog(DefaultEventOpInfo("查询枚举配置表", "queryConfig", middleware.LIST, middleware.INFO)), config_item.List)
 	}
 }
 
