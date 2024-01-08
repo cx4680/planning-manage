@@ -1,17 +1,19 @@
 package http
 
 import (
+	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/machine_room"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
-	"github.com/gin-contrib/sessions"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"net/http"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/az"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cell"
@@ -198,6 +200,13 @@ func Router(engine *gin.Engine) {
 			cloudProduct.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("保存用户选择的云产品", "saveCloudProduct", middleware.CREATE, middleware.INFO)), cloud_product.Save)
 			cloudProduct.GET("/list/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id获取用户选择的云产品清单", "listCloudProduct", middleware.LIST, middleware.INFO)), cloud_product.List)
 			cloudProduct.GET("/export/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载云服务规格清单", "exportCloudProduct", middleware.EXPORT, middleware.INFO)), cloud_product.Export)
+		}
+
+		// 机房规划
+		machineRoomGroup := api.Group("/machineRoom")
+		{
+			// 机柜列表查询
+			machineRoomGroup.GET("/cabinet/page", middleware.OperatorLog(DefaultEventOpInfo("机房规划机柜列表查询", "pageCabinet", middleware.LIST, middleware.INFO)), machine_room.PageCabinets)
 		}
 	}
 
