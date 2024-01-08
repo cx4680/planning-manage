@@ -176,3 +176,7 @@ func getNetworkDeviceListByPlanIdAndRoleId(planId int64, roleId int64) (entity.N
 	}
 	return networkDevice, nil
 }
+
+func getCabinetList(planId int64) error {
+	return nil
+}

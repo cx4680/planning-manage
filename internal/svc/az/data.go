@@ -5,6 +5,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"errors"
+	"gorm.io/gorm"
 )
 
 func ListAz(request *Request) ([]*entity.AzManage, error) {
@@ -35,21 +36,35 @@ func CreateAz(request *Request) error {
 		return err
 	}
 	now := datetime.GetNow()
-	azEntity := &entity.AzManage{
-		Code:            request.Code,
-		RegionId:        request.RegionId,
-		MachineRoomName: request.MachineRoomName,
-		MachineRoomCode: request.MachineRoomCode,
-		Province:        request.Province,
-		City:            request.City,
-		Address:         request.Address,
-		CreateUserId:    request.UserId,
-		CreateTime:      now,
-		UpdateUserId:    request.UserId,
-		UpdateTime:      now,
-		DeleteState:     0,
-	}
-	if err := data.DB.Create(&azEntity).Error; err != nil {
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		azEntity := &entity.AzManage{
+			Code:         request.Code,
+			RegionId:     request.RegionId,
+			CreateUserId: request.UserId,
+			CreateTime:   now,
+			UpdateUserId: request.UserId,
+			UpdateTime:   now,
+			DeleteState:  0,
+		}
+		if err := tx.Create(&azEntity).Error; err != nil {
+			return err
+		}
+		var machineRoomList []*entity.MachineRoom
+		for _, v := range request.MachineRoomList {
+			machineRoomList = append(machineRoomList, &entity.MachineRoom{
+				AzId:     azEntity.Id,
+				Name:     v.Name,
+				Abbr:     v.Abbr,
+				Province: v.Province,
+				City:     v.City,
+				Address:  v.Address,
+			})
+		}
+		if err := tx.Create(&machineRoomList).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
 	return nil
@@ -60,32 +75,58 @@ func UpdateAz(request *Request) error {
 		return err
 	}
 	now := datetime.GetNow()
-	azEntity := &entity.AzManage{
-		Id:              request.Id,
-		Code:            request.Code,
-		MachineRoomName: request.MachineRoomName,
-		MachineRoomCode: request.MachineRoomCode,
-		Province:        request.Province,
-		City:            request.City,
-		Address:         request.Address,
-		UpdateUserId:    request.UserId,
-		UpdateTime:      now,
-	}
-	if err := data.DB.Updates(&azEntity).Error; err != nil {
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		azEntity := &entity.AzManage{
+			Id:           request.Id,
+			Code:         request.Code,
+			UpdateUserId: request.UserId,
+			UpdateTime:   now,
+		}
+		if err := tx.Updates(&azEntity).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&entity.MachineRoom{}, "az_id = ?", request.Id).Error; err != nil {
+			return err
+		}
+		var machineRoomList []*entity.MachineRoom
+		for _, v := range request.MachineRoomList {
+			machineRoomList = append(machineRoomList, &entity.MachineRoom{
+				AzId:     request.Id,
+				Name:     v.Name,
+				Abbr:     v.Abbr,
+				Province: v.Province,
+				City:     v.City,
+				Address:  v.Address,
+			})
+		}
+		if err := tx.Create(&machineRoomList).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func DeleteAz(request *Request) error {
 	now := datetime.GetNow()
-	azEntity := &entity.AzManage{
-		Id:           request.Id,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
-		DeleteState:  1,
-	}
-	if err := data.DB.Updates(&azEntity).Error; err != nil {
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		azEntity := &entity.AzManage{
+			Id:           request.Id,
+			UpdateUserId: request.UserId,
+			UpdateTime:   now,
+			DeleteState:  1,
+		}
+		if err := tx.Updates(&azEntity).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&entity.MachineRoom{}, "az_id = ?", request.Id).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
 	return nil

@@ -81,11 +81,6 @@ CREATE TABLE `az_manage`
     `id`                bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'azId',
     `code`              varchar(255) DEFAULT NULL COMMENT 'az编码',
     `region_id`         bigint(20) NULL DEFAULT NULL COMMENT 'regionId',
-    `machine_room_name` varchar(255) NULL DEFAULT NULL COMMENT '机房名称',
-    `machine_room_code` varchar(255) NULL DEFAULT NULL COMMENT '机房编码',
-    `province`          varchar(50) NULL DEFAULT NULL COMMENT '省',
-    `city`              varchar(50) NULL DEFAULT NULL COMMENT '市',
-    `address`           varchar(50) NULL DEFAULT NULL COMMENT '地址',
     `create_user_id`    varchar(255) NULL DEFAULT NULL COMMENT '创建人id',
     `create_time`       datetime NULL DEFAULT NULL COMMENT '创建时间',
     `update_user_id`    varchar(255) DEFAULT NULL COMMENT '更新人id',
@@ -93,6 +88,19 @@ CREATE TABLE `az_manage`
     `delete_state`      tinyint(1) NULL DEFAULT NULL COMMENT '作废状态：1，作废；0，正常',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'az管理表' ROW_FORMAT = Dynamic;
+
+
+CREATE TABLE `machine_room`
+(
+    `id`       bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `az_id`    bigint(20) NULL DEFAULT NULL COMMENT 'azId',
+    `name`     varchar(255) NULL DEFAULT NULL COMMENT '机房名称',
+    `abbr`     varchar(255) NULL DEFAULT NULL COMMENT '机房缩写',
+    `province` varchar(50) NULL DEFAULT NULL COMMENT '省',
+    `city`     varchar(50) NULL DEFAULT NULL COMMENT '市',
+    `address`  varchar(50) NULL DEFAULT NULL COMMENT '地址',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '机房表' ROW_FORMAT = Dynamic;
 
 
 CREATE TABLE `cell_manage`

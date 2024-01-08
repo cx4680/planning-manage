@@ -517,3 +517,12 @@ func queryServerPlanningListByPlanId(planId int64) ([]entity.ServerPlanning, err
 	}
 	return serverPlanningList, nil
 }
+
+func GetCabinetList(c *gin.Context) {
+	request := &Request{}
+	if request.PlanId == 0 {
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+
+}
