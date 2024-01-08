@@ -177,6 +177,45 @@ func getNetworkDeviceListByPlanIdAndRoleId(planId int64, roleId int64) (entity.N
 	return networkDevice, nil
 }
 
-func getCabinetList(planId int64) error {
-	return nil
+func getNetworkShelveList(planId int64) ([]*entity.NetworkDeviceShelve, error) {
+	var networkDeviceShelve []*entity.NetworkDeviceShelve
+	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceShelve).Error; err != nil {
+		return nil, err
+	}
+	return networkDeviceShelve, nil
+}
+
+func getNetworkShelveDownloadList(planId int64) ([]NetworkDeviceShelveDownload, string, error) {
+	networkDeviceShelve, err := getNetworkShelveList(planId)
+	if err != nil {
+		return nil, "", err
+	}
+	//构建返回体
+	var response []NetworkDeviceShelveDownload
+	for _, v := range networkDeviceShelve {
+		response = append(response, NetworkDeviceShelveDownload{
+			DeviceLogicalId:   v.DeviceLogicalId,
+			DeviceId:          v.DeviceId,
+			Sn:                v.Sn,
+			MachineRoomAbbr:   v.MachineRoomAbbr,
+			MachineRoomNumber: v.MachineRoomNumber,
+			CabinetNumber:     v.CabinetNumber,
+			SlotPosition:      v.SlotPosition,
+			UNumber:           v.UNumber,
+		})
+	}
+	//构建文件名称
+	var planManage = &entity.PlanManage{}
+	if err = data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManage).Error; err != nil {
+		return nil, "", err
+	}
+	if planManage.Id == 0 {
+		return nil, "", errors.New("方案不存在")
+	}
+	var projectManage = &entity.ProjectManage{}
+	if err = data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
+		return nil, "", err
+	}
+	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器规划清单"
+	return response, fileName, nil
 }
