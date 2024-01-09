@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
+func ListServer(request *Request) ([]*Server, error) {
 	//缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	//查询云产品规划表
@@ -46,11 +46,11 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 		return nil, err
 	}
 	//查询已保存的服务器规划表
-	var serverPlanningList []*entity.ServerPlanning
+	var serverPlanningList []*Server
 	if err = db.Where("plan_id = ?", request.PlanId).Find(&serverPlanningList).Error; err != nil {
 		return nil, err
 	}
-	var nodeRoleServerPlanningMap = make(map[int64]*entity.ServerPlanning)
+	var nodeRoleServerPlanningMap = make(map[int64]*Server)
 	for _, v := range serverPlanningList {
 		nodeRoleServerPlanningMap[v.NodeRoleId] = v
 	}
@@ -60,9 +60,9 @@ func ListServer(request *Request) ([]*entity.ServerPlanning, error) {
 		return nil, err
 	}
 	//构建返回体
-	var list []*entity.ServerPlanning
+	var list []*Server
 	for _, v := range nodeRoleBaselineList {
-		serverPlanning := &entity.ServerPlanning{}
+		serverPlanning := &Server{}
 		//若服务器规划有保存过，则加载已保存的数据
 		if nodeRoleServerPlanningMap[v.Id] != nil && util.IsBlank(request.NetworkInterface) && util.IsBlank(request.CpuType) {
 			serverPlanning = nodeRoleServerPlanningMap[v.Id]
@@ -518,7 +518,7 @@ func checkBusiness(request *Request) error {
 	return nil
 }
 
-func getMixedNodeRoleMap(db *gorm.DB, nodeRoleIdList []int64) (map[int64][]*entity.MixedNodeRole, error) {
+func getMixedNodeRoleMap(db *gorm.DB, nodeRoleIdList []int64) (map[int64][]*MixedNodeRole, error) {
 	var nodeRoleIdMap = make(map[int64]interface{})
 	var newNodeRoleId []int64
 	for _, v := range nodeRoleIdList {
@@ -543,15 +543,15 @@ func getMixedNodeRoleMap(db *gorm.DB, nodeRoleIdList []int64) (map[int64][]*enti
 	for _, v := range mixedNodeRoleBaselineList {
 		nodeRoleBaselineMap[v.Id] = v
 	}
-	var mixedNodeRoleMap = make(map[int64][]*entity.MixedNodeRole)
+	var mixedNodeRoleMap = make(map[int64][]*MixedNodeRole)
 	for _, v := range newNodeRoleId {
-		mixedNodeRoleMap[v] = append(mixedNodeRoleMap[v], &entity.MixedNodeRole{
+		mixedNodeRoleMap[v] = append(mixedNodeRoleMap[v], &MixedNodeRole{
 			Id:   v,
 			Name: "独立部署",
 		})
 	}
 	for _, v := range nodeRoleMixedDeployList {
-		mixedNodeRoleMap[v.NodeRoleId] = append(mixedNodeRoleMap[v.NodeRoleId], &entity.MixedNodeRole{
+		mixedNodeRoleMap[v.NodeRoleId] = append(mixedNodeRoleMap[v.NodeRoleId], &MixedNodeRole{
 			Id:   nodeRoleBaselineMap[v.MixedNodeRoleId].Id,
 			Name: "混合部署：" + nodeRoleBaselineMap[v.MixedNodeRoleId].NodeRoleName,
 		})
@@ -559,7 +559,7 @@ func getMixedNodeRoleMap(db *gorm.DB, nodeRoleIdList []int64) (map[int64][]*enti
 	return mixedNodeRoleMap, nil
 }
 
-func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *Request) (map[int64]*entity.ServerBaseline, map[int64][]*entity.ServerPlanningBaseline, map[int64][]*entity.ServerBaseline, error) {
+func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *Request) (map[int64]*entity.ServerBaseline, map[int64][]*Baseline, map[int64][]*entity.ServerBaseline, error) {
 	//查询服务器和角色关联表
 	var serverNodeRoleRelList []*entity.ServerNodeRoleRel
 	if err := db.Where("node_role_id IN (?)", nodeRoleIdList).Find(&serverNodeRoleRelList).Error; err != nil {
@@ -581,13 +581,13 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 		serverBaselineMap[v.Id] = v
 	}
 	//查询服务器基线表
-	var nodeRoleServerBaselineListMap = make(map[int64][]*entity.ServerPlanningBaseline)
+	var nodeRoleServerBaselineListMap = make(map[int64][]*Baseline)
 	var screenNodeRoleServerBaselineListMap = make(map[int64][]*entity.ServerBaseline)
 	for k, serverIdList := range nodeRoleServerRelMap {
 		for _, serverId := range serverIdList {
 			serverBaseline := serverBaselineMap[serverId]
 			if serverBaseline != nil {
-				nodeRoleServerBaselineListMap[k] = append(nodeRoleServerBaselineListMap[k], &entity.ServerPlanningBaseline{
+				nodeRoleServerBaselineListMap[k] = append(nodeRoleServerBaselineListMap[k], &Baseline{
 					Id:                serverBaseline.Id,
 					BomCode:           serverBaseline.BomCode,
 					NetworkInterface:  serverBaseline.NetworkInterface,
@@ -605,7 +605,7 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 	return serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineListMap, nil
 }
 
-func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineListMap map[int64][]*entity.ServerPlanningBaseline) (map[int64]int, error) {
+func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineListMap map[int64][]*Baseline) (map[int64]int, error) {
 	var serverCapPlanningList []*entity.ServerCapPlanning
 	if err := db.Where("plan_id = ?", request.PlanId).Find(&serverCapPlanningList).Error; err != nil {
 		return nil, err
@@ -652,4 +652,8 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 		}
 	}
 	return nodeRoleCapMap, nil
+}
+
+func getServerShelveList(planId int64) error {
+	return nil
 }

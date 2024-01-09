@@ -9,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
+func PageProject(request *Request) ([]*Project, int64, error) {
 	//缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " update_time "
@@ -74,7 +74,7 @@ func PageProject(request *Request) ([]*entity.ProjectManage, int64, error) {
 	if err := db.Model(&entity.ProjectManage{}).Where(screenSql, screenParams...).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
-	var list []*entity.ProjectManage
+	var list []*Project
 	if err := db.Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
@@ -231,7 +231,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 	return nil
 }
 
-func buildResponse(list []*entity.ProjectManage) ([]*entity.ProjectManage, error) {
+func buildResponse(list []*Project) ([]*Project, error) {
 	if len(list) == 0 {
 		return list, nil
 	}

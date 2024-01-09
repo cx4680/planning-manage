@@ -542,8 +542,7 @@ func ListNetworkShelve(c *gin.Context) {
 }
 
 func DownloadNetworkShelve(c *gin.Context) {
-	param := c.Param("planId")
-	planId, _ := strconv.ParseInt(param, 10, 64)
+	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	if planId == 0 {
 		result.Failure(c, "planId不能为空", http.StatusBadRequest)
 		return
@@ -561,8 +560,7 @@ func DownloadNetworkShelve(c *gin.Context) {
 }
 
 func UploadNetworkShelve(c *gin.Context) {
-	param := c.Param("planId")
-	planId, _ := strconv.ParseInt(param, 10, 64)
+	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	if planId == 0 {
 		result.Failure(c, "planId不能为空", http.StatusBadRequest)
 		return

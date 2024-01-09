@@ -14,3 +14,32 @@ CREATE TABLE `network_device_shelve`
     `create_time`         datetime NULL DEFAULT NULL COMMENT '创建时间',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品基线';
+
+
+CREATE TABLE `server_shelve`
+(
+    `id`                      bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `plan_id`                 bigint(20) DEFAULT NULL COMMENT ' 方案id',
+    `node_role_id`            bigint(20) DEFAULT NULL COMMENT '节点角色',
+    `node_ip`                 varchar(255) DEFAULT NULL COMMENT '节点IP',
+    `sn`                      varchar(255) DEFAULT NULL COMMENT 'SN',
+    `model`                   varchar(255) DEFAULT NULL COMMENT '机型',
+    `machine_room_abbr`       varchar(255) DEFAULT NULL COMMENT '机房缩写',
+    `machine_room_number`     varchar(255) DEFAULT NULL COMMENT '机房编号',
+    `column_number`           varchar(255) DEFAULT NULL COMMENT '列号',
+    `cabinet_asw`             varchar(255) DEFAULT NULL COMMENT '机柜ASW组',
+    `cabinet_number`          varchar(255) DEFAULT NULL COMMENT '机柜编号',
+    `cabinet_original_number` varchar(255) DEFAULT NULL COMMENT '机柜原始编号',
+    `cabinet_location`        varchar(255) DEFAULT NULL COMMENT '机柜位置',
+    `slot_position`           varchar(255) DEFAULT NULL COMMENT '槽位',
+    `network_interface`       varchar(255) DEFAULT NULL COMMENT '网络接口',
+    `bmc_user_name`           varchar(255) DEFAULT NULL COMMENT 'bmc用户名',
+    `bmc_password`            varchar(255) DEFAULT NULL COMMENT 'bmc密码',
+    `bmc_ip`                  varchar(255) DEFAULT NULL COMMENT 'bmc IP地址',
+    `bmc_mac`                 varchar(255) DEFAULT NULL COMMENT 'bmc mac地址',
+    `mask`                    varchar(255) DEFAULT NULL COMMENT '掩码',
+    `gateway`                 varchar(255) DEFAULT NULL COMMENT '网关',
+    `create_user_id`          varchar(255) NULL DEFAULT NULL COMMENT '创建人id',
+    `create_time`             datetime NULL DEFAULT NULL COMMENT '创建时间',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='server_shelve';

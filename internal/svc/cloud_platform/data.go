@@ -10,7 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func ListCloudPlatform(request *Request) ([]*entity.CloudPlatformManage, error) {
+func ListCloudPlatform(request *Request) ([]*CloudPlatformManage, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " create_time "
 	if request.CustomerId != 0 {
 		screenSql += " AND customer_id = ? "
@@ -30,7 +30,7 @@ func ListCloudPlatform(request *Request) ([]*entity.CloudPlatformManage, error) 
 	default:
 		orderSql += " asc "
 	}
-	var list []*entity.CloudPlatformManage
+	var list []*CloudPlatformManage
 	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Find(&list).Error; err != nil {
 		return nil, err
 	}
@@ -95,11 +95,11 @@ func UpdateCloudPlatform(request *Request) error {
 	return nil
 }
 
-func TreeCloudPlatform(request *Request) ([]*entity.RegionManage, error) {
+func TreeCloudPlatform(request *Request) ([]*RegionManage, error) {
 	//缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	//查询region
-	var RegionList []*entity.RegionManage
+	var RegionList []*RegionManage
 	if err := db.Model(&entity.RegionManage{}).Where(" delete_state = ? AND cloud_platform_id = ?", 0, request.CloudPlatformId).Find(&RegionList).Error; err != nil {
 		return nil, err
 	}
@@ -108,11 +108,11 @@ func TreeCloudPlatform(request *Request) ([]*entity.RegionManage, error) {
 		regionIdList = append(regionIdList, v.Id)
 	}
 	//查询az
-	var azList []*entity.AzManage
+	var azList []*AzManage
 	if err := db.Model(&entity.AzManage{}).Where(" delete_state = ? AND region_id IN (?)", 0, regionIdList).Find(&azList).Error; err != nil {
 		return nil, err
 	}
-	var regionAzMap = make(map[int64][]*entity.AzManage)
+	var regionAzMap = make(map[int64][]*AzManage)
 	var azIdList []int64
 	for _, v := range azList {
 		regionAzMap[v.RegionId] = append(regionAzMap[v.RegionId], v)

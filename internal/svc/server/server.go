@@ -5,7 +5,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
-	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"net/http"
@@ -40,8 +39,8 @@ func Save(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if err := checkRequest(request, true); err != nil {
-		result.Failure(c, err.Error(), http.StatusBadRequest)
+	if request.PlanId == 0 {
+		result.Failure(c, "planId参数为空", http.StatusBadRequest)
 		return
 	}
 	request.UserId = user.GetUserId(c)
@@ -151,15 +150,20 @@ func Download(c *gin.Context) {
 	return
 }
 
-func checkRequest(request *Request, isCreate bool) error {
+func ListServerShelve(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindQuery(&request); err != nil {
+		log.Errorf("list server bind param error: ", err)
+	}
 	if request.PlanId == 0 {
-		return errors.New("planId参数为空")
+		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+		return
 	}
-	if isCreate {
-	} else {
-		if request.Id == 0 {
-			return errors.New("id参数为空")
-		}
+	err := getServerShelveList(request.PlanId)
+	if err != nil {
+		log.Errorf("ListServerShelve error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	return nil
+	return
 }

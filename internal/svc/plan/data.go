@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func PagePlan(request *Request) ([]*entity.PlanManage, int64, error) {
+func PagePlan(request *Request) ([]*Manage, int64, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " CASE WHEN type = 'standby' OR type = 'delivery' THEN 0 ELSE 1 END ASC "
 	if request.ProjectId != 0 {
 		screenSql += " AND project_id = ? "
@@ -55,7 +55,7 @@ func PagePlan(request *Request) ([]*entity.PlanManage, int64, error) {
 	if err := data.DB.Model(&entity.PlanManage{}).Where(screenSql, screenParams...).Count(&count).Error; err != nil {
 		return nil, 0, err
 	}
-	var list []*entity.PlanManage
+	var list []*Manage
 	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
