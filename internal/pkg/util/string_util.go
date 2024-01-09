@@ -43,8 +43,8 @@ func SplitString(str string, split string) []string {
 }
 
 func HandleRangeStr(rangeStr string) (bool, []int) {
+	var rangeIntegers []int
 	if rangeStr != "" {
-		var rangeIntegers []int
 		rangeCommaStrings := strings.Split(rangeStr, constant.Comma)
 		for _, rangeCommaString := range rangeCommaStrings {
 			if strings.Contains(rangeCommaString, constant.Hyphen) {
@@ -77,5 +77,5 @@ func HandleRangeStr(rangeStr string) (bool, []int) {
 			}
 		}
 	}
-	return false, nil
+	return false, rangeIntegers
 }

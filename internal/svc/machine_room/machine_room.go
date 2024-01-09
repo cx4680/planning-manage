@@ -114,7 +114,22 @@ func ImportCabinet(context *gin.Context) {
 		if len(cabinets) > 0 {
 			// 先删除，再新增
 			if err = DeleteCabinets(cabinets); err != nil {
-				log.Errorf("delete cabinets error: %v", err)
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return
+			}
+			var cabinetIds []int64
+			for _, cabinet := range cabinets {
+				cabinetIds = append(cabinetIds, cabinet.Id)
+			}
+			if err = DeleteCabinetIdleSlotRel(cabinetIds); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return
+			}
+			if err = DeleteCabinetRackServerRel(cabinetIds); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return
+			}
+			if err = DeleteCabinetRackAswPortRel(cabinetIds); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return
 			}
@@ -159,7 +174,7 @@ func ImportCabinet(context *gin.Context) {
 				ResidualRackAswPort:   cabinetExcel.ResidualRackAswPort,
 				CreateTime:            now,
 			}
-			if err = CreateCabinet(cabinet); err != nil {
+			if err = CreateCabinet(&cabinet); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return
 			}

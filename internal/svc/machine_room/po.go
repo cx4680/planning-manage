@@ -17,7 +17,7 @@ type CabinetExcel struct {
 	CabinetAsw            string `excel:"name:机柜ASW组;" json:"cabinetAsw"`              // 机柜ASW组
 	TotalPower            int    `excel:"name:总功率（W）;" json:"totalPower"`              // 总功率（W）
 	ResidualPower         int    `excel:"name:剩余功率（W）;" json:"residualPower"`          // 剩余功率（W）
-	TotalSlotNum          int    `excel:"name:总槽位数（U位）;" json:"totalSlotNum"`          // 总槽位数（U位）
+	TotalSlotNum          int    `excel:"name:总槽位（U位）;" json:"totalSlotNum"`           // 总槽位（U位）
 	IdleSlotRange         string `excel:"name:空闲槽位（U位）范围;" json:"idleSlotRange"`       // 空闲槽位（U位）范围
 	MaxRackServerNum      int    `excel:"name:最大可上架服务器数;" json:"maxRackServerNum"`     // 最大可上架服务器数
 	ResidualRackServerNum int    `excel:"name:剩余上架服务器数;" json:"residualRackServerNum"` // 剩余上架服务器数
