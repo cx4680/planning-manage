@@ -1,7 +1,5 @@
 package network_device
 
-import "time"
-
 type NetworkDeviceListExportResponse struct {
 	NetworkDeviceRoleName string `gorm:"column:network_device_role_name" json:"networkDeviceRoleName" excel:"name:设备类型;index:0"`
 	NetworkDeviceRole     string `gorm:"column:network_device_role" json:"networkDeviceRole" excel:"name:设备角色;index:1"`
@@ -64,12 +62,12 @@ type NetworkDeviceModel struct {
 }
 
 type NetworkDeviceShelveDownload struct {
-	DeviceLogicalId   string    `json:"deviceLogicalId" excel:"name:网络设备逻辑ID;"`
-	DeviceId          string    `json:"deviceId" excel:"name:网络设备ID;"`
-	Sn                string    `json:"sn" excel:"name:SN;"`
-	MachineRoomAbbr   string    `json:"machineRoomAbbr" excel:"name:机房缩写;"`
-	MachineRoomNumber string    `json:"machineRoomNumber" excel:"name:机房编号;"`
-	CabinetNumber     time.Time `json:"cabinetNumber" excel:"name:机柜编号;"`
-	SlotPosition      time.Time `json:"slotPosition" excel:"name:槽位;"`
-	UNumber           int       `json:"uNumber" excel:"name:U数;"`
+	DeviceLogicalId   string `json:"deviceLogicalId" excel:"name:网络设备逻辑ID;"`
+	DeviceId          string `json:"deviceId" excel:"name:网络设备ID;"`
+	Sn                string `json:"sn" excel:"name:SN;"`
+	MachineRoomAbbr   string `json:"machineRoomAbbr" excel:"name:机房缩写;"`
+	MachineRoomNumber string `json:"machineRoomNumber" excel:"name:机房编号;"`
+	CabinetNumber     string `json:"cabinetNumber" excel:"name:机柜编号;"`
+	SlotPosition      string `json:"slotPosition" excel:"name:槽位;"`
+	UNumber           int    `json:"uNumber" excel:"name:U数;"`
 }
