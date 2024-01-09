@@ -1,6 +1,11 @@
 package util
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
+)
 
 func IsEmpty(str string) bool {
 	if str == "" || len(str) <= 0 {
@@ -35,4 +40,42 @@ func SplitString(str string, split string) []string {
 		return stringList
 	}
 	return nil
+}
+
+func HandleRangeStr(rangeStr string) (bool, []int) {
+	if rangeStr != "" {
+		var rangeIntegers []int
+		rangeCommaStrings := strings.Split(rangeStr, constant.Comma)
+		for _, rangeCommaString := range rangeCommaStrings {
+			if strings.Contains(rangeCommaString, constant.Hyphen) {
+				rangeHyphens := strings.Split(rangeCommaString, constant.Hyphen)
+				if len(rangeHyphens) != 2 {
+					return true, nil
+				}
+				startStr := rangeHyphens[0]
+				endStr := rangeHyphens[1]
+				start, err := strconv.Atoi(startStr)
+				if err != nil {
+					return true, nil
+				}
+				end, err := strconv.Atoi(endStr)
+				if err != nil {
+					return true, nil
+				}
+				if start >= end {
+					return true, nil
+				}
+				for i := start; i <= end; i++ {
+					rangeIntegers = append(rangeIntegers, i)
+				}
+			} else {
+				rangeComma, err := strconv.Atoi(rangeCommaString)
+				if err != nil {
+					return true, nil
+				}
+				rangeIntegers = append(rangeIntegers, rangeComma)
+			}
+		}
+	}
+	return false, nil
 }

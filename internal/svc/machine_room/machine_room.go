@@ -18,6 +18,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 )
 
 func PageCabinets(context *gin.Context) {
@@ -78,7 +79,7 @@ func ImportCabinet(context *gin.Context) {
 		return
 	}
 	filePath := fmt.Sprintf("%s/%s-%d-%d.xlsx", "exampledir", "cabinet", time.Now().Unix(), rand.Uint32())
-	if err := context.SaveUploadedFile(file, filePath); err != nil {
+	if err = context.SaveUploadedFile(file, filePath); err != nil {
 		log.Error(err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
@@ -87,24 +88,24 @@ func ImportCabinet(context *gin.Context) {
 	if err != nil {
 		log.Errorf("excelize openFile error: %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		if err := f.Close(); err != nil {
+		if err = f.Close(); err != nil {
 			log.Errorf("excelize close error: %v", err)
 		}
-		if err := os.Remove(filePath); err != nil {
+		if err = os.Remove(filePath); err != nil {
 			log.Errorf("os removeFile error: %v", err)
 		}
 		return
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
+		if err = f.Close(); err != nil {
 			log.Errorf("excelize close error: %v", err)
 		}
-		if err := os.Remove(filePath); err != nil {
+		if err = os.Remove(filePath); err != nil {
 			log.Errorf("os removeFile error: %v", err)
 		}
 	}()
 	var cabinetExcelList []CabinetExcel
-	if err := excel.ImportBySheet(f, &cabinetExcelList, "机房勘察模版", 0, 1); err != nil {
+	if err = excel.ImportBySheet(f, &cabinetExcelList, "机房勘察模版", 0, 1); err != nil {
 		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
@@ -112,13 +113,15 @@ func ImportCabinet(context *gin.Context) {
 	if len(cabinetExcelList) > 0 {
 		if len(cabinets) > 0 {
 			// 先删除，再新增
-			if err := DeleteCabinets(cabinets); err != nil {
+			if err = DeleteCabinets(cabinets); err != nil {
 				log.Errorf("delete cabinets error: %v", err)
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return
 			}
 		}
-		cabinets = []entity.CabinetInfo{}
+		var cabinetIdleSlotRels []entity.CabinetIdleSlotRel
+		var rackServerSlotRels []entity.CabinetRackServerSlotRel
+		var residualRackAswPortRels []entity.CabinetRackAswPortRel
 		now := time.Now()
 		for _, cabinetExcel := range cabinetExcelList {
 			var cabinetType int
@@ -136,7 +139,7 @@ func ImportCabinet(context *gin.Context) {
 				result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 				return
 			}
-			cabinets = append(cabinets, entity.CabinetInfo{
+			cabinet := entity.CabinetInfo{
 				PlanId:                planId,
 				MachineRoomAbbr:       cabinetExcel.MachineRoomAbbr,
 				MachineRoomNum:        cabinetExcel.MachineRoomNum,
@@ -155,13 +158,57 @@ func ImportCabinet(context *gin.Context) {
 				RackServerSlot:        cabinetExcel.RackServerSlot,
 				ResidualRackAswPort:   cabinetExcel.ResidualRackAswPort,
 				CreateTime:            now,
-			})
+			}
+			if err = CreateCabinet(cabinet); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return
+			}
+			handleResult, idleSlots := util.HandleRangeStr(cabinetExcel.IdleSlotRange)
+			if handleResult {
+				result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+				return
+			}
+			for _, idleSlot := range idleSlots {
+				cabinetIdleSlotRels = append(cabinetIdleSlotRels, entity.CabinetIdleSlotRel{
+					CabinetId:      cabinet.Id,
+					IdleSlotNumber: idleSlot,
+				})
+			}
+			handleResult, rackServerSlots := util.HandleRangeStr(cabinetExcel.RackServerSlot)
+			if handleResult {
+				result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+				return
+			}
+			for _, rackServerSlot := range rackServerSlots {
+				rackServerSlotRels = append(rackServerSlotRels, entity.CabinetRackServerSlotRel{
+					CabinetId:         cabinet.Id,
+					RackServerSlotNum: rackServerSlot,
+				})
+			}
+			handleResult, residualRackAswPorts := util.HandleRangeStr(cabinetExcel.ResidualRackAswPort)
+			if handleResult {
+				result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+				return
+			}
+			for _, residualRackAswPort := range residualRackAswPorts {
+				residualRackAswPortRels = append(residualRackAswPortRels, entity.CabinetRackAswPortRel{
+					CabinetId:              cabinet.Id,
+					ResidualRackAswPortNum: residualRackAswPort,
+				})
+			}
 		}
-		if err := BatchCreateCabinets(cabinets); err != nil {
+		if err = BatchCreateCabinetIdleSlotRel(cabinetIdleSlotRels); err != nil {
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 			return
 		}
-		// TODO 处理机柜空闲槽位关联数据、机柜已上架服务器槽位关联数据、机柜剩余可上架ASW端口关联数据
+		if err = BatchCreateCabinetRackServerRel(rackServerSlotRels); err != nil {
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return
+		}
+		if err = BatchCreateCabinetRackAswPortRel(residualRackAswPortRels); err != nil {
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return
+		}
 	}
 	result.Success(context, nil)
 	return

@@ -51,3 +51,44 @@ func BatchCreateCabinets(cabinets []entity.CabinetInfo) error {
 	}
 	return nil
 }
+
+func CreateCabinet(cabinet entity.CabinetInfo) error {
+	if err := data.DB.Table(entity.CabinetInfoTable).Create(&cabinet).Error; err != nil {
+		log.Errorf("insert cabinetInfo error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func BatchCreateCabinetIdleSlotRel(cabinetIdleSlots []entity.CabinetIdleSlotRel) error {
+	if len(cabinetIdleSlots) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CabinetIdleSlotRelTable).Create(&cabinetIdleSlots).Error; err != nil {
+		log.Errorf("batch insert cabinetIdleSlots error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func BatchCreateCabinetRackServerRel(cabinetRackServerSlots []entity.CabinetRackServerSlotRel) error {
+	if len(cabinetRackServerSlots) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CabinetRackServerSlotRelTable).Create(&cabinetRackServerSlots).Error; err != nil {
+		log.Errorf("batch insert cabinetRackServerSlots error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func BatchCreateCabinetRackAswPortRel(cabinetRackAswPorts []entity.CabinetRackAswPortRel) error {
+	if len(cabinetRackAswPorts) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CabinetRackAswPortRelTable).Create(&cabinetRackAswPorts).Error; err != nil {
+		log.Errorf("batch insert cabinetRackAswPorts error: %v", err)
+		return err
+	}
+	return nil
+}
