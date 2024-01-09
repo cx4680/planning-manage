@@ -3,6 +3,7 @@ package network_device
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"errors"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
@@ -218,4 +219,39 @@ func getNetworkShelveDownloadList(planId int64) ([]NetworkDeviceShelveDownload, 
 	}
 	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器规划清单"
 	return response, fileName, nil
+}
+
+func uploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDeviceShelveDownload, userId string) error {
+	if len(networkDeviceShelveDownload) == 0 {
+		return errors.New("数据为空")
+	}
+	now := datetime.GetNow()
+	var networkDeviceShelveList []*entity.NetworkDeviceShelve
+	for _, v := range networkDeviceShelveDownload {
+		networkDeviceShelveList = append(networkDeviceShelveList, &entity.NetworkDeviceShelve{
+			PlanId:            planId,
+			DeviceLogicalId:   v.DeviceLogicalId,
+			DeviceId:          v.DeviceId,
+			Sn:                v.Sn,
+			MachineRoomAbbr:   v.MachineRoomAbbr,
+			MachineRoomNumber: v.MachineRoomNumber,
+			CabinetNumber:     v.CabinetNumber,
+			SlotPosition:      v.SlotPosition,
+			UNumber:           v.UNumber,
+			CreateUserId:      userId,
+			CreateTime:        now,
+		})
+	}
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Delete(&entity.NetworkDeviceShelve{}, "plan_id = ?", planId).Error; err != nil {
+			return err
+		}
+		if err := tx.CreateInBatches(&networkDeviceShelveList, 10).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
 }
