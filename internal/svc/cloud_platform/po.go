@@ -16,6 +16,28 @@ type Request struct {
 	Sort            string `form:"sort"`
 }
 
+type Response struct {
+	CloudPlatform *entity.CloudPlatformManage `json:"cloudPlatform"`
+	RegionList    []*RegionManage             `json:"regionList"`
+	LeaderId      string                      `json:"leaderId"`
+	LeaderName    string                      `json:"leaderName" `
+}
+
+type ResponseTree struct {
+	RegionList []*ResponseTreeRegion `json:"regionList"`
+}
+
+type ResponseTreeRegion struct {
+	Region *entity.RegionManage `json:"region"`
+	AzList []*ResponseTreeAz    `json:"azList"`
+}
+
+type ResponseTreeAz struct {
+	Az              *entity.AzManage      `json:"az"`
+	MachineRoomList []*entity.MachineRoom `gorm:"-" json:"machineRoomList"`
+	CellList        []*entity.CellManage  `json:"cellList"`
+}
+
 type CloudPlatformManage struct {
 	Id           int64           `gorm:"column:id" json:"id"`                       //云平台id
 	Name         string          `gorm:"column:name" json:"name"`                   //云平台名称
