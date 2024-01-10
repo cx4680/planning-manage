@@ -1,6 +1,7 @@
 package network_device
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
@@ -256,7 +257,9 @@ func uploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 	return nil
 }
 
-func saveNetworkShelve(planId int64, request SaveNetworkShelveRequest, userId string) error {
-
+func saveNetworkShelve(request *SaveNetworkShelveRequest) error {
+	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningServer}).Error; err != nil {
+		return err
+	}
 	return nil
 }

@@ -26,14 +26,23 @@ const (
 	TripleNetworkSeparation = 3 // 三网分离
 	TriplePlay              = 1 // 三网合一
 
-	Plan              = "plan"     // 待规划
-	Planning          = "planning" // 规划中
-	Planned           = "planned"  // 规划完成
-	BusinessStart     = 0          // 业务规划开始阶段
-	CloudProductConf  = 1          // 云产品配置阶段
-	ServerPlan        = 2          // 服务器规划阶段
-	NetworkDevicePlan = 3          // 网络设备规划阶段
-	BusinessEnd       = 4          // 业务规划结束
+	Plan     = "plan"     // 待规划
+	Planning = "planning" // 规划中
+	Planned  = "planned"  // 规划完成
+
+	BusinessPlanningStart         = 0 // 业务规划开始阶段
+	BusinessPlanningCloudProduct  = 1 // 业务规划-云产品配置阶段
+	BusinessPlanningServer        = 2 // 业务规划-服务器规划阶段
+	BusinessPlanningNetworkDevice = 3 // 业务规划-网络设备规划阶段
+	BusinessPlanningEnd           = 4 // 业务规划结束
+
+	DeliverPlanningStart               = 0 // 交付规划开始阶段
+	DeliverPlanningMachineRoom         = 1 // 交付规划-机房规划
+	DeliverPlanningNetworkDevice       = 2 // 交付规划-网络设备上架
+	DeliverPlanningServer              = 3 // 交付规划-服务器上架
+	DeliverPlanningIp                  = 4 // 交付规划-IP规划
+	DeliverPlanningGlobalConfiguration = 5 // 交付规划-全局配置
+	DeliverPlanningEnd                 = 6 // 交付规划-全局配置
 
 	SplitLineBreak    = "\n"
 	SplitLineAsterisk = "*"

@@ -73,5 +73,6 @@ type NetworkDeviceShelveDownload struct {
 }
 
 type SaveNetworkShelveRequest struct {
-	PlanId int64 `json:"planId" form:"planId"`
+	PlanId int64  `json:"planId" form:"planId"`
+	UserId string `json:"userId" form:"userId"`
 }
