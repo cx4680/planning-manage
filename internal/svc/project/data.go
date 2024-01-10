@@ -75,7 +75,7 @@ func PageProject(request *Request) ([]*Project, int64, error) {
 		return nil, 0, err
 	}
 	var list []*Project
-	if err := db.Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
+	if err := db.Model(&entity.ProjectManage{}).Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
 	list, err := buildResponse(list)

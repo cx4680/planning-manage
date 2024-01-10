@@ -56,7 +56,7 @@ func PagePlan(request *Request) ([]*Manage, int64, error) {
 		return nil, 0, err
 	}
 	var list []*Manage
-	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
+	if err := data.DB.Model(&entity.PlanManage{}).Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
 	var alternativeCount int64

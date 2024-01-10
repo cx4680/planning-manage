@@ -31,7 +31,7 @@ func ListCloudPlatform(request *Request) ([]*CloudPlatformManage, error) {
 		orderSql += " asc "
 	}
 	var list []*CloudPlatformManage
-	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Find(&list).Error; err != nil {
+	if err := data.DB.Model(&entity.CloudPlatformManage{}).Where(screenSql, screenParams...).Order(orderSql).Find(&list).Error; err != nil {
 		return nil, err
 	}
 	//查询负责人名称
