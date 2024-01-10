@@ -1,5 +1,9 @@
 package machine_room
 
+import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+)
+
 type PageRequest struct {
 	PlanId   int64 `form:"planId" json:"planId"`
 	Current  int   `form:"current" json:"current"`
@@ -35,11 +39,6 @@ type RegionAzCell struct {
 	CellName   string `form:"cellName" json:"cellName"`     // 集群名称
 }
 
-type MachineRoom struct {
-	AzId     int64  `form:"regionId" json:"regionId"` // azId
-	Name     string `form:"name" json:"name"`         // 机房名称
-	Abbr     string `form:"abbr" json:"abbr"`         // 机房缩写
-	Province string `form:"province" json:"province"` // 省
-	City     string `form:"city" json:"city"`         // 市
-	Address  string `form:"address" json:"address"`   // 地址
+type MachineRoomRequest struct {
+	MachineRooms []entity.MachineRoom `json:"machineRooms"`
 }

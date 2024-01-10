@@ -23,7 +23,11 @@ import (
 )
 
 func GetRegionAzCellByPlanId(context *gin.Context) {
-	planId, _ := strconv.ParseInt(context.Param("planId"), 10, 64)
+	planId, err := strconv.ParseInt(context.Param("planId"), 10, 64)
+	if err != nil {
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
 	cellInfo, err := QueryRegionAzCellByPlanId(planId)
 	if err != nil {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
@@ -51,12 +55,36 @@ func UpdateRegionAzCell(context *gin.Context) {
 }
 
 func GetMachineRoomByPlanId(context *gin.Context) {
-	// planId, _ := strconv.ParseInt(context.Param("planId"), 10, 64)
-	// cellInfo, err := QueryMachineRoomByPlanId(planId)
-	// if err != nil {
-	// 	result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-	// 	return
-	// }
+	planId, err := strconv.ParseInt(context.Param("planId"), 10, 64)
+	if err != nil {
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	machineRooms, err := QueryMachineRoomByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	result.Success(context, machineRooms)
+	return
+}
+
+func UpdateMachineRoom(context *gin.Context) {
+	planId, err := strconv.ParseInt(context.Param("planId"), 10, 64)
+	if err != nil {
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	var request MachineRoomRequest
+	if err := context.ShouldBindJSON(&request); err != nil {
+		log.Errorf("update machine room bind param error: %v", err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	if err = UpdateMachineRoomByPlanId(planId, request.MachineRooms); err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
 	result.Success(context, nil)
 	return
 }

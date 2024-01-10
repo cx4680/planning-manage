@@ -217,6 +217,7 @@ func Router(engine *gin.Engine) {
 			machineRoomGroup.GET("/regionAzCell/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询区域可用区集群信息", "getRegionAzCellByPlanId", middleware.GET, middleware.INFO)), machine_room.GetRegionAzCellByPlanId)
 			machineRoomGroup.PUT("/regionAzCell", middleware.OperatorLog(DefaultEventOpInfo("修改区域可用区集群信息", "updateRegionAzCell", middleware.UPDATE, middleware.INFO)), machine_room.UpdateRegionAzCell)
 			machineRoomGroup.GET("/list/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询机房信息", "getMachineRoomByPlanId", middleware.GET, middleware.INFO)), machine_room.GetMachineRoomByPlanId)
+			machineRoomGroup.PUT("/:planId", middleware.OperatorLog(DefaultEventOpInfo("修改机房信息", "updateMachineRoom", middleware.UPDATE, middleware.INFO)), machine_room.UpdateMachineRoom)
 			machineRoomGroup.GET("/download", middleware.OperatorLog(DefaultEventOpInfo("下载机房勘察模版", "downloadCabinetTemplate", middleware.EXPORT, middleware.INFO)), machine_room.DownloadCabinetTemplate)
 			machineRoomGroup.POST("/import", middleware.OperatorLog(DefaultEventOpInfo("导入机房勘察文件", "importCabinet", middleware.IMPORT, middleware.INFO)), machine_room.ImportCabinet)
 			machineRoomGroup.GET("/cabinet/page", middleware.OperatorLog(DefaultEventOpInfo("机房规划机柜列表查询", "pageCabinet", middleware.LIST, middleware.INFO)), machine_room.PageCabinets)
