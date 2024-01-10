@@ -56,7 +56,7 @@ func PagePlan(request *Request) ([]*Manage, int64, error) {
 		return nil, 0, err
 	}
 	var list []*Manage
-	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
+	if err := data.DB.Model(&entity.PlanManage{}).Where(screenSql, screenParams...).Order(orderSql).Offset((request.Current - 1) * request.PageSize).Limit(request.PageSize).Find(&list).Error; err != nil {
 		return nil, 0, err
 	}
 	var alternativeCount int64
@@ -77,15 +77,17 @@ func CreatePlan(request *Request) error {
 	}
 	now := datetime.GetNow()
 	planEntity := &entity.PlanManage{
-		Name:         request.Name,
-		ProjectId:    request.ProjectId,
-		Type:         "general",
-		Stage:        "plan",
-		DeleteState:  0,
-		CreateUserId: request.UserId,
-		CreateTime:   now,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
+		Name:              request.Name,
+		ProjectId:         request.ProjectId,
+		Type:              "general",
+		Stage:             "plan",
+		BusinessPlanStage: 0,
+		DeliverPlanStage:  0,
+		DeleteState:       0,
+		CreateUserId:      request.UserId,
+		CreateTime:        now,
+		UpdateUserId:      request.UserId,
+		UpdateTime:        now,
 	}
 	if err := data.DB.Create(&planEntity).Error; err != nil {
 		return err

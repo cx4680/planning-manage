@@ -260,13 +260,11 @@ func SaveDeviceList(c *gin.Context) {
 			}
 		}
 		// 更新方案表的状态
-		err = plan.UpdatePlanStage(tx, planId, constant.Planned, userId, constant.BusinessEnd)
-		if err != nil {
+		if err = plan.UpdatePlanStage(tx, planId, constant.Planned, userId, constant.BusinessPlanningEnd); err != nil {
 			return err
 		}
 		// 批量保存网络设备清单
-		err = SaveBatch(tx, networkDeviceList)
-		if err != nil {
+		if err = SaveBatch(tx, networkDeviceList); err != nil {
 			return err
 		}
 		// 根据方案ID查询网络设备清单
@@ -599,9 +597,25 @@ func UploadNetworkShelve(c *gin.Context) {
 		return
 	}
 	userId := user.GetUserId(c)
-	err = uploadNetworkShelve(planId, networkDeviceShelveDownload, userId)
-	if err != nil {
+	if err = uploadNetworkShelve(planId, networkDeviceShelveDownload, userId); err != nil {
 		log.Errorf("ListNetworkShelve error, %v", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, nil)
+	return
+}
+
+func SaveNetworkShelve(c *gin.Context) {
+	request := &SaveNetworkShelveRequest{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.Errorf("SaveNetworkShelve param error: ", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	request.UserId = user.GetUserId(c)
+	if err := saveNetworkShelve(request); err != nil {
+		log.Errorf("SaveNetworkShelve error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}

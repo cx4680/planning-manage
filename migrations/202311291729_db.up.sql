@@ -90,19 +90,6 @@ CREATE TABLE `az_manage`
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'az管理表' ROW_FORMAT = Dynamic;
 
 
-CREATE TABLE `machine_room`
-(
-    `id`       bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'id',
-    `az_id`    bigint(20) NULL DEFAULT NULL COMMENT 'azId',
-    `name`     varchar(255) NULL DEFAULT NULL COMMENT '机房名称',
-    `abbr`     varchar(255) NULL DEFAULT NULL COMMENT '机房缩写',
-    `province` varchar(50) NULL DEFAULT NULL COMMENT '省',
-    `city`     varchar(50) NULL DEFAULT NULL COMMENT '市',
-    `address`  varchar(50) NULL DEFAULT NULL COMMENT '地址',
-    PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '机房表' ROW_FORMAT = Dynamic;
-
-
 CREATE TABLE `cell_manage`
 (
     `id`             bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'cell Id',

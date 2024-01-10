@@ -1,3 +1,15 @@
+CREATE TABLE `machine_room`
+(
+    `az_id`    bigint(20) NULL DEFAULT NULL COMMENT 'azId',
+    `name`     varchar(255) NULL DEFAULT NULL COMMENT '机房名称',
+    `abbr`     varchar(255) NULL DEFAULT NULL COMMENT '机房缩写',
+    `province` varchar(50) NULL DEFAULT NULL COMMENT '省',
+    `city`     varchar(50) NULL DEFAULT NULL COMMENT '市',
+    `address`  varchar(50) NULL DEFAULT NULL COMMENT '地址',
+    `sort`     int NULL DEFAULT NULL COMMENT '排序'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='机房表';
+
+
 CREATE TABLE `network_device_shelve`
 (
     `id`                  bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'id',
