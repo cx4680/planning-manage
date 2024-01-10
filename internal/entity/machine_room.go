@@ -3,7 +3,7 @@ package entity
 const MachineRoomTable = "machine_room"
 
 type MachineRoom struct {
-	AzId     int64  `gorm:"column:az_id" json:"regionId"`    //azId
+	AzId     int64  `gorm:"column:az_id" json:"azId"`        //azId
 	Name     string `gorm:"column:name" json:"name"`         //机房名称
 	Abbr     string `gorm:"column:abbr" json:"abbr"`         //机房缩写
 	Province string `gorm:"column:province" json:"province"` //省

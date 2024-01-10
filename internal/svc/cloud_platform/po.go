@@ -18,7 +18,6 @@ type Request struct {
 
 type Response struct {
 	CloudPlatform *entity.CloudPlatformManage `json:"cloudPlatform"`
-	RegionList    []*RegionManage             `json:"regionList"`
 	LeaderId      string                      `json:"leaderId"`
 	LeaderName    string                      `json:"leaderName" `
 }
