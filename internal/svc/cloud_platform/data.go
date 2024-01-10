@@ -10,7 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func ListCloudPlatform(request *Request) ([]*CloudPlatformManage, error) {
+func ListCloudPlatform(request *Request) ([]*Response, error) {
+	var response []*Response
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " create_time "
 	if request.CustomerId != 0 {
 		screenSql += " AND customer_id = ? "
@@ -30,13 +31,14 @@ func ListCloudPlatform(request *Request) ([]*CloudPlatformManage, error) {
 	default:
 		orderSql += " asc "
 	}
-	var list []*CloudPlatformManage
-	if err := data.DB.Model(&entity.CloudPlatformManage{}).Where(screenSql, screenParams...).Order(orderSql).Find(&list).Error; err != nil {
+	var cloudPlatformList []*entity.CloudPlatformManage
+	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Find(&cloudPlatformList).Error; err != nil {
 		return nil, err
 	}
 	//查询负责人名称
 	var customerIdList []int64
-	for _, v := range list {
+	for _, v := range cloudPlatformList {
+		response = append(response, &Response{CloudPlatform: v})
 		customerIdList = append(customerIdList, v.CustomerId)
 	}
 	var customerList []*entity.CustomerManage
@@ -47,13 +49,13 @@ func ListCloudPlatform(request *Request) ([]*CloudPlatformManage, error) {
 	for _, v := range customerList {
 		customerMap[v.ID] = v
 	}
-	for i, v := range list {
-		if customerMap[v.CustomerId] != nil {
-			list[i].LeaderId = customerMap[v.CustomerId].LeaderId
-			list[i].LeaderName = customerMap[v.CustomerId].LeaderName
+	for i, v := range response {
+		if customerMap[v.CloudPlatform.CustomerId] != nil {
+			response[i].LeaderId = customerMap[v.CloudPlatform.CustomerId].LeaderId
+			response[i].LeaderName = customerMap[v.CloudPlatform.CustomerId].LeaderName
 		}
 	}
-	return list, nil
+	return response, nil
 }
 
 func CreateCloudPlatform(request *Request) error {
@@ -95,31 +97,33 @@ func UpdateCloudPlatform(request *Request) error {
 	return nil
 }
 
-func TreeCloudPlatform(request *Request) ([]*RegionManage, error) {
+func TreeCloudPlatform(request *Request) (*ResponseTree, error) {
+	var responseTree = &ResponseTree{}
 	//缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	//查询region
-	var RegionList []*RegionManage
-	if err := db.Model(&entity.RegionManage{}).Where(" delete_state = ? AND cloud_platform_id = ?", 0, request.CloudPlatformId).Find(&RegionList).Error; err != nil {
+	var RegionList []*entity.RegionManage
+	if err := db.Where(" delete_state = ? AND cloud_platform_id = ?", 0, request.CloudPlatformId).Find(&RegionList).Error; err != nil {
 		return nil, err
 	}
 	var regionIdList []int64
 	for _, v := range RegionList {
+		responseTree.RegionList = append(responseTree.RegionList, &ResponseTreeRegion{Region: v})
 		regionIdList = append(regionIdList, v.Id)
 	}
 	//查询az
-	var azList []*AzManage
-	if err := db.Model(&entity.AzManage{}).Where(" delete_state = ? AND region_id IN (?)", 0, regionIdList).Find(&azList).Error; err != nil {
+	var azList []*entity.AzManage
+	if err := db.Where(" delete_state = ? AND region_id IN (?)", 0, regionIdList).Find(&azList).Error; err != nil {
 		return nil, err
 	}
-	var regionAzMap = make(map[int64][]*AzManage)
+	var regionAzMap = make(map[int64][]*ResponseTreeAz)
 	var azIdList []int64
 	for _, v := range azList {
-		regionAzMap[v.RegionId] = append(regionAzMap[v.RegionId], v)
+		regionAzMap[v.RegionId] = append(regionAzMap[v.RegionId], &ResponseTreeAz{Az: v})
 		azIdList = append(azIdList, v.Id)
 	}
-	for i, v := range RegionList {
-		RegionList[i].AzList = regionAzMap[v.Id]
+	for i, v := range responseTree.RegionList {
+		responseTree.RegionList[i].AzList = regionAzMap[v.Region.Id]
 	}
 	//查询机房信息
 	var machineRoomList []*entity.MachineRoom
@@ -130,9 +134,6 @@ func TreeCloudPlatform(request *Request) ([]*RegionManage, error) {
 	for _, v := range machineRoomList {
 		machineRoomMap[v.AzId] = append(machineRoomMap[v.AzId], v)
 	}
-	for i, v := range azList {
-		azList[i].MachineRoomList = machineRoomMap[v.Id]
-	}
 	//查询cell
 	var cellList []*entity.CellManage
 	if err := db.Model(&entity.CellManage{}).Where(" delete_state = ? AND az_id IN (?)", 0, azIdList).Find(&cellList).Error; err != nil {
@@ -142,10 +143,13 @@ func TreeCloudPlatform(request *Request) ([]*RegionManage, error) {
 	for _, v := range cellList {
 		azCellMap[v.AzId] = append(azCellMap[v.AzId], v)
 	}
-	for i, v := range azList {
-		azList[i].CellList = azCellMap[v.Id]
+	for i, v := range responseTree.RegionList {
+		for i2, v2 := range v.AzList {
+			responseTree.RegionList[i].AzList[i2].MachineRoomList = machineRoomMap[v2.Az.Id]
+			responseTree.RegionList[i].AzList[i2].CellList = azCellMap[v2.Az.Id]
+		}
 	}
-	return RegionList, nil
+	return responseTree, nil
 }
 
 func CreateCloudPlatformByCustomerId(request *Request) error {
