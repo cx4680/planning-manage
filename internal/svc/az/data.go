@@ -74,7 +74,7 @@ func CreateAz(request *Request) error {
 				Province: v.Province,
 				City:     v.City,
 				Address:  v.Address,
-				Sort:     i,
+				Sort:     i + 1,
 			})
 		}
 		if err := tx.Create(&machineRoomList).Error; err != nil {
@@ -114,7 +114,7 @@ func UpdateAz(request *Request) error {
 				Province: v.Province,
 				City:     v.City,
 				Address:  v.Address,
-				Sort:     i,
+				Sort:     i + 1,
 			})
 		}
 		if err := tx.Create(&machineRoomList).Error; err != nil {
