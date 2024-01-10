@@ -11,11 +11,11 @@ import (
 
 func QueryRegionAzCellByPlanId(planId int64) (RegionAzCell, error) {
 	var regionAzCell RegionAzCell
-	if err := data.DB.Table(entity.PlanManageTable+" plan").Select("plan.id as planId, region.id as regionId, region.code as regionCode, az.id as azId, az.code as azCode, cell.id as cellId, cell.name as cellName").
-		Joins("project_manage project on plan.project_id = project.id").
-		Joins("region_manage region on project.region_id = region.id").
-		Joins("az_manage az on project.az_id = az.id").
-		Joins("cell_manage cell on project.cell_id = cell.id").
+	if err := data.DB.Table(entity.PlanManageTable+" plan").Select("region.id as region_id, region.code as region_code, az.id as az_id, az.code as az_code, cell.id as cell_id, cell.name as cell_name").
+		Joins("left join project_manage project on plan.project_id = project.id").
+		Joins("left join region_manage region on project.region_id = region.id").
+		Joins("left join az_manage az on project.az_id = az.id").
+		Joins("left join cell_manage cell on project.cell_id = cell.id").
 		Where("plan.id = ?", planId).
 		Find(&regionAzCell).Error; err != nil {
 		log.Errorf("[queryRegionAzCellByPlanId] query region az cell error, %v", err)
@@ -24,8 +24,8 @@ func QueryRegionAzCellByPlanId(planId int64) (RegionAzCell, error) {
 	return regionAzCell, nil
 }
 
-func UpdateRegionAzCellByPlanId(regionAzCell RegionAzCell, userId string) error {
-	originRegionAzCell, err := QueryRegionAzCellByPlanId(regionAzCell.PlanId)
+func UpdateRegionAzCellByPlanId(planId int64, regionAzCell RegionAzCell, userId string) error {
+	originRegionAzCell, err := QueryRegionAzCellByPlanId(planId)
 	if err != nil {
 		return err
 	}

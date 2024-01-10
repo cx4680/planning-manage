@@ -38,14 +38,19 @@ func GetRegionAzCellByPlanId(context *gin.Context) {
 }
 
 func UpdateRegionAzCell(context *gin.Context) {
+	planId, err := strconv.ParseInt(context.Param("planId"), 10, 64)
+	if err != nil {
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
 	var request RegionAzCell
-	if err := context.ShouldBindJSON(&request); err != nil {
+	if err = context.ShouldBindJSON(&request); err != nil {
 		log.Errorf("update region az cell bind param error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
 	userId := user.GetUserId(context)
-	if err := UpdateRegionAzCellByPlanId(request, userId); err != nil {
+	if err = UpdateRegionAzCellByPlanId(planId, request, userId); err != nil {
 		log.Errorf("update region az cell error: %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return

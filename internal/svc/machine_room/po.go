@@ -30,7 +30,6 @@ type CabinetExcel struct {
 }
 
 type RegionAzCell struct {
-	PlanId     int64  `form:"planId" json:"planId"`         // 方案id
 	RegionId   int64  `form:"regionId" json:"regionId"`     // 区域id
 	RegionCode string `form:"regionCode" json:"regionCode"` // 区域编码
 	AzId       int64  `form:"azId" json:"azId"`             // 可用区id
