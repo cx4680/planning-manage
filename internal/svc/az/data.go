@@ -8,7 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func ListAz(request *Request) ([]*entity.AzManage, error) {
+func ListAz(request *Request) ([]*Az, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? AND region_id = ? ", []interface{}{0, request.RegionId}, " create_time "
 	switch request.SortField {
 	case "createTime":
@@ -24,9 +24,25 @@ func ListAz(request *Request) ([]*entity.AzManage, error) {
 	default:
 		orderSql += " asc "
 	}
-	var list []*entity.AzManage
+	var list []*Az
 	if err := data.DB.Model(&entity.AzManage{}).Where(screenSql, screenParams...).Order(orderSql).Find(&list).Error; err != nil {
 		return nil, err
+	}
+	//查询机房表
+	var azIdList []int64
+	for _, v := range list {
+		azIdList = append(azIdList, v.Id)
+	}
+	var machineRoomList []*entity.MachineRoom
+	if err := data.DB.Model(&entity.MachineRoom{}).Where("az_id IN (?)", azIdList).Order("sort asc").Find(&machineRoomList).Error; err != nil {
+		return nil, err
+	}
+	var azIdMachineRoomMap = make(map[int64][]*entity.MachineRoom)
+	for _, v := range machineRoomList {
+		azIdMachineRoomMap[v.AzId] = append(azIdMachineRoomMap[v.AzId], v)
+	}
+	for i, v := range list {
+		list[i].MachineRoomList = azIdMachineRoomMap[v.Id]
 	}
 	return list, nil
 }
@@ -50,7 +66,7 @@ func CreateAz(request *Request) error {
 			return err
 		}
 		var machineRoomList []*entity.MachineRoom
-		for _, v := range request.MachineRoomList {
+		for i, v := range request.MachineRoomList {
 			machineRoomList = append(machineRoomList, &entity.MachineRoom{
 				AzId:     azEntity.Id,
 				Name:     v.Name,
@@ -58,6 +74,7 @@ func CreateAz(request *Request) error {
 				Province: v.Province,
 				City:     v.City,
 				Address:  v.Address,
+				Sort:     i,
 			})
 		}
 		if err := tx.Create(&machineRoomList).Error; err != nil {
@@ -89,7 +106,7 @@ func UpdateAz(request *Request) error {
 			return err
 		}
 		var machineRoomList []*entity.MachineRoom
-		for _, v := range request.MachineRoomList {
+		for i, v := range request.MachineRoomList {
 			machineRoomList = append(machineRoomList, &entity.MachineRoom{
 				AzId:     request.Id,
 				Name:     v.Name,
@@ -97,6 +114,7 @@ func UpdateAz(request *Request) error {
 				Province: v.Province,
 				City:     v.City,
 				Address:  v.Address,
+				Sort:     i,
 			})
 		}
 		if err := tx.Create(&machineRoomList).Error; err != nil {

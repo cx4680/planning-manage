@@ -255,3 +255,8 @@ func uploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 	}
 	return nil
 }
+
+func saveNetworkShelve(planId int64, request SaveNetworkShelveRequest, userId string) error {
+
+	return nil
+}

@@ -608,3 +608,13 @@ func UploadNetworkShelve(c *gin.Context) {
 	result.Success(c, nil)
 	return
 }
+
+func SaveNetworkShelve(c *gin.Context) {
+	request := &SaveNetworkShelveRequest{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.Errorf("SaveNetworkShelve param error: ", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+
+}

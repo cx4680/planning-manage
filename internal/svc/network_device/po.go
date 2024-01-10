@@ -71,3 +71,7 @@ type NetworkDeviceShelveDownload struct {
 	SlotPosition      string `json:"slotPosition" excel:"name:槽位;"`
 	UNumber           int    `json:"uNumber" excel:"name:U数;"`
 }
+
+type SaveNetworkShelveRequest struct {
+	PlanId int64 `json:"planId" form:"planId"`
+}
