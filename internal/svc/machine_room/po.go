@@ -1,9 +1,9 @@
 package machine_room
 
 type PageRequest struct {
-	PlanId   int64 `form:"planId"`
-	Current  int   `json:"current"`
-	PageSize int   `json:"pageSize"`
+	PlanId   int64 `form:"planId" json:"planId"`
+	Current  int   `form:"current" json:"current"`
+	PageSize int   `form:"pageSize" json:"pageSize"`
 }
 
 type CabinetExcel struct {
@@ -23,4 +23,23 @@ type CabinetExcel struct {
 	ResidualRackServerNum int    `excel:"name:剩余上架服务器数;" json:"residualRackServerNum"` // 剩余上架服务器数
 	RackServerSlot        string `excel:"name:已上架服务器（U位）;" json:"rackServerSlot"`      // 已上架服务器（U位）
 	ResidualRackAswPort   string `excel:"name:剩余可上架ASW端口;" json:"residualRackAswPort"` // 剩余可上架ASW端口
+}
+
+type RegionAzCell struct {
+	PlanId     int64  `form:"planId" json:"planId"`         // 方案id
+	RegionId   int64  `form:"regionId" json:"regionId"`     // 区域id
+	RegionCode string `form:"regionCode" json:"regionCode"` // 区域编码
+	AzId       int64  `form:"azId" json:"azId"`             // 可用区id
+	AzCode     string `form:"azCode" json:"azCode"`         // 可用区编码
+	CellId     int64  `form:"cellId" json:"cellId"`         // 集群id
+	CellName   string `form:"cellName" json:"cellName"`     // 集群名称
+}
+
+type MachineRoom struct {
+	AzId     int64  `form:"regionId" json:"regionId"` // azId
+	Name     string `form:"name" json:"name"`         // 机房名称
+	Abbr     string `form:"abbr" json:"abbr"`         // 机房缩写
+	Province string `form:"province" json:"province"` // 省
+	City     string `form:"city" json:"city"`         // 市
+	Address  string `form:"address" json:"address"`   // 地址
 }

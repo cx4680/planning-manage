@@ -18,8 +18,48 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 )
+
+func GetRegionAzCellByPlanId(context *gin.Context) {
+	planId, _ := strconv.ParseInt(context.Param("planId"), 10, 64)
+	cellInfo, err := QueryRegionAzCellByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	result.Success(context, cellInfo)
+	return
+}
+
+func UpdateRegionAzCell(context *gin.Context) {
+	var request RegionAzCell
+	if err := context.ShouldBindJSON(&request); err != nil {
+		log.Errorf("update region az cell bind param error: %v", err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	userId := user.GetUserId(context)
+	if err := UpdateRegionAzCellByPlanId(request, userId); err != nil {
+		log.Errorf("update region az cell error: %v", err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	result.Success(context, nil)
+	return
+}
+
+func GetMachineRoomByPlanId(context *gin.Context) {
+	// planId, _ := strconv.ParseInt(context.Param("planId"), 10, 64)
+	// cellInfo, err := QueryMachineRoomByPlanId(planId)
+	// if err != nil {
+	// 	result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+	// 	return
+	// }
+	result.Success(context, nil)
+	return
+}
 
 func PageCabinets(context *gin.Context) {
 	request := &PageRequest{Current: 1, PageSize: 10}

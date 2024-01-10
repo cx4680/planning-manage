@@ -47,13 +47,14 @@ func HandleRangeStr(rangeStr string) (bool, []int) {
 	if rangeStr != "" {
 		rangeCommaStrings := strings.Split(rangeStr, constant.Comma)
 		for _, rangeCommaString := range rangeCommaStrings {
+			rangeCommaString = strings.TrimSpace(rangeCommaString)
 			if strings.Contains(rangeCommaString, constant.Hyphen) {
 				rangeHyphens := strings.Split(rangeCommaString, constant.Hyphen)
 				if len(rangeHyphens) != 2 {
 					return true, nil
 				}
-				startStr := rangeHyphens[0]
-				endStr := rangeHyphens[1]
+				startStr := strings.TrimSpace(rangeHyphens[0])
+				endStr := strings.TrimSpace(rangeHyphens[1])
 				start, err := strconv.Atoi(startStr)
 				if err != nil {
 					return true, nil
