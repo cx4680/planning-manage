@@ -10,8 +10,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func ListCloudPlatform(request *Request) ([]*Response, error) {
-	var response []*Response
+func ListCloudPlatform(request *Request) ([]*CloudPlatform, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " create_time "
 	if request.CustomerId != 0 {
 		screenSql += " AND customer_id = ? "
@@ -31,14 +30,13 @@ func ListCloudPlatform(request *Request) ([]*Response, error) {
 	default:
 		orderSql += " asc "
 	}
-	var cloudPlatformList []*entity.CloudPlatformManage
-	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Find(&cloudPlatformList).Error; err != nil {
+	var list []*CloudPlatform
+	if err := data.DB.Model(&entity.CloudPlatformManage{}).Where(screenSql, screenParams...).Order(orderSql).Find(&list).Error; err != nil {
 		return nil, err
 	}
 	//查询负责人名称
 	var customerIdList []int64
-	for _, v := range cloudPlatformList {
-		response = append(response, &Response{CloudPlatform: v})
+	for _, v := range list {
 		customerIdList = append(customerIdList, v.CustomerId)
 	}
 	var customerList []*entity.CustomerManage
@@ -49,13 +47,13 @@ func ListCloudPlatform(request *Request) ([]*Response, error) {
 	for _, v := range customerList {
 		customerMap[v.ID] = v
 	}
-	for i, v := range response {
-		if customerMap[v.CloudPlatform.CustomerId] != nil {
-			response[i].LeaderId = customerMap[v.CloudPlatform.CustomerId].LeaderId
-			response[i].LeaderName = customerMap[v.CloudPlatform.CustomerId].LeaderName
+	for i, v := range list {
+		if customerMap[v.CustomerId] != nil {
+			list[i].LeaderId = customerMap[v.CustomerId].LeaderId
+			list[i].LeaderName = customerMap[v.CustomerId].LeaderName
 		}
 	}
-	return response, nil
+	return list, nil
 }
 
 func CreateCloudPlatform(request *Request) error {
@@ -136,12 +134,26 @@ func TreeCloudPlatform(request *Request) (*ResponseTree, error) {
 	}
 	//查询cell
 	var cellList []*entity.CellManage
-	if err := db.Model(&entity.CellManage{}).Where(" delete_state = ? AND az_id IN (?)", 0, azIdList).Find(&cellList).Error; err != nil {
+	if err := db.Model(&entity.CellManage{}).Where("delete_state = ? AND az_id IN (?)", 0, azIdList).Find(&cellList).Error; err != nil {
 		return nil, err
 	}
-	var azCellMap = make(map[int64][]*entity.CellManage)
+	var azCellMap = make(map[int64][]*ResponseTreeCell)
+	var cellIdList []int64
 	for _, v := range cellList {
-		azCellMap[v.AzId] = append(azCellMap[v.AzId], v)
+		cellIdList = append(cellIdList, v.Id)
+	}
+	//查询方案数量
+	var projectList []*entity.ProjectManage
+	if err := data.DB.Model(&entity.ProjectManage{}).Where("cell_id IN (?)", cellIdList).Find(&projectList).Error; err != nil {
+		return nil, err
+	}
+	var projectCountMap = make(map[int64]int)
+	for _, v := range projectList {
+		projectCountMap[v.CellId]++
+	}
+	for _, v := range cellList {
+		azCellMap[v.AzId] = append(azCellMap[v.AzId], &ResponseTreeCell{Cell: v, ProjectCount: projectCountMap[v.Id]})
+		cellIdList = append(cellIdList, v.Id)
 	}
 	for i, v := range responseTree.RegionList {
 		for i2, v2 := range v.AzList {

@@ -22,7 +22,7 @@ type RequestMachineRoom struct {
 	Address  string `form:"address"`
 }
 
-type Response struct {
-	Az              *entity.AzManage      `json:"az"`
-	MachineRoomList []*entity.MachineRoom `json:"machineRoomList"`
+type Az struct {
+	entity.AzManage
+	MachineRoomList []*entity.MachineRoom `gorm:"-" json:"machineRoomList"`
 }

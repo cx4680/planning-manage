@@ -8,8 +8,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func ListAz(request *Request) ([]*Response, error) {
-	var response []*Response
+func ListAz(request *Request) ([]*Az, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? AND region_id = ? ", []interface{}{0, request.RegionId}, " create_time "
 	switch request.SortField {
 	case "createTime":
@@ -25,16 +24,15 @@ func ListAz(request *Request) ([]*Response, error) {
 	default:
 		orderSql += " asc "
 	}
-	var azList []*entity.AzManage
-	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Find(&azList).Error; err != nil {
+	var list []*Az
+	if err := data.DB.Model(&entity.AzManage{}).Where(screenSql, screenParams...).Order(orderSql).Find(&list).Error; err != nil {
 		return nil, err
 	}
+	//查询机房表
 	var azIdList []int64
-	for _, v := range azList {
-		response = append(response, &Response{Az: v})
+	for _, v := range list {
 		azIdList = append(azIdList, v.Id)
 	}
-	//查询机房表
 	var machineRoomList []*entity.MachineRoom
 	if err := data.DB.Model(&entity.MachineRoom{}).Where("az_id IN (?)", azIdList).Order("sort asc").Find(&machineRoomList).Error; err != nil {
 		return nil, err
@@ -43,10 +41,10 @@ func ListAz(request *Request) ([]*Response, error) {
 	for _, v := range machineRoomList {
 		azIdMachineRoomMap[v.AzId] = append(azIdMachineRoomMap[v.AzId], v)
 	}
-	for i, v := range response {
-		response[i].MachineRoomList = azIdMachineRoomMap[v.Az.Id]
+	for i, v := range list {
+		list[i].MachineRoomList = azIdMachineRoomMap[v.Id]
 	}
-	return response, nil
+	return list, nil
 }
 
 func CreateAz(request *Request) error {
