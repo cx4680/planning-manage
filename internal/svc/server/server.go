@@ -159,11 +159,12 @@ func ListServerShelve(c *gin.Context) {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
 		return
 	}
-	err := getServerShelveList(request.PlanId)
+	list, err := getServerShelveList(request.PlanId)
 	if err != nil {
 		log.Errorf("ListServerShelve error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	result.Success(c, list)
 	return
 }

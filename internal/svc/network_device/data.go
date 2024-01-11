@@ -188,37 +188,34 @@ func getNetworkShelveList(planId int64) ([]*entity.NetworkDeviceShelve, error) {
 }
 
 func getNetworkShelveDownloadList(planId int64) ([]NetworkDeviceShelveDownload, string, error) {
-	networkDeviceShelve, err := getNetworkShelveList(planId)
-	if err != nil {
+	var networkDeviceList []*entity.NetworkDeviceList
+	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceList).Error; err != nil {
 		return nil, "", err
+	}
+	if len(networkDeviceList) == 0 {
+		return nil, "", errors.New("网络设备未规划")
 	}
 	//构建返回体
 	var response []NetworkDeviceShelveDownload
-	for _, v := range networkDeviceShelve {
+	for _, v := range networkDeviceList {
 		response = append(response, NetworkDeviceShelveDownload{
-			DeviceLogicalId:   v.DeviceLogicalId,
-			DeviceId:          v.DeviceId,
-			Sn:                v.Sn,
-			MachineRoomAbbr:   v.MachineRoomAbbr,
-			MachineRoomNumber: v.MachineRoomNumber,
-			CabinetNumber:     v.CabinetNumber,
-			SlotPosition:      v.SlotPosition,
-			UNumber:           v.UNumber,
+			DeviceLogicalId: v.LogicalGrouping,
+			DeviceId:        v.DeviceId,
 		})
 	}
 	//构建文件名称
 	var planManage = &entity.PlanManage{}
-	if err = data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManage).Error; err != nil {
+	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManage).Error; err != nil {
 		return nil, "", err
 	}
 	if planManage.Id == 0 {
 		return nil, "", errors.New("方案不存在")
 	}
 	var projectManage = &entity.ProjectManage{}
-	if err = data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
+	if err := data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
 		return nil, "", err
 	}
-	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器规划清单"
+	fileName := projectManage.Name + "-" + planManage.Name + "-" + "网络设备上架表"
 	return response, fileName, nil
 }
 

@@ -654,6 +654,10 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 	return nodeRoleCapMap, nil
 }
 
-func getServerShelveList(planId int64) error {
-	return nil
+func getServerShelveList(planId int64) (*entity.ServerShelve, error) {
+	var serverShelve = &entity.ServerShelve{}
+	if err := data.DB.Where("plan_id = ?", planId).Find(&serverShelve).Error; err != nil {
+		return nil, err
+	}
+	return serverShelve, nil
 }
