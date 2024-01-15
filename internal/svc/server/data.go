@@ -47,7 +47,7 @@ func ListServer(request *Request) ([]*Server, error) {
 	}
 	//查询已保存的服务器规划表
 	var serverPlanningList []*Server
-	if err = db.Where("plan_id = ?", request.PlanId).Find(&serverPlanningList).Error; err != nil {
+	if err = db.Model(&entity.ServerPlanning{}).Where("plan_id = ?", request.PlanId).Find(&serverPlanningList).Error; err != nil {
 		return nil, err
 	}
 	var nodeRoleServerPlanningMap = make(map[int64]*Server)
@@ -773,4 +773,79 @@ func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 	}
 	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器上架表"
 	return response, fileName, nil
+}
+
+func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, userId string) error {
+	if len(serverShelveDownload) == 0 {
+		return errors.New("数据为空")
+	}
+	now := datetime.GetNow()
+	//查询服务器规划表
+	var serverPlanning []*entity.ServerPlanning
+	if err := data.DB.Where("plan_id = ?", planId).Find(&serverPlanning).Error; err != nil {
+		return err
+	}
+	var NodeRoleIdList []int64
+	for _, v := range serverPlanning {
+		NodeRoleIdList = append(NodeRoleIdList, v.NodeRoleId)
+	}
+	//查询节点角色表
+	var nodeRoleList []*entity.NodeRoleBaseline
+	if err := data.DB.Where("id IN (?)", NodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
+		return err
+	}
+	var nodeRoleNameMap = make(map[string]int64)
+	for _, v := range nodeRoleList {
+		nodeRoleNameMap[v.NodeRoleName] = v.Id
+	}
+	var serverShelveList []*entity.ServerShelve
+	for _, v := range serverShelveDownload {
+		if err := checkNetworkShelve(&v); err != nil {
+			return err
+		}
+		serverShelveList = append(serverShelveList, &entity.ServerShelve{
+			SortNumber:            v.SortNumber,
+			PlanId:                planId,
+			NodeRoleId:            nodeRoleNameMap[v.NodeRoleName],
+			NodeIp:                v.NodeIp,
+			Sn:                    v.Sn,
+			Model:                 v.Model,
+			MachineRoomAbbr:       v.MachineRoomAbbr,
+			MachineRoomNumber:     v.MachineRoomNumber,
+			ColumnNumber:          v.ColumnNumber,
+			CabinetAsw:            v.CabinetAsw,
+			CabinetNumber:         v.CabinetNumber,
+			CabinetOriginalNumber: v.CabinetOriginalNumber,
+			CabinetLocation:       v.CabinetLocation,
+			SlotPosition:          v.SlotPosition,
+			NetworkInterface:      v.NetworkInterface,
+			BmcUserName:           v.BmcUserName,
+			BmcPassword:           v.BmcPassword,
+			BmcIp:                 v.BmcIp,
+			BmcMac:                v.BmcMac,
+			Mask:                  v.Mask,
+			Gateway:               v.Gateway,
+			CreateUserId:          userId,
+			CreateTime:            now,
+		})
+	}
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Delete(&entity.NetworkDeviceShelve{}, "plan_id = ?", planId).Error; err != nil {
+			return err
+		}
+		if err := tx.CreateInBatches(&serverShelveList, 10).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkNetworkShelve(shelveDownload *ShelveDownload) error {
+	if util.IsBlank(shelveDownload.Sn) {
+		return errors.New("SN不能为空")
+	}
+	return nil
 }
