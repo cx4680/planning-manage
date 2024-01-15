@@ -4,3 +4,7 @@ DROP TABLE IF EXISTS `cabinet_info`;
 DROP TABLE IF EXISTS `cabinet_idle_slot_rel`;
 DROP TABLE IF EXISTS `cabinet_rack_server_slot_rel`;
 DROP TABLE IF EXISTS `cabinet_rack_asw_port_rel`;
+DROP TABLE IF EXISTS `vlan_id_config`;
+DROP TABLE IF EXISTS `cell_config`;
+DROP TABLE IF EXISTS `route_planning_config`;
+DROP TABLE IF EXISTS `large_network_segment_config`;
