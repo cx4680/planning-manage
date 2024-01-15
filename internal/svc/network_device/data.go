@@ -258,7 +258,7 @@ func uploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 	return nil
 }
 
-func saveNetworkShelve(request *SaveNetworkShelveRequest) error {
+func saveNetworkShelve(request *Request) error {
 	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningServer}).Error; err != nil {
 		return err
 	}

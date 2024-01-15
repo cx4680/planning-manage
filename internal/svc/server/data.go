@@ -843,6 +843,13 @@ func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 	return nil
 }
 
+func saveServerShelve(request *Request) error {
+	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningIp}).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 func checkNetworkShelve(shelveDownload *ShelveDownload) error {
 	if util.IsBlank(shelveDownload.Sn) {
 		return errors.New("SN不能为空")

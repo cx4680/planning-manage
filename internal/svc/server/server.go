@@ -240,3 +240,18 @@ func UploadServerShelve(c *gin.Context) {
 	result.Success(c, nil)
 	return
 }
+
+func SaveServerShelve(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.Error(err)
+	}
+	request.UserId = user.GetUserId(c)
+	if err := saveServerShelve(request); err != nil {
+		log.Errorf("SaveNetworkShelve error, %v", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, nil)
+	return
+}

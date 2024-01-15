@@ -36,6 +36,7 @@ type Request struct {
 	VersionId             int64            `json:"versionId" form:"versionId"`
 	Devices               []NetworkDevices `json:"devices" form:"devices"`
 	EditFlag              bool             `json:"editFlag" form:"editFlag"`
+	UserId                string
 }
 
 type NetworkDevicesResponse struct {
@@ -70,9 +71,4 @@ type NetworkDeviceShelveDownload struct {
 	CabinetNumber     string `json:"cabinetNumber" excel:"name:机柜编号;"`
 	SlotPosition      string `json:"slotPosition" excel:"name:槽位;"`
 	UNumber           int    `json:"uNumber" excel:"name:U数;"`
-}
-
-type SaveNetworkShelveRequest struct {
-	PlanId int64  `json:"planId" form:"planId"`
-	UserId string `json:"userId" form:"userId"`
 }

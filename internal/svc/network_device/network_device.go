@@ -607,10 +607,12 @@ func UploadNetworkShelve(c *gin.Context) {
 }
 
 func SaveNetworkShelve(c *gin.Context) {
-	request := &SaveNetworkShelveRequest{}
+	request := &Request{}
 	if err := c.ShouldBindJSON(&request); err != nil {
-		log.Errorf("SaveNetworkShelve param error: ", err)
-		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		log.Error(err)
+	}
+	if request.PlanId == 0 {
+		result.Failure(c, "planId不能为空", http.StatusBadRequest)
 		return
 	}
 	request.UserId = user.GetUserId(c)
