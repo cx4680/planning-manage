@@ -47,6 +47,7 @@ func (entity *ServerCapPlanning) TableName() string {
 type ServerShelve struct {
 	Id                    int64     `gorm:"column:id" json:"id"`                                         // 主键id
 	PlanId                int64     `gorm:"column:plan_id" json:"planId"`                                // 方案id
+	SortNumber            int       `gorm:"column:sort_number" json:"sortNumber"`                        // 序号
 	NodeRoleId            int64     `gorm:"column:node_role_id" json:"nodeRoleId"`                       // 节点角色id
 	NodeIp                string    `gorm:"column:node_ip" json:"nodeIp"`                                // 节点IP
 	Sn                    string    `gorm:"column:sn" json:"sn"`                                         // SN
@@ -59,13 +60,13 @@ type ServerShelve struct {
 	CabinetOriginalNumber string    `gorm:"column:cabinet_original_number" json:"cabinetOriginalNumber"` // 机柜原始编号
 	CabinetLocation       string    `gorm:"column:cabinet_location" json:"cabinetLocation"`              // 机柜位置
 	SlotPosition          string    `gorm:"column:slot_position" json:"slotPosition"`                    // 槽位（U位）
-	NetworkInterface      string    `gorm:"network_interface" json:"networkInterface"`                   // 网络接口
-	BmcUserName           string    `gorm:"bmc_user_name" json:"bmcUserName"`                            // bmc用户名
-	BmcPassword           string    `gorm:"bmc_password" json:"bmcPassword"`                             // bmc密码
-	BmcIp                 string    `gorm:"bmc_ip" json:"bmcIp"`                                         // bmc IP地址
-	BmcMac                string    `gorm:"bmc_mac" json:"bmcMac"`                                       // bmc mac地址
-	Mask                  string    `gorm:"mask" json:"mask"`                                            // 掩码
-	Gateway               string    `gorm:"gateway" json:"gateway"`                                      // 网关
+	NetworkInterface      string    `gorm:"column:network_interface" json:"networkInterface"`            // 网络接口
+	BmcUserName           string    `gorm:"column:bmc_user_name" json:"bmcUserName"`                     // bmc用户名
+	BmcPassword           string    `gorm:"column:bmc_password" json:"bmcPassword"`                      // bmc密码
+	BmcIp                 string    `gorm:"column:bmc_ip" json:"bmcIp"`                                  // bmc IP地址
+	BmcMac                string    `gorm:"column:bmc_mac" json:"bmcMac"`                                // bmc mac地址
+	Mask                  string    `gorm:"column:mask" json:"mask"`                                     // 掩码
+	Gateway               string    `gorm:"column:gateway" json:"gateway"`                               // 网关
 	CreateUserId          string    `gorm:"column:create_user_id" json:"createUserId"`                   // 创建人id
 	CreateTime            time.Time `gorm:"column:create_time" json:"createTime"`                        // 创建时间
 }
