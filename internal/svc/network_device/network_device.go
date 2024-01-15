@@ -570,7 +570,7 @@ func UploadNetworkShelve(c *gin.Context) {
 		result.Failure(c, "文件错误", http.StatusBadRequest)
 		return
 	}
-	filePath := fmt.Sprintf("%s/%s-%d-%d.xlsx", "exampledir", "cabinet", time.Now().Unix(), rand.Uint32())
+	filePath := fmt.Sprintf("%s/%s-%d-%d.xlsx", "exampledir", "networkShelve", time.Now().Unix(), rand.Uint32())
 	if err = c.SaveUploadedFile(file, filePath); err != nil {
 		log.Error(err)
 		result.Failure(c, "保存文件错误", http.StatusInternalServerError)
