@@ -66,7 +66,7 @@ func UpdateVlanIdConfig(context *gin.Context) {
 		return
 	}
 	originVlanIdConfig, err := QueryVlanIdConfigById(id)
-	if err == gorm.ErrRecordNotFound {
+	if err == gorm.ErrRecordNotFound || request.PlanId != originVlanIdConfig.PlanId {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
@@ -167,7 +167,7 @@ func UpdateCellConfig(context *gin.Context) {
 		return
 	}
 	originCellConfig, err := QueryCellConfigById(id)
-	if err == gorm.ErrRecordNotFound {
+	if err == gorm.ErrRecordNotFound || request.PlanId != originCellConfig.PlanId {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
@@ -244,7 +244,7 @@ func UpdateRoutePlanningConfig(context *gin.Context) {
 		return
 	}
 	originRoutePlanningConfig, err := QueryRoutePlanningConfigById(id)
-	if err == gorm.ErrRecordNotFound {
+	if err == gorm.ErrRecordNotFound || request.PlanId != originRoutePlanningConfig.PlanId {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
@@ -310,7 +310,7 @@ func UpdateLargeNetworkConfig(context *gin.Context) {
 		return
 	}
 	originLargeNetworkSegmentConfig, err := QueryLargeNetworkSegmentConfigById(id)
-	if err == gorm.ErrRecordNotFound {
+	if err == gorm.ErrRecordNotFound || request.PlanId != originLargeNetworkSegmentConfig.PlanId {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
