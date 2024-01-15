@@ -6,64 +6,7 @@ import (
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 )
-
-func QueryRegionAzCellByPlanId(planId int64) (RegionAzCell, error) {
-	var regionAzCell RegionAzCell
-	if err := data.DB.Table(entity.PlanManageTable+" plan").Select("region.id as region_id, region.code as region_code, az.id as az_id, az.code as az_code, cell.id as cell_id, cell.name as cell_name").
-		Joins("left join project_manage project on plan.project_id = project.id").
-		Joins("left join region_manage region on project.region_id = region.id").
-		Joins("left join az_manage az on project.az_id = az.id").
-		Joins("left join cell_manage cell on project.cell_id = cell.id").
-		Where("plan.id = ?", planId).
-		Find(&regionAzCell).Error; err != nil {
-		log.Errorf("[queryRegionAzCellByPlanId] query region az cell error, %v", err)
-		return regionAzCell, err
-	}
-	return regionAzCell, nil
-}
-
-func UpdateRegionAzCellByPlanId(planId int64, regionAzCell RegionAzCell, userId string) error {
-	originRegionAzCell, err := QueryRegionAzCellByPlanId(planId)
-	if err != nil {
-		return err
-	}
-	now := datetime.GetNow()
-	regionManage := entity.RegionManage{
-		Id:           originRegionAzCell.RegionId,
-		Code:         regionAzCell.RegionCode,
-		UpdateTime:   now,
-		UpdateUserId: userId,
-	}
-	azManage := entity.AzManage{
-		Id:           originRegionAzCell.AzId,
-		Code:         regionAzCell.AzCode,
-		UpdateTime:   now,
-		UpdateUserId: userId,
-	}
-	cellManage := entity.CellManage{
-		Id:           originRegionAzCell.CellId,
-		Name:         regionAzCell.CellName,
-		UpdateTime:   now,
-		UpdateUserId: userId,
-	}
-	if err = data.DB.Transaction(func(tx *gorm.DB) error {
-		if err = tx.Updates(&regionManage).Error; err != nil {
-			return err
-		}
-		if err = tx.Updates(&azManage).Error; err != nil {
-			return err
-		}
-		if err = tx.Updates(&cellManage).Error; err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-	return nil
-}
 
 func QueryMachineRoomByPlanId(planId int64) ([]entity.MachineRoom, error) {
 	var machineRooms []entity.MachineRoom

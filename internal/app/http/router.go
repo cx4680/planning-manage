@@ -12,6 +12,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/global_config"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/machine_room"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
 
@@ -214,13 +215,28 @@ func Router(engine *gin.Engine) {
 		// 机房规划
 		machineRoomGroup := api.Group("/machineRoom")
 		{
-			machineRoomGroup.GET("/regionAzCell/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询区域可用区集群信息", "getRegionAzCellByPlanId", middleware.GET, middleware.INFO)), machine_room.GetRegionAzCellByPlanId)
-			machineRoomGroup.PUT("/regionAzCell/:planId", middleware.OperatorLog(DefaultEventOpInfo("修改区域可用区集群信息", "updateRegionAzCell", middleware.UPDATE, middleware.INFO)), machine_room.UpdateRegionAzCell)
 			machineRoomGroup.GET("/list/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询机房信息", "getMachineRoomByPlanId", middleware.GET, middleware.INFO)), machine_room.GetMachineRoomByPlanId)
 			machineRoomGroup.PUT("/:planId", middleware.OperatorLog(DefaultEventOpInfo("修改机房信息", "updateMachineRoom", middleware.UPDATE, middleware.INFO)), machine_room.UpdateMachineRoom)
 			machineRoomGroup.GET("/download", middleware.OperatorLog(DefaultEventOpInfo("下载机房勘察模版", "downloadCabinetTemplate", middleware.EXPORT, middleware.INFO)), machine_room.DownloadCabinetTemplate)
 			machineRoomGroup.POST("/import", middleware.OperatorLog(DefaultEventOpInfo("导入机房勘察文件", "importCabinet", middleware.IMPORT, middleware.INFO)), machine_room.ImportCabinet)
 			machineRoomGroup.GET("/cabinet/page", middleware.OperatorLog(DefaultEventOpInfo("机房规划机柜列表查询", "pageCabinet", middleware.LIST, middleware.INFO)), machine_room.PageCabinets)
+		}
+
+		// 全局配置
+		globalConfigGroup := api.Group("/globalConfig")
+		{
+			globalConfigGroup.GET("/vlanId/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询vlan id配置信息", "getVlanIdConfigByPlanId", middleware.GET, middleware.INFO)), global_config.GetVlanIdConfigByPlanId)
+			globalConfigGroup.POST("/vlanId", middleware.OperatorLog(DefaultEventOpInfo("新增vlan id配置信息", "createVlanIdConfig", middleware.CREATE, middleware.INFO)), global_config.CreateVlanIdConfig)
+			globalConfigGroup.PUT("/vlanId/:id", middleware.OperatorLog(DefaultEventOpInfo("修改vlan id配置信息", "updateVlanIdConfig", middleware.UPDATE, middleware.INFO)), global_config.UpdateVlanIdConfig)
+			globalConfigGroup.GET("/cell/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询集群配置信息", "getCellConfigByPlanId", middleware.GET, middleware.INFO)), global_config.GetCellConfigByPlanId)
+			globalConfigGroup.POST("/cell", middleware.OperatorLog(DefaultEventOpInfo("新增集群配置信息", "createCellConfig", middleware.CREATE, middleware.INFO)), global_config.CreateCellConfig)
+			globalConfigGroup.PUT("/cell/:id", middleware.OperatorLog(DefaultEventOpInfo("修改集群配置信息", "updateCellConfig", middleware.UPDATE, middleware.INFO)), global_config.UpdateCellConfig)
+			globalConfigGroup.GET("/routePlanning/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询路由规划配置信息", "getRoutePlanningConfigByPlanId", middleware.GET, middleware.INFO)), global_config.GetRoutePlanningConfigByPlanId)
+			globalConfigGroup.POST("/routePlanning", middleware.OperatorLog(DefaultEventOpInfo("新增路由规划配置信息", "createRoutePlanningConfig", middleware.CREATE, middleware.INFO)), global_config.CreateRoutePlanningConfig)
+			globalConfigGroup.PUT("/routePlanning/:id", middleware.OperatorLog(DefaultEventOpInfo("修改路由规划配置信息", "updateRoutePlanningConfig", middleware.UPDATE, middleware.INFO)), global_config.UpdateRoutePlanningConfig)
+			globalConfigGroup.GET("/largeNetwork/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询大网网段配置信息", "getLargeNetworkConfigByPlanId", middleware.GET, middleware.INFO)), global_config.GetLargeNetworkConfigByPlanId)
+			globalConfigGroup.POST("/largeNetwork", middleware.OperatorLog(DefaultEventOpInfo("新增大网网段配置信息", "createLargeNetworkPlanningConfig", middleware.CREATE, middleware.INFO)), global_config.CreateLargeNetworkConfig)
+			globalConfigGroup.PUT("/largeNetwork/:id", middleware.OperatorLog(DefaultEventOpInfo("修改大网网段配置信息", "updateLargeNetworkConfig", middleware.UPDATE, middleware.INFO)), global_config.UpdateLargeNetworkConfig)
 		}
 	}
 

@@ -18,46 +18,8 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 )
-
-func GetRegionAzCellByPlanId(context *gin.Context) {
-	planId, err := strconv.ParseInt(context.Param("planId"), 10, 64)
-	if err != nil {
-		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
-		return
-	}
-	cellInfo, err := QueryRegionAzCellByPlanId(planId)
-	if err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	result.Success(context, cellInfo)
-	return
-}
-
-func UpdateRegionAzCell(context *gin.Context) {
-	planId, err := strconv.ParseInt(context.Param("planId"), 10, 64)
-	if err != nil {
-		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
-		return
-	}
-	var request RegionAzCell
-	if err = context.ShouldBindJSON(&request); err != nil {
-		log.Errorf("update region az cell bind param error: %v", err)
-		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
-		return
-	}
-	userId := user.GetUserId(context)
-	if err = UpdateRegionAzCellByPlanId(planId, request, userId); err != nil {
-		log.Errorf("update region az cell error: %v", err)
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	result.Success(context, nil)
-	return
-}
 
 func GetMachineRoomByPlanId(context *gin.Context) {
 	planId, err := strconv.ParseInt(context.Param("planId"), 10, 64)

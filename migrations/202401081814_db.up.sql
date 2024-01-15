@@ -57,40 +57,40 @@ CREATE TABLE `server_shelve`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='server_shelve';
 
 CREATE TABLE `cabinet_info` (
-                                `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
-                                `plan_id` bigint(20) DEFAULT NULL COMMENT '方案id',
-                                `machine_room_abbr` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '机房缩写',
-                                `machine_room_num` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '房间号',
-                                `column_num` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '列号',
-                                `cabinet_num` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '机柜编号',
-                                `original_num` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '原始编号',
-                                `cabinet_type` tinyint(4) DEFAULT NULL COMMENT '机柜类型，1：网络机柜，2：服务机柜，3：存储机柜',
-                                `business_attribute` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '业务属性',
-                                `cabinet_asw` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '机柜ASW组',
-                                `total_power` int(11) DEFAULT NULL COMMENT '总功率（W）',
-                                `residual_power` int(11) DEFAULT NULL COMMENT '剩余功率（W）',
-                                `total_slot_num` int(11) DEFAULT NULL COMMENT '总槽位数（U位）',
-                                `idle_slot_range` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '空闲槽位（U位）范围',
-                                `max_rack_server_num` int(11) DEFAULT NULL COMMENT '最大可上架服务器数',
-                                `residual_rack_server_num` int(11) DEFAULT NULL COMMENT '剩余上架服务器数',
-                                `rack_server_slot` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '已上架服务器（U位）',
-                                `residual_rack_asw_port` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '剩余可上架ASW端口',
-                                `create_time` datetime DEFAULT NULL COMMENT '创建时间',
-                                `update_time` datetime DEFAULT NULL COMMENT '修改时间',
-                                PRIMARY KEY (`id`)
+        `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+        `plan_id` bigint(20) DEFAULT NULL COMMENT '方案id',
+        `machine_room_abbr` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '机房缩写',
+        `machine_room_num` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '房间号',
+        `column_num` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '列号',
+        `cabinet_num` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '机柜编号',
+        `original_num` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '原始编号',
+        `cabinet_type` tinyint(4) DEFAULT NULL COMMENT '机柜类型，1：网络机柜，2：服务机柜，3：存储机柜',
+        `business_attribute` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '业务属性',
+        `cabinet_asw` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '机柜ASW组',
+        `total_power` int(11) DEFAULT NULL COMMENT '总功率（W）',
+        `residual_power` int(11) DEFAULT NULL COMMENT '剩余功率（W）',
+        `total_slot_num` int(11) DEFAULT NULL COMMENT '总槽位数（U位）',
+        `idle_slot_range` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '空闲槽位（U位）范围',
+        `max_rack_server_num` int(11) DEFAULT NULL COMMENT '最大可上架服务器数',
+        `residual_rack_server_num` int(11) DEFAULT NULL COMMENT '剩余上架服务器数',
+        `rack_server_slot` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '已上架服务器（U位）',
+        `residual_rack_asw_port` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '剩余可上架ASW端口',
+        `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+        `update_time` datetime DEFAULT NULL COMMENT '修改时间',
+        PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=53 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机柜信息';
 
 CREATE TABLE `cabinet_idle_slot_rel` (
-                                         `cabinet_id` bigint(20) DEFAULT NULL COMMENT '机柜id',
-                                         `idle_slot_number` int(11) DEFAULT NULL COMMENT '空闲槽位（U位）号'
+        `cabinet_id` bigint(20) DEFAULT NULL COMMENT '机柜id',
+        `idle_slot_number` int(11) DEFAULT NULL COMMENT '空闲槽位（U位）号'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机柜空闲槽位关联表';
 
 CREATE TABLE `cabinet_rack_server_slot_rel` (
-                                                `cabinet_id` bigint(20) DEFAULT NULL COMMENT '机柜id',
-                                                `rack_server_slot_num` int(11) DEFAULT NULL COMMENT '已上架服务器槽位（U位）号'
+        `cabinet_id` bigint(20) DEFAULT NULL COMMENT '机柜id',
+        `rack_server_slot_num` int(11) DEFAULT NULL COMMENT '已上架服务器槽位（U位）号'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机柜已上架服务器槽位关联表';
 
 CREATE TABLE `cabinet_rack_asw_port_rel` (
-                                             `cabinet_id` bigint(20) DEFAULT NULL COMMENT '机柜id',
-                                             `residual_rack_asw_port_num` int(11) DEFAULT NULL COMMENT '剩余可上架ASW端口号'
+        `cabinet_id` bigint(20) DEFAULT NULL COMMENT '机柜id',
+        `residual_rack_asw_port_num` int(11) DEFAULT NULL COMMENT '剩余可上架ASW端口号'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机柜剩余可上架ASW端口关联表';
