@@ -5,6 +5,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
@@ -226,6 +227,9 @@ func uploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 	now := datetime.GetNow()
 	var networkDeviceShelveList []*entity.NetworkDeviceShelve
 	for _, v := range networkDeviceShelveDownload {
+		if err := checkNetworkShelve(&v); err != nil {
+			return err
+		}
 		networkDeviceShelveList = append(networkDeviceShelveList, &entity.NetworkDeviceShelve{
 			PlanId:            planId,
 			DeviceLogicalId:   v.DeviceLogicalId,
@@ -257,6 +261,15 @@ func uploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 func saveNetworkShelve(request *SaveNetworkShelveRequest) error {
 	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningServer}).Error; err != nil {
 		return err
+	}
+	return nil
+}
+
+func checkNetworkShelve(networkDeviceShelve *NetworkDeviceShelveDownload) error {
+	if util.IsBlank(networkDeviceShelve.DeviceLogicalId) || util.IsBlank(networkDeviceShelve.DeviceId) || util.IsBlank(networkDeviceShelve.Sn) ||
+		util.IsBlank(networkDeviceShelve.MachineRoomAbbr) || util.IsBlank(networkDeviceShelve.MachineRoomNumber) || util.IsBlank(networkDeviceShelve.CabinetNumber) ||
+		util.IsBlank(networkDeviceShelve.SlotPosition) || networkDeviceShelve.UNumber == 0 {
+		return errors.New("表单所有参数不能为空")
 	}
 	return nil
 }

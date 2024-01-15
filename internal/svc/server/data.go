@@ -654,10 +654,73 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 	return nodeRoleCapMap, nil
 }
 
-func getServerShelveList(planId int64) (*entity.ServerShelve, error) {
-	var serverShelve = &entity.ServerShelve{}
-	if err := data.DB.Where("plan_id = ?", planId).Find(&serverShelve).Error; err != nil {
+func getServerShelveList(planId int64) ([]*ResponseServerShelve, error) {
+	//查询服务器规划表
+	var serverPlanning []*entity.ServerPlanning
+	if err := data.DB.Where("plan_id = ?", planId).Find(&serverPlanning).Error; err != nil {
 		return nil, err
+	}
+	var NodeRoleIdList []int64
+	var ServerBaselineIdList []int64
+	for _, v := range serverPlanning {
+		NodeRoleIdList = append(NodeRoleIdList, v.NodeRoleId)
+		ServerBaselineIdList = append(ServerBaselineIdList, v.ServerBaselineId)
+	}
+	//查询节点角色表
+	var nodeRoleList []*entity.NodeRoleBaseline
+	if err := data.DB.Where("id IN (?)", NodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
+		return nil, err
+	}
+	var nodeRoleNameMap = make(map[int64]string)
+	for _, v := range nodeRoleList {
+		nodeRoleNameMap[v.Id] = v.NodeRoleName
+	}
+	//查询服务器基线表
+	var serverBaseline []*entity.ServerBaseline
+	if err := data.DB.Where("id IN (?)", ServerBaselineIdList).Find(&serverBaseline).Error; err != nil {
+		return nil, err
+	}
+	var serverBaselineMap = make(map[int64]*entity.ServerBaseline)
+	for _, v := range serverBaseline {
+		serverBaselineMap[v.Id] = v
+	}
+	var savedServerShelve []*entity.ServerShelve
+	if err := data.DB.Where("plan_id = ?", planId).Find(&savedServerShelve).Error; err != nil {
+		return nil, err
+	}
+	var savedServerShelveMap = make(map[int64]*entity.ServerShelve)
+	for _, v := range savedServerShelve {
+		savedServerShelveMap[v.NodeRoleId] = v
+	}
+	var serverShelve []*ResponseServerShelve
+	for _, v := range serverPlanning {
+		var responseServerShelve = &ResponseServerShelve{}
+		if savedServerShelveMap[v.NodeRoleId] != nil {
+			responseServerShelve.ServerShelve = savedServerShelveMap[v.NodeRoleId]
+		} else {
+			responseServerShelve.ServerShelve = &entity.ServerShelve{
+				PlanId:                planId,
+				NodeRoleId:            v.NodeRoleId,
+				Model:                 serverBaselineMap[v.ServerBaselineId].BomCode,
+				MachineRoomAbbr:       "",
+				MachineRoomNumber:     "",
+				ColumnNumber:          "",
+				CabinetAsw:            "",
+				CabinetNumber:         "",
+				CabinetOriginalNumber: "",
+				CabinetLocation:       "",
+				SlotPosition:          "",
+				NetworkInterface:      "",
+				BmcUserName:           "",
+				BmcPassword:           "",
+				BmcIp:                 "",
+				BmcMac:                "",
+				Mask:                  "",
+				Gateway:               "",
+			}
+		}
+		responseServerShelve.NodeRoleName = nodeRoleNameMap[v.NodeRoleId]
+		serverShelve = append(serverShelve, responseServerShelve)
 	}
 	return serverShelve, nil
 }

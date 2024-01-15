@@ -1,6 +1,9 @@
 package server
 
-import "time"
+import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"time"
+)
 
 type Request struct {
 	Id                 int64
@@ -101,3 +104,8 @@ type ResponseFeatures struct {
 }
 
 var FeatureMap = map[string]string{"超分": "超分比", "三副本": "副本模式", "EC纠删码": "副本模式"}
+
+type ResponseServerShelve struct {
+	*entity.ServerShelve
+	NodeRoleName string `gorm:"-" json:"nodeRoleName"` // 节点角色名称
+}
