@@ -168,3 +168,21 @@ func ListServerShelve(c *gin.Context) {
 	result.Success(c, list)
 	return
 }
+
+func DownloadServerShelve(c *gin.Context) {
+	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
+	if planId == 0 {
+		result.Failure(c, "planId不能为空", http.StatusBadRequest)
+		return
+	}
+	response, fileName, err := getServerShelveDownload(planId)
+	if err != nil {
+		log.Errorf("ListNetworkShelve error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if err = excel.NormalDownLoad(fileName, "服务器上架表", "", false, response, c.Writer); err != nil {
+		log.Errorf("下载错误：", err)
+	}
+	return
+}

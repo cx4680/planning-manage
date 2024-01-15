@@ -169,6 +169,8 @@ func Router(engine *gin.Engine) {
 			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.EXPORT, middleware.INFO)), server.Download)
 			// 查询服务器上架表
 			serverGroup.GET("/shelve/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器上架表", "getNetworkShelveList", middleware.LIST, middleware.INFO)), server.ListServerShelve)
+			// 下载服务器上架表
+			serverGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表", "downloadNetworkShelve", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelve)
 
 		}
 

@@ -109,3 +109,26 @@ type ResponseServerShelve struct {
 	*entity.ServerShelve
 	NodeRoleName string `gorm:"-" json:"nodeRoleName"` // 节点角色名称
 }
+
+type ShelveDownload struct {
+	SortNumber            int    `excel:"name:序号;" json:"sortNumber"`
+	NodeRoleName          string `excel:"name:节点角色;" json:"nodeRoleName"`
+	NodeIp                string `excel:"name:节点IP;" json:"nodeIp"`
+	Sn                    string `excel:"name:SN;" json:"sn"`
+	Model                 string `excel:"name:机型;" json:"model"`
+	MachineRoomAbbr       string `excel:"name:机房缩写;" json:"machineRoomAbbr"`
+	MachineRoomNumber     string `excel:"name:房间号;" form:"machineRoomNumber"`
+	ColumnNumber          string `excel:"name:列号;" form:"columnNumber"`
+	CabinetAsw            string `excel:"name:机柜ASW组;" json:"cabinetAsw"`
+	CabinetNumber         string `excel:"name:机柜编号;" json:"cabinetNumber"`
+	CabinetOriginalNumber string `excel:"name:机柜原始编号;" json:"cabinetOriginalNumber"`
+	CabinetLocation       string `excel:"name:机柜位置;" json:"cabinetLocation"`
+	SlotPosition          string `excel:"name:槽位（U位）;" json:"slotPosition"`
+	NetworkInterface      string `excel:"name:区域;" json:"networkInterface"`
+	BmcUserName           string `excel:"name:bmc用户名;" json:"bmcUserName"`
+	BmcPassword           string `excel:"name:bmc密码;" json:"bmcPassword"`
+	BmcIp                 string `excel:"name:bmc IP地址;" json:"bmcIp"`
+	BmcMac                string `excel:"name:bmc mac地址;" json:"bmcMac"`
+	Mask                  string `excel:"name:掩码;" json:"mask"`
+	Gateway               string `excel:"name:网关;" json:"gateway"`
+}
