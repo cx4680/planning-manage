@@ -155,25 +155,6 @@ func Download(c *gin.Context) {
 	return
 }
 
-func ListServerShelve(c *gin.Context) {
-	request := &Request{}
-	if err := c.ShouldBindQuery(&request); err != nil {
-		log.Errorf("list server bind param error: ", err)
-	}
-	if request.PlanId == 0 {
-		result.Failure(c, "planId参数为空", http.StatusBadRequest)
-		return
-	}
-	list, err := getServerShelveList(request.PlanId)
-	if err != nil {
-		log.Errorf("ListServerShelve error: ", err)
-		result.Failure(c, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	result.Success(c, list)
-	return
-}
-
 func DownloadServerShelve(c *gin.Context) {
 	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	if planId == 0 {
