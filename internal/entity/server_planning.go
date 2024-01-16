@@ -19,8 +19,8 @@ type ServerPlanning struct {
 	NetworkInterface   string    `gorm:"column:network_interface" form:"networkInterface"`     // 网络类型
 	CpuType            string    `gorm:"column:cpu_type" form:"cpuType"`                       // CPU类型
 	BusinessAttributes string    `gorm:"column:business_attributes" form:"businessAttributes"` // 业务属性
-	ShelveMode         string    `gorm:"column:shelve_priority" form:"shelvePriority"`         // 上架模式
-	ShelvePriority     int       `gorm:"column:shelve_mode" form:"shelveMode"`                 // 上架优先级
+	ShelveMode         string    `gorm:"column:shelve_mode" form:"shelvePriority"`             // 上架模式
+	ShelvePriority     int       `gorm:"column:shelve_priority" form:"shelveMode"`             // 上架优先级
 	CreateUserId       string    `gorm:"column:create_user_id" json:"createUserId"`            // 创建人id
 	CreateTime         time.Time `gorm:"column:create_time" json:"createTime"`                 // 创建时间
 	UpdateUserId       string    `gorm:"column:update_user_id" json:"updateUserId"`            // 更新人id

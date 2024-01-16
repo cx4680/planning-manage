@@ -656,30 +656,35 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 
 func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 	//查询服务器规划表
-	ServerShelveList, err := getServerPlanningList(planId)
+	serverPlanningList, err := getServerPlanningList(planId)
 	if err != nil {
 		return nil, "", err
 	}
-	if len(ServerShelveList) == 0 {
+	if len(serverPlanningList) == 0 {
 		return nil, "", errors.New("服务器未规划")
 	}
 	//构建返回体
 	var response []ShelveDownload
-	for i, v := range ServerShelveList {
-		response = append(response, ShelveDownload{
-			SortNumber:            i + 1,
-			NodeRoleName:          v.NodeRoleName,
-			Model:                 v.ServerBomCode,
-			MachineRoomAbbr:       "",
-			MachineRoomNumber:     "",
-			ColumnNumber:          "",
-			CabinetAsw:            "",
-			CabinetNumber:         "",
-			CabinetOriginalNumber: "",
-			CabinetLocation:       "",
-			SlotPosition:          "",
-			NetworkInterface:      v.NetworkInterface,
-		})
+	var sortNumber = 1
+	for _, v := range serverPlanningList {
+		for i := 1; i <= v.Number; i++ {
+
+			response = append(response, ShelveDownload{
+				SortNumber:            sortNumber,
+				NodeRoleName:          v.NodeRoleName,
+				Model:                 v.ServerBomCode,
+				MachineRoomAbbr:       "",
+				MachineRoomNumber:     "",
+				ColumnNumber:          "",
+				CabinetAsw:            "",
+				CabinetNumber:         "",
+				CabinetOriginalNumber: "",
+				CabinetLocation:       "",
+				SlotPosition:          "",
+				NetworkInterface:      v.NetworkInterface,
+			})
+			sortNumber++
+		}
 	}
 	//构建文件名称
 	var planManage = &entity.PlanManage{}
