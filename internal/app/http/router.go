@@ -172,9 +172,9 @@ func Router(engine *gin.Engine) {
 			// 下载服务器上架表
 			serverGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表", "downloadNetworkShelve", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelve)
 			// 上传服务器上架表
-			serverGroup.GET("/shelve/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传服务器上架表", "uploadNetworkShelve", middleware.EXPORT, middleware.INFO)), server.UploadServerShelve)
+			serverGroup.POST("/shelve/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传服务器上架表", "uploadNetworkShelve", middleware.EXPORT, middleware.INFO)), server.UploadServerShelve)
 			// 保存服务器上架表
-			serverGroup.GET("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器上架表", "saveNetworkShelve", middleware.UPDATE, middleware.INFO)), server.SaveServerShelve)
+			serverGroup.POST("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器上架表", "saveNetworkShelve", middleware.UPDATE, middleware.INFO)), server.SaveServerShelve)
 		}
 
 		// 网络规划
