@@ -164,7 +164,7 @@ func ListServerShelve(c *gin.Context) {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
 		return
 	}
-	list, err := getServerShelveList(request.PlanId)
+	list, err := getServerPlanningList(request.PlanId)
 	if err != nil {
 		log.Errorf("ListServerShelve error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
@@ -205,7 +205,7 @@ func UploadServerShelve(c *gin.Context) {
 		result.Failure(c, "文件错误", http.StatusBadRequest)
 		return
 	}
-	filePath := fmt.Sprintf("%s/%s-%d-%d.xlsx", "exampledir", "networkShelve", time.Now().Unix(), rand.Uint32())
+	filePath := fmt.Sprintf("%s/%s-%d-%d.xlsx", "exampledir", "serverShelve", time.Now().Unix(), rand.Uint32())
 	if err = c.SaveUploadedFile(file, filePath); err != nil {
 		log.Error(err)
 		result.Failure(c, "保存文件错误", http.StatusInternalServerError)
@@ -226,7 +226,7 @@ func UploadServerShelve(c *gin.Context) {
 		return
 	}
 	var serverShelveDownload []ShelveDownload
-	if err = excel.ImportBySheet(f, &serverShelveDownload, "网络设备上架表", 0, 1); err != nil {
+	if err = excel.ImportBySheet(f, &serverShelveDownload, "服务器上架表", 0, 1); err != nil {
 		log.Errorf("excel import error: %v", err)
 		result.Failure(c, "解析文件错误", http.StatusInternalServerError)
 		return
