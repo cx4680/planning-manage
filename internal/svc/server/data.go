@@ -655,10 +655,8 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 }
 
 func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
-	//缓存预编译 会话模式
-	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	//查询服务器规划表
-	ServerShelveList, err := getServerPlanningList(db, planId)
+	ServerShelveList, err := getServerPlanningList(planId)
 	if err != nil {
 		return nil, "", err
 	}
@@ -699,10 +697,10 @@ func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 	return response, fileName, nil
 }
 
-func getServerPlanningList(db *gorm.DB, planId int64) ([]*Server, error) {
+func getServerPlanningList(planId int64) ([]*Server, error) {
 	//查询服务器规划表
 	var serverPlanning []*Server
-	if err := db.Model(&entity.ServerPlanning{}).Where("plan_id = ?", planId).Find(&serverPlanning).Error; err != nil {
+	if err := data.DB.Model(&entity.ServerPlanning{}).Where("plan_id = ?", planId).Find(&serverPlanning).Error; err != nil {
 		return nil, err
 	}
 	var NodeRoleIdList []int64
