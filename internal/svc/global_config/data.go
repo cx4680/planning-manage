@@ -51,6 +51,7 @@ func QueryVlanIdConfigById(id int64) (entity.VlanIdConfig, error) {
 func UpdateVlanIdConfigById(userId string, id int64, request VlanIdConfigRequest, originVlanIdConfig entity.VlanIdConfig) error {
 	vlanIdConfig := entity.VlanIdConfig{
 		Id:                 id,
+		PlanId:             request.PlanId,
 		InBandMgtVlanId:    request.InBandMgtVlanId,
 		LocalStorageVlanId: request.LocalStorageVlanId,
 		BizIntranetVlanId:  request.BizIntranetVlanId,
@@ -100,6 +101,7 @@ func InsertCellConfig(userId string, request CellConfigReq) error {
 		CellVip:                  request.CellVip,
 		CellVipIpv6:              request.CellVipIpv6,
 		ExternalNtpIp:            request.ExternalNtpIp,
+		NetworkMode:              request.NetworkMode,
 		CellContainerNetwork:     request.CellContainerNetwork,
 		CellContainerNetworkIpv6: request.CellContainerNetworkIpv6,
 		CellSvcNetwork:           request.CellSvcNetwork,
@@ -136,6 +138,7 @@ func UpdateCellConfigById(userId string, id int64, request CellConfigReq, origin
 		CellVip:                  request.CellVip,
 		CellVipIpv6:              request.CellVipIpv6,
 		ExternalNtpIp:            request.ExternalNtpIp,
+		NetworkMode:              request.NetworkMode,
 		CellContainerNetwork:     request.CellContainerNetwork,
 		CellContainerNetworkIpv6: request.CellContainerNetworkIpv6,
 		CellSvcNetwork:           request.CellSvcNetwork,

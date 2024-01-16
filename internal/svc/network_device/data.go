@@ -1,19 +1,21 @@
 package network_device
 
 import (
+	"errors"
+	"strconv"
+	"time"
+
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
-	"errors"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"gorm.io/gorm"
-	"strconv"
-	"time"
 )
 
-func searchDevicePlanByPlanId(planId int64) (*entity.NetworkDevicePlanning, error) {
+func SearchDevicePlanByPlanId(planId int64) (*entity.NetworkDevicePlanning, error) {
 	var devicePlan entity.NetworkDevicePlanning
 	if err := data.DB.Where("plan_id = ?", planId).Find(&devicePlan).Error; err != nil {
 		log.Errorf("[searchDevicePlanByPlanId] query device plan error, %v", err)
@@ -196,7 +198,7 @@ func getNetworkShelveDownloadList(planId int64) ([]NetworkDeviceShelveDownload, 
 	if len(networkDeviceList) == 0 {
 		return nil, "", errors.New("网络设备未规划")
 	}
-	//构建返回体
+	// 构建返回体
 	var response []NetworkDeviceShelveDownload
 	for _, v := range networkDeviceList {
 		response = append(response, NetworkDeviceShelveDownload{
@@ -204,7 +206,7 @@ func getNetworkShelveDownloadList(planId int64) ([]NetworkDeviceShelveDownload, 
 			DeviceId:        v.DeviceId,
 		})
 	}
-	//构建文件名称
+	// 构建文件名称
 	var planManage = &entity.PlanManage{}
 	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManage).Error; err != nil {
 		return nil, "", err

@@ -88,4 +88,22 @@ const (
 	CabinetTypeNetwork    = 1
 	CabinetTypeBusiness   = 2
 	CabinetTypeStorage    = 3
+
+	YesCn = "是"
+	Yes   = 1
+	NoCn  = "否"
+	No    = 0
+
+	Ipv6YesCn = "是"
+	Ipv6Yes   = "1"
+	Ipv6NoCn  = "否"
+	Ipv6No    = "0"
+
+	NetworkModeStandardCn = "标准模式"
+	NetworkModeStandard   = 0
+	NetworkMode2NetworkCn = "纯二层组网模式"
+	NetworkMode2Network   = 1
+
+	RegionTypeCode = "regionType"
+	CellTypeCode   = "cellType"
 )

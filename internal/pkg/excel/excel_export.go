@@ -27,7 +27,7 @@ func GetExcelColumnName(columnNumber int) string {
 func ExportExcel(sheet, title, fields string, isGhbj, isIgnore bool, list interface{}, changeHead map[string]string, e *Excel) (err error) {
 	index, _ := e.F.GetSheetIndex(sheet)
 	if index < 0 { // 如果sheet名称不存在，将默认的sheet页名称替换为传进来的
-		//e.F.NewSheet(sheet)
+		// e.F.NewSheet(sheet)
 		e.F.SetSheetName("Sheet1", sheet)
 	}
 	// 构造excel表格
@@ -252,4 +252,50 @@ func DownLoadExcel(fileName string, res http.ResponseWriter, file *excelize.File
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+// ExportExcelByAssignCell excel指定单元格导出
+func ExportExcelByAssignCell(sheet, fields string, isIgnore bool, data interface{}, e *Excel) (err error) {
+	index, _ := e.F.GetSheetIndex(sheet)
+	if index < 0 {
+		// 如果sheet名称不存在，将默认的sheet页名称替换为传进来的
+		if err = e.F.SetSheetName("Sheet1", sheet); err != nil {
+			return
+		}
+	}
+	// 构造excel表格
+	// 取目标对象的元素类型、字段类型和 tag
+	dataValue := reflect.ValueOf(data)
+	// 实时写入数据
+	typ := dataValue.Type()
+	num := dataValue.NumField()
+	// 遍历结构体的所有字段
+	for j := 0; j < num; j++ {
+		// 获取到struct标签，需要通过reflect.Type来获取tag标签的值
+		dataField := typ.Field(j)
+		tagVal := dataField.Tag.Get(ExcelTagKey)
+		// 如果非导出则跳过
+		if tagVal == "" {
+			continue
+		}
+		// 选择要导出或要忽略的字段
+		if fields != "" {
+			if isIgnore && strings.Contains(fields, dataField.Name+",") { // 忽略指定字段
+				continue
+			}
+			if !isIgnore && !strings.Contains(fields, dataField.Name+",") { // 导出指定字段
+				continue
+			}
+		}
+		var dataCol ExcelTag
+		if err = dataCol.GetTag(tagVal); err != nil {
+			return
+		}
+		// 取字段值
+		fieldData := dataValue.FieldByName(dataField.Name)
+		if err = e.F.SetCellValue(sheet, dataCol.CellPosition, &fieldData); err != nil {
+			return
+		}
+	}
+	return
 }

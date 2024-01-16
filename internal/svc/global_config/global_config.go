@@ -6,11 +6,16 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"github.com/xuri/excelize/v2"
 	"gorm.io/gorm"
 
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/network_device"
 )
 
 func GetVlanIdConfigByPlanId(context *gin.Context) {
@@ -321,4 +326,178 @@ func UpdateLargeNetworkConfig(context *gin.Context) {
 	}
 	result.Success(context, nil)
 	return
+}
+
+func CompleteGlobalConfig(context *gin.Context) {
+	planId, err := strconv.ParseInt(context.Param("planId"), 10, 64)
+	if err != nil {
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	file, err := excelize.OpenFile("template/规划文件模板.xlsx")
+	if err != nil {
+		log.Errorf("open cabinet template error: %v", err)
+		if err = file.Close(); err != nil {
+			log.Errorf("excelize close error: %v", err)
+		}
+		return
+	}
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Errorf("excelize close error: %v", err)
+		}
+	}()
+	globalConfigExcel, err := ConvertGlobalConfigExcel(context, planId)
+	if err != nil {
+		return
+	}
+	excelFile := excel.Excel{
+		F: file,
+	}
+	if err = excel.ExportExcelByAssignCell("Sheet3", "", false, *globalConfigExcel, &excelFile); err != nil {
+		log.Errorf("export excel error: %v", err)
+		return
+	}
+	if err = excelFile.F.SaveAs("/Users/blue/Desktop/规划文件模板.xlsx"); err != nil {
+		log.Errorf("excelize save error: %v", err)
+		return
+	}
+	result.Success(context, nil)
+	return
+}
+
+func ConvertGlobalConfigExcel(context *gin.Context, planId int64) (*GlobalConfigExcel, error) {
+	vlanIdConfig, err := QueryVlanIdConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return nil, err
+	}
+	if vlanIdConfig.Id == 0 {
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return nil, err
+	}
+	cellConfig, err := QueryCellConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return nil, err
+	}
+	if cellConfig.Id == 0 {
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return nil, err
+	}
+	regionAzCell, err := QueryRegionAzCellByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return nil, err
+	}
+	regionType := regionAzCell.RegionType
+	cellType := regionAzCell.CellType
+	regionTypeList, err := config_item.ListConfigItem(constant.RegionTypeCode)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return nil, err
+	}
+	for _, configItem := range regionTypeList {
+		if configItem.Code == regionType {
+			regionType = configItem.Name
+			break
+		}
+	}
+	cellTypeList, err := config_item.ListConfigItem(constant.CellTypeCode)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return nil, err
+	}
+	for _, configItem := range cellTypeList {
+		if configItem.Code == cellType {
+			cellType = configItem.Name
+			break
+		}
+	}
+	cellSelfMgt := constant.NoCn
+	if cellConfig.CellSelfMgt == constant.Yes {
+		cellSelfMgt = constant.YesCn
+	}
+	networkDevicePlanning, err := network_device.SearchDevicePlanByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return nil, err
+	}
+	dualStackDeploy := constant.Ipv6NoCn
+	if networkDevicePlanning.Ipv6 == constant.Ipv6Yes {
+		dualStackDeploy = constant.Ipv6YesCn
+	}
+	networkMode := constant.NetworkModeStandardCn
+	if cellConfig.NetworkMode == constant.NetworkMode2Network {
+		networkMode = constant.NetworkMode2NetworkCn
+	}
+	routePlanningConfig, err := QueryRoutePlanningConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return nil, err
+	}
+	if routePlanningConfig.Id == 0 {
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return nil, err
+	}
+	deployUseBgp := constant.NoCn
+	if routePlanningConfig.DeployUseBgp == constant.Yes {
+		deployUseBgp = constant.YesCn
+	}
+	largeNetworkSegmentConfig, err := QueryLargeNetworkSegmentConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return nil, err
+	}
+	if largeNetworkSegmentConfig.Id == 0 {
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return nil, err
+	}
+	globalConfigExcel := GlobalConfigExcel{
+		InBandMgtVlanId:                vlanIdConfig.InBandMgtVlanId,
+		LocalStorageVlanId:             vlanIdConfig.LocalStorageVlanId,
+		BizIntranetVlanId:              vlanIdConfig.BizIntranetVlanId,
+		RegionCode:                     regionAzCell.RegionCode,
+		AzCode:                         regionAzCell.AzCode,
+		RegionType:                     regionType,
+		CellType:                       cellType,
+		CellSelfMgt:                    cellSelfMgt,
+		CellName:                       regionAzCell.CellName,
+		MgtGlobalDnsRootDomain:         cellConfig.MgtGlobalDnsRootDomain,
+		GlobalDnsSvcAddress:            cellConfig.GlobalDnsSvcAddress,
+		DualStackDeploy:                dualStackDeploy,
+		CellVip:                        cellConfig.CellVip,
+		CellVipIpv6:                    cellConfig.CellVipIpv6,
+		ExternalNtpIp:                  cellConfig.ExternalNtpIp,
+		NetworkMode:                    networkMode,
+		CellContainerNetwork:           cellConfig.CellContainerNetwork,
+		CellContainerNetworkIpv6:       cellConfig.CellContainerNetworkIpv6,
+		CellSvcNetwork:                 cellConfig.CellSvcNetwork,
+		CellSvcNetworkIpv6:             cellConfig.CellSvcNetworkIpv6,
+		AddCellNodeSshPublicKey:        cellConfig.AddCellNodeSshPublicKey,
+		DeployUseBgp:                   deployUseBgp,
+		DeployMachSwitchSelfNum:        routePlanningConfig.DeployMachSwitchSelfNum,
+		DeployMachSwitchIp:             routePlanningConfig.DeployMachSwitchIp,
+		SvcExternalAccessAddress:       routePlanningConfig.SvcExternalAccessAddress,
+		BgpNeighbor:                    routePlanningConfig.BgpNeighbor,
+		CellDnsSvcAddress:              routePlanningConfig.CellDnsSvcAddress,
+		RegionDnsSvcAddress:            routePlanningConfig.RegionDnsSvcAddress,
+		OpsCenterIp:                    routePlanningConfig.OpsCenterIp,
+		OpsCenterIpv6:                  routePlanningConfig.OpsCenterIpv6,
+		OpsCenterPort:                  routePlanningConfig.OpsCenterPort,
+		OpsCenterDomain:                routePlanningConfig.OpsCenterDomain,
+		OperationCenterIp:              routePlanningConfig.OperationCenterIp,
+		OperationCenterIpv6:            routePlanningConfig.OperationCenterIpv6,
+		OperationCenterPort:            routePlanningConfig.OperationCenterPort,
+		OperationCenterDomain:          routePlanningConfig.OperationCenterDomain,
+		OpsCenterInitUserName:          routePlanningConfig.OpsCenterInitUserName,
+		OpsCenterInitUserPwd:           routePlanningConfig.OpsCenterInitUserPwd,
+		OperationCenterInitUserName:    routePlanningConfig.OperationCenterInitUserName,
+		OperationCenterInitUserPwd:     routePlanningConfig.OperationCenterInitUserPwd,
+		StorageNetworkSegmentRoute:     largeNetworkSegmentConfig.StorageNetworkSegmentRoute,
+		BizIntranetNetworkSegmentRoute: largeNetworkSegmentConfig.BizIntranetNetworkSegmentRoute,
+		BizExternalLargeNetworkSegment: largeNetworkSegmentConfig.BizExternalLargeNetworkSegment,
+		BmcNetworkSegmentRoute:         largeNetworkSegmentConfig.BmcNetworkSegmentRoute,
+	}
+	return &globalConfigExcel, nil
 }

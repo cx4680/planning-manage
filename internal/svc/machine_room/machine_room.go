@@ -81,8 +81,16 @@ func DownloadCabinetTemplate(context *gin.Context) {
 	if err != nil {
 		log.Errorf("download cabinet template error: %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		if err = file.Close(); err != nil {
+			log.Errorf("excelize close error: %v", err)
+		}
 		return
 	}
+	defer func() {
+		if err = file.Close(); err != nil {
+			log.Errorf("excelize close error: %v", err)
+		}
+	}()
 	excel.DownLoadExcel("机房勘察模版", context.Writer, file)
 	return
 }

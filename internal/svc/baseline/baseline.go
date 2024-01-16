@@ -64,7 +64,7 @@ func Import(context *gin.Context) {
 	now := datetime.GetNow()
 	if softwareVersion.Id > 0 {
 		// 编辑软件版本
-		if err := UpdateSoftwareVersion(softwareVersion); err != nil {
+		if err = UpdateSoftwareVersion(softwareVersion); err != nil {
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 			return
 		}
@@ -76,13 +76,13 @@ func Import(context *gin.Context) {
 			CreateTime:        now,
 		}
 		// 新增软件版本
-		if err := CreateSoftwareVersion(&softwareVersion); err != nil {
+		if err = CreateSoftwareVersion(&softwareVersion); err != nil {
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 			return
 		}
 	}
 	filePath := fmt.Sprintf("%s/%s-%d-%d.xlsx", "exampledir", "baseline", time.Now().Unix(), rand.Uint32())
-	if err := context.SaveUploadedFile(file, filePath); err != nil {
+	if err = context.SaveUploadedFile(file, filePath); err != nil {
 		log.Error(err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
@@ -91,19 +91,19 @@ func Import(context *gin.Context) {
 	if err != nil {
 		log.Errorf("excelize openFile error: %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		if err := f.Close(); err != nil {
+		if err = f.Close(); err != nil {
 			log.Errorf("excelize close error: %v", err)
 		}
-		if err := os.Remove(filePath); err != nil {
+		if err = os.Remove(filePath); err != nil {
 			log.Errorf("os removeFile error: %v", err)
 		}
 		return
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
+		if err = f.Close(); err != nil {
 			log.Errorf("excelize close error: %v", err)
 		}
-		if err := os.Remove(filePath); err != nil {
+		if err = os.Remove(filePath); err != nil {
 			log.Errorf("os removeFile error: %v", err)
 		}
 	}()

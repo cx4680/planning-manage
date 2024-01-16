@@ -1,16 +1,18 @@
 package network_device
 
 import (
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"errors"
 	"fmt"
-	"github.com/xuri/excelize/v2"
 	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/xuri/excelize/v2"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 
 	"code.cestc.cn/ccos/cnm/ops-base/utils"
 	"github.com/gin-gonic/gin"
@@ -31,14 +33,14 @@ import (
 func GetDevicePlanByPlanId(c *gin.Context) {
 	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	// 根据方案ID查询网络设备规划
-	devicePlan, err := searchDevicePlanByPlanId(planId)
+	devicePlan, err := SearchDevicePlanByPlanId(planId)
 	if err != nil {
 		log.Errorf("[searchDevicePlanByPlanId] search device plan by planId error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
 	if devicePlan.PlanId == 0 {
-		//说明第一次进入，赋默认值方便前端展示
+		// 说明第一次进入，赋默认值方便前端展示
 		devicePlan.DeviceType = 0
 		devicePlan.ApplicationDispersion = "1"
 		devicePlan.AwsServerNum = 44
@@ -122,7 +124,7 @@ func ListNetworkDevices(c *gin.Context) {
 		return
 	}
 	if len(deviceList) > 0 && !request.EditFlag {
-		//不是第一次进入并且也不是编辑网络设备规划 那就不需要重新计算 直接从库里拿
+		// 不是第一次进入并且也不是编辑网络设备规划 那就不需要重新计算 直接从库里拿
 		for _, device := range deviceList {
 			networkDevice := NetworkDevices{
 				NetworkDeviceRole:     device.NetworkDeviceRole,
@@ -134,12 +136,12 @@ func ListNetworkDevices(c *gin.Context) {
 				DeviceModel:           device.DeviceModel,
 				ConfOverview:          device.ConfOverview,
 			}
-			//单独处理下型号列表
+			// 单独处理下型号列表
 			deviceModels, _ := getModelsByVersionIdAndRoleAndBrand(versionId, device.NetworkDeviceRoleId, request.Brand, request.DeviceType)
 			networkDevice.DeviceModels = deviceModels
 			response = append(response, networkDevice)
 		}
-		//计算网络设备总数
+		// 计算网络设备总数
 		count := len(response)
 		finalResponse.Total = count
 		finalResponse.NetworkDeviceList = response
@@ -168,11 +170,11 @@ func ListNetworkDevices(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	//计算网络设备总数
+	// 计算网络设备总数
 	total := len(response)
 	finalResponse.Total = total
 	finalResponse.NetworkDeviceList = response
-	devicePlan, err := searchDevicePlanByPlanId(planId)
+	devicePlan, err := SearchDevicePlanByPlanId(planId)
 	if err != nil {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
@@ -344,7 +346,7 @@ func NetworkDeviceListDownload(context *gin.Context) {
 		nums, _ := strconv.Atoi(response.Num)
 		total += nums
 	}
-	//手动添加合计行
+	// 手动添加合计行
 	lastData := NetworkDeviceListExportResponse{
 		Num: "总计:" + strconv.Itoa(total) + "台",
 	}
@@ -563,7 +565,7 @@ func UploadNetworkShelve(c *gin.Context) {
 		result.Failure(c, "planId不能为空", http.StatusBadRequest)
 		return
 	}
-	//上传文件处理
+	// 上传文件处理
 	file, err := c.FormFile("file")
 	if err != nil {
 		log.Error(err)

@@ -13,6 +13,7 @@ type CellConfig struct {
 	CellVip                  string    `gorm:"column:cell_vip" json:"cellVip"`                                     // 集群Vip
 	CellVipIpv6              string    `gorm:"column:cell_vip_ipv6" json:"cellVipIpv6"`                            // 集群Vip-IPV6地址
 	ExternalNtpIp            string    `gorm:"column:external_ntp_ip" json:"externalNtpIp"`                        // 外部时钟源IP（多个时钟源以逗号分隔）
+	NetworkMode              int       `gorm:"column:network_mode" json:"networkMode"`                             // 组网模式，0：标准模式，1：纯二层组网模式
 	CellContainerNetwork     string    `gorm:"column:cell_container_network" json:"cellContainerNetwork"`          // 集群网络配置-集群容器网
 	CellContainerNetworkIpv6 string    `gorm:"column:cell_container_network_ipv6" json:"cellContainerNetworkIpv6"` // 集群网络配置-集群容器网IPV6
 	CellSvcNetwork           string    `gorm:"column:cell_svc_network" json:"cellSvcNetwork"`                      // 集群网络配置-集群服务网

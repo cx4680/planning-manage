@@ -124,6 +124,7 @@ CREATE TABLE `cell_config`
     `cell_vip`                     varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '集群Vip',
     `cell_vip_ipv6`                varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '集群Vip-IPV6地址',
     `external_ntp_ip`              varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '外部时钟源IP（多个时钟源以逗号分隔）',
+    `network_mode`                 tinyint(4) DEFAULT NULL COMMENT '组网模式，0：标准模式，1：纯二层组网模式',
     `cell_container_network`       varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '集群网络配置-集群容器网',
     `cell_container_network_ipv6`  varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '集群网络配置-集群容器网IPV6',
     `cell_svc_network`             varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '集群网络配置-集群服务网',
