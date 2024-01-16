@@ -663,6 +663,39 @@ func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 	if len(serverPlanningList) == 0 {
 		return nil, "", errors.New("服务器未规划")
 	}
+	//查询机柜
+	var cabinetInfoList []*entity.CabinetInfo
+	if err = data.DB.Where("plan_id = ? AND cabinet_type = ?", planId, 2).Find(&cabinetInfoList).Error; err != nil {
+		return nil, "", err
+	}
+	var cabinetIdList []int64
+	var cabinetResidualRackServerNumMap = make(map[int64]int)
+	for _, v := range cabinetInfoList {
+		cabinetIdList = append(cabinetIdList, v.Id)
+		cabinetResidualRackServerNumMap[v.Id] = v.ResidualRackServerNum
+	}
+	//查询机柜槽位
+	var cabinetIdleSlotRelList []*entity.CabinetIdleSlotRel
+	if err = data.DB.Where("cabinet_id IN (?)", cabinetIdList).Order("idle_slot_number ASC").Find(&cabinetIdleSlotRelList).Error; err != nil {
+		return nil, "", err
+	}
+	var cabinetIdleSlotNumberMap = make(map[int64]int)
+	var cabinetIdleSlotListMap = make(map[int64][]string)
+	for _, v := range cabinetIdleSlotRelList {
+		if v.IdleSlotNumber == 1 {
+			continue
+		}
+		if cabinetIdleSlotNumberMap[v.CabinetId] == 0 {
+			cabinetIdleSlotNumberMap[v.CabinetId] = v.IdleSlotNumber
+		} else {
+			if v.IdleSlotNumber-cabinetIdleSlotNumberMap[v.CabinetId] == 1 {
+				cabinetIdleSlotListMap[v.CabinetId] = append(cabinetIdleSlotListMap[v.CabinetId], fmt.Sprintf("%d-%d", cabinetIdleSlotNumberMap[v.CabinetId], v.IdleSlotNumber))
+				cabinetIdleSlotNumberMap[v.CabinetId] = 0
+			} else {
+				cabinetIdleSlotNumberMap[v.CabinetId] = v.IdleSlotNumber
+			}
+		}
+	}
 	//构建返回体
 	var response []ShelveDownload
 	var sortNumber = 1
@@ -809,6 +842,13 @@ func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 
 func saveServerShelve(request *Request) error {
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		var serverShelveCount int64
+		if err := tx.Model(&entity.ServerShelve{}).Where("plan_id = ?", request.PlanId).Count(&serverShelveCount).Error; err != nil {
+			return err
+		}
+		if serverShelveCount == 0 {
+			return errors.New("服务器未上架")
+		}
 		for _, v := range request.ServerList {
 			if err := tx.Model(&entity.ServerPlanning{}).Where("plan_id = ? AND node_role_id = ?", request.PlanId, v.NodeRoleId).Updates(map[string]interface{}{"business_attributes": v.BusinessAttributes, "shelve_mode": v.ShelveMode, "shelve_priority": v.ShelvePriority}).Error; err != nil {
 				return err

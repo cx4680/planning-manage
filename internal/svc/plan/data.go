@@ -27,8 +27,9 @@ func PagePlan(request *Request) ([]*Plan, int64, error) {
 		screenParams = append(screenParams, request.Name)
 	}
 	if util.IsNotBlank(request.Type) {
-		screenSql += " AND type = ? "
-		screenParams = append(screenParams, request.Type)
+		typeSplit := strings.Split(request.Type, ",")
+		screenSql += " AND type IN (?) "
+		screenParams = append(screenParams, typeSplit)
 	}
 	if util.IsNotBlank(request.Stage) {
 		stageSplit := strings.Split(request.Stage, ",")
