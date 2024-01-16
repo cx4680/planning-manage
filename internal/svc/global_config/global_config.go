@@ -114,6 +114,7 @@ func GetCellConfigByPlanId(context *gin.Context) {
 		CellVip:                  cellConfig.CellVip,
 		CellVipIpv6:              cellConfig.CellVipIpv6,
 		ExternalNtpIp:            cellConfig.ExternalNtpIp,
+		NetworkMode:              cellConfig.NetworkMode,
 		CellContainerNetwork:     cellConfig.CellContainerNetwork,
 		CellContainerNetworkIpv6: cellConfig.CellContainerNetworkIpv6,
 		CellSvcNetwork:           cellConfig.CellSvcNetwork,
