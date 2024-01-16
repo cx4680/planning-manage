@@ -102,6 +102,7 @@ func UpdatePlan(request *Request) error {
 	now := datetime.GetNow()
 	planEntity := &entity.PlanManage{
 		Id:           request.Id,
+		Name:         request.Name,
 		Type:         request.Type,
 		Stage:        request.Stage,
 		UpdateUserId: request.UserId,

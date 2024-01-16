@@ -200,20 +200,23 @@ CREATE TABLE `cloud_product_baseline`
 
 CREATE TABLE `server_planning`
 (
-    `id`                 bigint(20) NOT NULL AUTO_INCREMENT COMMENT '服务器规划id',
-    `plan_id`            bigint(20) DEFAULT NULL COMMENT ' 方案id',
-    `node_role_id`       bigint(20) DEFAULT NULL COMMENT '节点角色id',
-    `mixed_node_role_id` bigint(20) DEFAULT NULL COMMENT '节点角色id',
-    `server_baseline_id` bigint(20) DEFAULT NULL COMMENT '服务器基线表id',
-    `number`             int          DEFAULT NULL COMMENT '数量',
-    `open_dpdk`          int          DEFAULT NULL COMMENT '是否开启DPDK，1：开启，0：关闭',
-    `network_interface`  varchar(255) DEFAULT NULL COMMENT '网络类型',
-    `cpu_type`           varchar(255) DEFAULT NULL COMMENT 'cpu类型',
-    `create_user_id`     varchar(255) DEFAULT NULL COMMENT '创建人id',
-    `create_time`        datetime NULL DEFAULT NULL COMMENT '创建时间',
-    `update_user_id`     varchar(255) NULL DEFAULT NULL COMMENT '更新人id',
-    `update_time`        datetime NULL DEFAULT NULL COMMENT '更新时间',
-    `delete_state`       tinyint(1) NULL DEFAULT NULL COMMENT '作废状态：1，作废；0，正常',
+    `id`                  bigint(20) NOT NULL AUTO_INCREMENT COMMENT '服务器规划id',
+    `plan_id`             bigint(20) DEFAULT NULL COMMENT ' 方案id',
+    `node_role_id`        bigint(20) DEFAULT NULL COMMENT '节点角色id',
+    `mixed_node_role_id`  bigint(20) DEFAULT NULL COMMENT '节点角色id',
+    `server_baseline_id`  bigint(20) DEFAULT NULL COMMENT '服务器基线表id',
+    `number`              int          DEFAULT NULL COMMENT '数量',
+    `open_dpdk`           int          DEFAULT NULL COMMENT '是否开启DPDK，1：开启，0：关闭',
+    `network_interface`   varchar(255) DEFAULT NULL COMMENT '网络类型',
+    `cpu_type`            varchar(255) DEFAULT NULL COMMENT 'cpu类型',
+    `business_attributes` varchar(255) DEFAULT NULL COMMENT '业务属性',
+    `shelve_mode`         varchar(255) DEFAULT NULL COMMENT '上架模式',
+    `shelve_priority`     int          DEFAULT NULL COMMENT '上架优先级',
+    `create_user_id`      varchar(255) DEFAULT NULL COMMENT '创建人id',
+    `create_time`         datetime NULL DEFAULT NULL COMMENT '创建时间',
+    `update_user_id`      varchar(255) NULL DEFAULT NULL COMMENT '更新人id',
+    `update_time`         datetime NULL DEFAULT NULL COMMENT '更新时间',
+    `delete_state`        tinyint(1) NULL DEFAULT NULL COMMENT '作废状态：1，作废；0，正常',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品基线';
 

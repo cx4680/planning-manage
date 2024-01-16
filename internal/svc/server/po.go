@@ -6,12 +6,29 @@ import (
 
 type Request struct {
 	Id                 int64
-	UserId             string
 	PlanId             int64                    `form:"planId"`
 	NetworkInterface   string                   `form:"networkInterface"`
 	CpuType            string                   `form:"cpuType"`
 	ServerList         []*RequestServer         `form:"serverList"`
 	ServerCapacityList []*RequestServerCapacity `form:"serverCapacityList"`
+	UserId             string
+}
+
+type RequestServer struct {
+	NodeRoleId         int64  `form:"nodeRoleId"`
+	MixedNodeRoleId    int64  `form:"mixedNodeRoleId"`
+	ServerBaselineId   int64  `form:"serverBaselineId"`
+	Number             int    `form:"number"`
+	OpenDpdk           int    `form:"openDpdk"`
+	BusinessAttributes string `form:"businessAttributes"` // 业务属性
+	ShelveMode         string `form:"shelveMode"`         // 上架模式
+	ShelvePriority     int    `form:"shelvePriority"`     // 上架优先级
+}
+
+type RequestServerCapacity struct {
+	Id            int64 `form:"id"`
+	Number        int   `form:"number"`
+	FeatureNumber int   `form:"featureNumber"`
 }
 
 type Server struct {
@@ -40,20 +57,6 @@ type Baseline struct {
 	CpuType           string `gorm:"-" json:"cpuType"`           // cpu类型
 	Arch              string `gorm:"-" json:"arch"`              // 硬件架构
 	ConfigurationInfo string `gorm:"-" json:"configurationInfo"` // 配置概要
-}
-
-type RequestServer struct {
-	NodeRoleId       int64 `form:"nodeRoleId"`
-	MixedNodeRoleId  int64 `form:"mixedNodeRoleId"`
-	ServerBaselineId int64 `form:"serverBaselineId"`
-	Number           int   `form:"number"`
-	OpenDpdk         int   `form:"openDpdk"`
-}
-
-type RequestServerCapacity struct {
-	Id            int64 `form:"id"`
-	Number        int   `form:"number"`
-	FeatureNumber int   `form:"featureNumber"`
 }
 
 type ResponseDownloadServer struct {

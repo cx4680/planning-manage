@@ -805,7 +805,17 @@ func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 }
 
 func saveServerShelve(request *Request) error {
-	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningIp}).Error; err != nil {
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		for _, v := range request.ServerList {
+			if err := tx.Model(&entity.ServerPlanning{}).Where("plan_id = ? AND node_role_id = ?", request.PlanId, v.NodeRoleId).Updates(map[string]interface{}{"business_attributes": v.BusinessAttributes, "shelve_mode": v.ShelveMode, "shelve_priority": v.ShelvePriority}).Error; err != nil {
+				return err
+			}
+		}
+		if err := tx.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningIp}).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		return err
 	}
 	return nil
