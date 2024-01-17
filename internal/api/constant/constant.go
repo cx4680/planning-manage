@@ -26,9 +26,15 @@ const (
 	TripleNetworkSeparation = 3 // 三网分离
 	TriplePlay              = 1 // 三网合一
 
-	Plan     = "plan"     // 待规划
-	Planning = "planning" // 规划中
-	Planned  = "planned"  // 规划完成
+	ProjectStagePlanning  = "planning"  //规划阶段
+	ProjectStageDelivery  = "delivery"  //交付阶段
+	ProjectStageDelivered = "delivered" //已交付
+
+	PlanStagePlan       = "plan"       // 待规划
+	PlanStagePlanning   = "planning"   // 规划中
+	PlanStagePlanned    = "planned"    // 规划完成
+	PlanStageDelivering = "delivering" //交付中
+	PlanStageDelivered  = "delivered"  //交付完成
 
 	BusinessPlanningStart         = 0 // 业务规划开始阶段
 	BusinessPlanningCloudProduct  = 1 // 业务规划-云产品配置阶段

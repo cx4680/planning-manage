@@ -262,7 +262,7 @@ func SaveDeviceList(c *gin.Context) {
 			}
 		}
 		// 更新方案表的状态
-		if err = plan.UpdatePlanStage(tx, planId, constant.Planned, userId, constant.BusinessPlanningEnd); err != nil {
+		if err = plan.UpdatePlanStage(tx, planId, constant.PlanStagePlanned, userId, constant.BusinessPlanningEnd); err != nil {
 			return err
 		}
 		// 批量保存网络设备清单
