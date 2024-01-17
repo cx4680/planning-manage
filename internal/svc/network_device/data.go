@@ -190,7 +190,7 @@ func getNetworkShelveList(planId int64) ([]*entity.NetworkDeviceShelve, error) {
 	return networkDeviceShelve, nil
 }
 
-func getNetworkShelveDownloadList(planId int64) ([]NetworkDeviceShelveDownload, string, error) {
+func getDownloadNetworkShelveTemplate(planId int64) ([]NetworkDeviceShelveDownload, string, error) {
 	var networkDeviceList []*entity.NetworkDeviceList
 	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceList).Error; err != nil {
 		return nil, "", err
@@ -265,6 +265,44 @@ func saveNetworkShelve(request *Request) error {
 		return err
 	}
 	return nil
+}
+
+func getDownloadNetworkShelve(planId int64) ([]NetworkDeviceShelveDownload, string, error) {
+	var networkDeviceShelve []*entity.NetworkDeviceShelve
+	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceShelve).Error; err != nil {
+		return nil, "", err
+	}
+	if len(networkDeviceShelve) == 0 {
+		return nil, "", errors.New("网络设备未上架")
+	}
+	// 构建返回体
+	var response []NetworkDeviceShelveDownload
+	for _, v := range networkDeviceShelve {
+		response = append(response, NetworkDeviceShelveDownload{
+			DeviceLogicalId:   v.DeviceLogicalId,
+			DeviceId:          v.DeviceId,
+			Sn:                v.Sn,
+			MachineRoomAbbr:   v.MachineRoomAbbr,
+			MachineRoomNumber: v.MachineRoomNumber,
+			CabinetNumber:     v.CabinetNumber,
+			SlotPosition:      v.SlotPosition,
+			UNumber:           v.UNumber,
+		})
+	}
+	// 构建文件名称
+	var planManage = &entity.PlanManage{}
+	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManage).Error; err != nil {
+		return nil, "", err
+	}
+	if planManage.Id == 0 {
+		return nil, "", errors.New("方案不存在")
+	}
+	var projectManage = &entity.ProjectManage{}
+	if err := data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
+		return nil, "", err
+	}
+	fileName := projectManage.Name + "-" + planManage.Name + "-" + "网络设备上架表"
+	return response, fileName, nil
 }
 
 func checkNetworkShelve(networkDeviceShelve *NetworkDeviceShelveDownload) error {
