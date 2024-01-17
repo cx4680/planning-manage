@@ -155,7 +155,7 @@ func Download(c *gin.Context) {
 	return
 }
 
-func ListServerShelve(c *gin.Context) {
+func ListServerShelvePlanning(c *gin.Context) {
 	request := &Request{}
 	if err := c.ShouldBindQuery(&request); err != nil {
 		log.Errorf("list server bind param error: ", err)
@@ -164,7 +164,7 @@ func ListServerShelve(c *gin.Context) {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
 		return
 	}
-	list, err := getServerPlanningList(request.PlanId)
+	list, err := getServerShelvePlanningList(request.PlanId)
 	if err != nil {
 		log.Errorf("ListServerShelve error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
@@ -234,6 +234,21 @@ func UploadServerShelve(c *gin.Context) {
 	userId := user.GetUserId(c)
 	if err = uploadServerShelve(planId, serverShelveDownload, userId); err != nil {
 		log.Errorf("ListNetworkShelve error, %v", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, nil)
+	return
+}
+
+func SaveServerPlanning(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.Error(err)
+	}
+	request.UserId = user.GetUserId(c)
+	if err := saveServerPlanning(request); err != nil {
+		log.Errorf("SaveNetworkShelve error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}

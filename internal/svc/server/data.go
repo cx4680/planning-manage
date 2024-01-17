@@ -656,7 +656,7 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 
 func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 	//查询服务器规划表
-	serverPlanningList, err := getServerPlanningList(planId)
+	serverPlanningList, err := getServerShelvePlanningList(planId)
 	if err != nil {
 		return nil, "", err
 	}
@@ -706,10 +706,10 @@ func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 	return response, fileName, nil
 }
 
-func getServerPlanningList(planId int64) ([]*Server, error) {
+func getServerShelvePlanningList(planId int64) ([]*Server, error) {
 	//查询服务器规划表
 	var serverPlanning []*Server
-	if err := data.DB.Model(&entity.ServerPlanning{}).Where("plan_id = ?", planId).Find(&serverPlanning).Error; err != nil {
+	if err := data.DB.Model(&entity.ServerPlanning{}).Where("plan_id = ?", planId).Order("shelve_priority ASC").Find(&serverPlanning).Error; err != nil {
 		return nil, err
 	}
 	var NodeRoleIdList []int64
@@ -736,9 +736,19 @@ func getServerPlanningList(planId int64) ([]*Server, error) {
 	for _, v := range serverBaseline {
 		serverBaselineMap[v.Id] = v.BomCode
 	}
+	//查询服务器上架表
+	var serverShelveCount int64
+	if err := data.DB.Model(&entity.ServerShelve{}).Where("plan_id = ?", planId).Count(&serverShelveCount).Error; err != nil {
+		return nil, err
+	}
+	var upload int
+	if serverShelveCount > 0 {
+		upload = 1
+	}
 	for i, v := range serverPlanning {
 		serverPlanning[i].NodeRoleName = nodeRoleNameMap[v.NodeRoleId]
 		serverPlanning[i].ServerBomCode = serverBaselineMap[v.ServerBaselineId]
+		serverPlanning[i].Upload = upload
 	}
 	return serverPlanning, nil
 }
@@ -877,6 +887,20 @@ func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 	return nil
 }
 
+func saveServerPlanning(request *Request) error {
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		for _, v := range request.ServerList {
+			if err := tx.Model(&entity.ServerPlanning{}).Where("plan_id = ? AND node_role_id = ?", request.PlanId, v.NodeRoleId).Updates(map[string]interface{}{"business_attributes": v.BusinessAttributes, "shelve_mode": v.ShelveMode, "shelve_priority": v.ShelvePriority}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
 func saveServerShelve(request *Request) error {
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
 		var serverShelveCount int64
@@ -885,11 +909,6 @@ func saveServerShelve(request *Request) error {
 		}
 		if serverShelveCount == 0 {
 			return errors.New("服务器未上架")
-		}
-		for _, v := range request.ServerList {
-			if err := tx.Model(&entity.ServerPlanning{}).Where("plan_id = ? AND node_role_id = ?", request.PlanId, v.NodeRoleId).Updates(map[string]interface{}{"business_attributes": v.BusinessAttributes, "shelve_mode": v.ShelveMode, "shelve_priority": v.ShelvePriority}).Error; err != nil {
-				return err
-			}
 		}
 		if err := tx.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningIp}).Error; err != nil {
 			return err
