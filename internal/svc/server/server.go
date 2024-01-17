@@ -174,13 +174,13 @@ func ListServerShelvePlanning(c *gin.Context) {
 	return
 }
 
-func DownloadServerShelve(c *gin.Context) {
+func DownloadServerShelveTemplate(c *gin.Context) {
 	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	if planId == 0 {
 		result.Failure(c, "planId不能为空", http.StatusBadRequest)
 		return
 	}
-	response, fileName, err := getServerShelveDownload(planId)
+	response, fileName, err := getServerShelveDownloadTemplate(planId)
 	if err != nil {
 		log.Errorf("ListNetworkShelve error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -268,5 +268,23 @@ func SaveServerShelve(c *gin.Context) {
 		return
 	}
 	result.Success(c, nil)
+	return
+}
+
+func DownloadServerShelve(c *gin.Context) {
+	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
+	if planId == 0 {
+		result.Failure(c, "planId不能为空", http.StatusBadRequest)
+		return
+	}
+	response, fileName, err := getServerShelveDownload(planId)
+	if err != nil {
+		log.Errorf("ListNetworkShelve error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if err = excel.NormalDownLoad(fileName, "服务器上架表", "", false, response, c.Writer); err != nil {
+		log.Errorf("下载错误：", err)
+	}
 	return
 }

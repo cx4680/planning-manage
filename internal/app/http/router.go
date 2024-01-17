@@ -170,13 +170,15 @@ func Router(engine *gin.Engine) {
 			// 查询服务器上架表
 			serverGroup.GET("/shelve/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器上架表", "getNetworkShelveList", middleware.LIST, middleware.INFO)), server.ListServerShelvePlanning)
 			// 下载服务器上架表模板
-			serverGroup.GET("/shelve/download/template/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表模板", "downloadServerShelveTemplate", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelve)
+			serverGroup.GET("/shelve/download/template/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表模板", "downloadServerShelveTemplate", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelveTemplate)
 			// 上传服务器上架表
 			serverGroup.POST("/shelve/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传服务器上架表", "uploadServerShelve", middleware.IMPORT, middleware.INFO)), server.UploadServerShelve)
 			// 保存服务器规划表
 			serverGroup.POST("/shelve/planning/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器规划表", "saveServerPlanning", middleware.UPDATE, middleware.INFO)), server.SaveServerPlanning)
 			// 保存服务器上架表
 			serverGroup.POST("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器上架表", "saveServerShelve", middleware.UPDATE, middleware.INFO)), server.SaveServerShelve)
+			// 下载服务器上架表模板
+			serverGroup.GET("/shelve/download/template/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表模板", "downloadServerShelveTemplate", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelve)
 		}
 
 		// 网络规划
