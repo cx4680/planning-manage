@@ -7,6 +7,7 @@ const CellConfigTable = "cell_config"
 type CellConfig struct {
 	Id                       int64     `gorm:"column:id" json:"id"`                                                // 主键Id
 	PlanId                   int64     `gorm:"column:plan_id" json:"planId"`                                       // 方案Id
+	BizRegionAbbr            string    `gorm:"column:biz_region_abbr" json:"bizRegionAbbr"`                        // 业务区域缩写
 	CellSelfMgt              int       `gorm:"column:cell_self_mgt" json:"cellSelfMgt"`                            // 集群自纳管，0：否，1：是
 	MgtGlobalDnsRootDomain   string    `gorm:"column:mgt_global_dns_root_domain" json:"mgtGlobalDnsRootDomain"`    // 管理网全局DNS根域
 	GlobalDnsSvcAddress      string    `gorm:"column:global_dns_svc_address" json:"globalDnsSvcAddress"`           // 全局DNS服务地址

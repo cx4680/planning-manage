@@ -17,6 +17,7 @@ type CellConfigReq struct {
 	PlanId                   int64  `form:"planId" json:"planId"`                                     // 方案Id
 	RegionCode               string `form:"regionCode" json:"regionCode"`                             // 区域编码
 	RegionType               string `form:"regionType" json:"regionType"`                             // 区域类型
+	BizRegionAbbr            string `form:"bizRegionAbbr" json:"bizRegionAbbr"`                       // 业务区域缩写
 	AzCode                   string `form:"azCode" json:"azCode"`                                     // 可用区编码
 	CellType                 string `form:"cellType" json:"cellType"`                                 // 集群类型
 	CellName                 string `form:"cellName" json:"cellName"`                                 // 集群名称
@@ -50,6 +51,7 @@ type CellConfigResp struct {
 	PlanId                   int64  `form:"planId" json:"planId"`                                     // 方案Id
 	RegionCode               string `form:"regionCode" json:"regionCode"`                             // 区域编码
 	RegionType               string `form:"regionType" json:"regionType"`                             // 区域类型
+	BizRegionAbbr            string `form:"bizRegionAbbr" json:"bizRegionAbbr"`                       // 业务区域缩写
 	AzCode                   string `form:"azCode" json:"azCode"`                                     // 可用区编码
 	CellType                 string `form:"cellType" json:"cellType"`                                 // 集群类型
 	CellName                 string `form:"cellName" json:"cellName"`                                 // 集群名称

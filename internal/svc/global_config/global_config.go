@@ -105,6 +105,7 @@ func GetCellConfigByPlanId(context *gin.Context) {
 		PlanId:                   cellConfig.PlanId,
 		RegionCode:               regionAzCell.RegionCode,
 		RegionType:               regionAzCell.RegionType,
+		BizRegionAbbr:            cellConfig.BizRegionAbbr,
 		AzCode:                   regionAzCell.AzCode,
 		CellType:                 regionAzCell.CellType,
 		CellName:                 regionAzCell.CellName,
@@ -335,7 +336,7 @@ func CompleteGlobalConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	file, err := excelize.OpenFile("template/规划文件模板.xlsx")
+	file, err := excelize.OpenFile("template/规划文件模版.xlsx")
 	if err != nil {
 		log.Errorf("open cabinet template error: %v", err)
 		if err = file.Close(); err != nil {

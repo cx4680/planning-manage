@@ -95,6 +95,7 @@ func InsertCellConfig(userId string, request CellConfigReq) error {
 	now := time.Now()
 	cellConfig := entity.CellConfig{
 		PlanId:                   request.PlanId,
+		BizRegionAbbr:            request.BizRegionAbbr,
 		CellSelfMgt:              request.CellSelfMgt,
 		MgtGlobalDnsRootDomain:   request.MgtGlobalDnsRootDomain,
 		GlobalDnsSvcAddress:      request.GlobalDnsSvcAddress,
@@ -132,6 +133,7 @@ func UpdateCellConfigById(userId string, id int64, request CellConfigReq, origin
 	cellConfig := entity.CellConfig{
 		Id:                       id,
 		PlanId:                   request.PlanId,
+		BizRegionAbbr:            request.BizRegionAbbr,
 		CellSelfMgt:              request.CellSelfMgt,
 		MgtGlobalDnsRootDomain:   request.MgtGlobalDnsRootDomain,
 		GlobalDnsSvcAddress:      request.GlobalDnsSvcAddress,

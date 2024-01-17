@@ -118,6 +118,7 @@ CREATE TABLE `cell_config`
 (
     `id`                           bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
     `plan_id`                      bigint(20) DEFAULT NULL COMMENT '方案id',
+    `biz_region_abbr`              varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '业务区域缩写',
     `cell_self_mgt`                tinyint(4) DEFAULT NULL COMMENT '集群自纳管，0：否，1：是',
     `mgt_global_dns_root_domain`   varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '管理网全局DNS根域',
     `global_dns_svc_address`       varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '全局DNS服务地址',
