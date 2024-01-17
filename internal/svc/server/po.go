@@ -121,3 +121,9 @@ type ShelveDownload struct {
 	Mask                  string `excel:"name:掩码;" json:"mask"`
 	Gateway               string `excel:"name:网关;" json:"gateway"`
 }
+
+type Cabinet struct {
+	*entity.CabinetInfo
+	CabinetLocation string `json:"cabinetLocation"`
+	IdleSlot        string `json:"idleSlot"`
+}

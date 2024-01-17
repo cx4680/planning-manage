@@ -664,56 +664,27 @@ func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 		return nil, "", errors.New("服务器未规划")
 	}
 	//查询机柜
-	var cabinetInfoList []*entity.CabinetInfo
-	if err = data.DB.Where("plan_id = ? AND cabinet_type = ?", planId, 2).Find(&cabinetInfoList).Error; err != nil {
+	cabinetIdleSlotList, err := getCabinetInfo(planId)
+	if err != nil {
 		return nil, "", err
-	}
-	var cabinetIdList []int64
-	var cabinetResidualRackServerNumMap = make(map[int64]int)
-	for _, v := range cabinetInfoList {
-		cabinetIdList = append(cabinetIdList, v.Id)
-		cabinetResidualRackServerNumMap[v.Id] = v.ResidualRackServerNum
-	}
-	//查询机柜槽位
-	var cabinetIdleSlotRelList []*entity.CabinetIdleSlotRel
-	if err = data.DB.Where("cabinet_id IN (?)", cabinetIdList).Order("idle_slot_number ASC").Find(&cabinetIdleSlotRelList).Error; err != nil {
-		return nil, "", err
-	}
-	var cabinetIdleSlotNumberMap = make(map[int64]int)
-	var cabinetIdleSlotListMap = make(map[int64][]string)
-	for _, v := range cabinetIdleSlotRelList {
-		if v.IdleSlotNumber == 1 {
-			continue
-		}
-		if cabinetIdleSlotNumberMap[v.CabinetId] == 0 {
-			cabinetIdleSlotNumberMap[v.CabinetId] = v.IdleSlotNumber
-		} else {
-			if v.IdleSlotNumber-cabinetIdleSlotNumberMap[v.CabinetId] == 1 {
-				cabinetIdleSlotListMap[v.CabinetId] = append(cabinetIdleSlotListMap[v.CabinetId], fmt.Sprintf("%d-%d", cabinetIdleSlotNumberMap[v.CabinetId], v.IdleSlotNumber))
-				cabinetIdleSlotNumberMap[v.CabinetId] = 0
-			} else {
-				cabinetIdleSlotNumberMap[v.CabinetId] = v.IdleSlotNumber
-			}
-		}
 	}
 	//构建返回体
 	var response []ShelveDownload
-	var sortNumber = 1
+	var sortNumber = 0
 	for _, v := range serverPlanningList {
 		for i := 1; i <= v.Number; i++ {
-
 			response = append(response, ShelveDownload{
-				SortNumber:            sortNumber,
+				SortNumber:            sortNumber + 1,
 				NodeRoleName:          v.NodeRoleName,
 				Model:                 v.ServerBomCode,
-				MachineRoomAbbr:       "",
-				MachineRoomNumber:     "",
-				ColumnNumber:          "",
-				CabinetAsw:            "",
-				CabinetNumber:         "",
-				CabinetOriginalNumber: "",
-				CabinetLocation:       "",
-				SlotPosition:          "",
+				MachineRoomAbbr:       cabinetIdleSlotList[sortNumber].MachineRoomAbbr,
+				MachineRoomNumber:     cabinetIdleSlotList[sortNumber].MachineRoomNum,
+				ColumnNumber:          cabinetIdleSlotList[sortNumber].ColumnNum,
+				CabinetAsw:            cabinetIdleSlotList[sortNumber].CabinetAsw,
+				CabinetNumber:         cabinetIdleSlotList[sortNumber].CabinetNum,
+				CabinetOriginalNumber: cabinetIdleSlotList[sortNumber].OriginalNum,
+				CabinetLocation:       cabinetIdleSlotList[sortNumber].CabinetLocation,
+				SlotPosition:          cabinetIdleSlotList[sortNumber].IdleSlot,
 				NetworkInterface:      v.NetworkInterface,
 			})
 			sortNumber++
@@ -770,6 +741,72 @@ func getServerPlanningList(planId int64) ([]*Server, error) {
 		serverPlanning[i].ServerBomCode = serverBaselineMap[v.ServerBaselineId]
 	}
 	return serverPlanning, nil
+}
+
+func getCabinetInfo(planId int64) ([]*Cabinet, error) {
+	var cabinetInfoList []*entity.CabinetInfo
+	if err := data.DB.Where("plan_id = ? AND cabinet_type = ?", planId, 2).Find(&cabinetInfoList).Error; err != nil {
+		return nil, err
+	}
+	var cabinetMap = make(map[int64]*entity.CabinetInfo)
+	var cabinetIdList []int64
+	//剩余上架服务器数
+	var cabinetResidualRackServerNumMap = make(map[int64]int)
+	for _, v := range cabinetInfoList {
+		cabinetMap[v.Id] = v
+		cabinetIdList = append(cabinetIdList, v.Id)
+		cabinetResidualRackServerNumMap[v.Id] = v.ResidualRackServerNum
+	}
+	//查询机柜槽位
+	var cabinetIdleSlotRelList []*entity.CabinetIdleSlotRel
+	if err := data.DB.Where("cabinet_id IN (?)", cabinetIdList).Order("idle_slot_number ASC").Find(&cabinetIdleSlotRelList).Error; err != nil {
+		return nil, err
+	}
+	var cabinetIdleSlotNumberMap = make(map[int64]int)
+	var cabinetIdleSlotListMap = make(map[int64][]*Cabinet)
+	for _, v := range cabinetIdleSlotRelList {
+		//1号槽位不上架
+		if v.IdleSlotNumber == 1 {
+			continue
+		}
+		if cabinetIdleSlotNumberMap[v.CabinetId] == 0 {
+			cabinetIdleSlotNumberMap[v.CabinetId] = v.IdleSlotNumber
+		} else {
+			//两个槽位相邻，且不超过机柜的剩余上架服务器数
+			if v.IdleSlotNumber-cabinetIdleSlotNumberMap[v.CabinetId] == 1 && len(cabinetIdleSlotListMap) <= cabinetResidualRackServerNumMap[v.CabinetId] {
+				cabinetIdleSlotListMap[v.CabinetId] = append(cabinetIdleSlotListMap[v.CabinetId],
+					&Cabinet{
+						CabinetInfo:     cabinetMap[v.CabinetId],
+						CabinetLocation: fmt.Sprintf("%d-%d", cabinetIdleSlotNumberMap[v.CabinetId], v.IdleSlotNumber),
+						IdleSlot:        fmt.Sprintf("%d-%d", cabinetIdleSlotNumberMap[v.CabinetId], v.IdleSlotNumber),
+					})
+				cabinetIdleSlotNumberMap[v.CabinetId] = 0
+			} else {
+				cabinetIdleSlotNumberMap[v.CabinetId] = v.IdleSlotNumber
+			}
+		}
+	}
+	//跨机柜上架，将所有机柜槽位列表纵向排布，然后从低到高横向上架
+	var cabinetIdleSlotList []*Cabinet
+	var maxLength int
+	for _, v := range cabinetIdleSlotListMap {
+		if len(v) > maxLength {
+			maxLength = len(v)
+		}
+	}
+	var index int
+	for index < maxLength {
+		for _, v := range cabinetIdleSlotListMap {
+			if len(v) > maxLength {
+				maxLength = len(v)
+			}
+			if len(v) > index {
+				cabinetIdleSlotList = append(cabinetIdleSlotList, v[index])
+			}
+		}
+		index++
+	}
+	return cabinetIdleSlotList, nil
 }
 
 func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, userId string) error {
