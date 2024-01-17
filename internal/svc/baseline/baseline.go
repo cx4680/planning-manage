@@ -966,10 +966,15 @@ func ImportIPDemandBaseline(context *gin.Context, versionId int64, f *excelize.F
 			if networkDeviceRole != "" {
 				ipDemandBaselineExcelList[i].NetworkDeviceRoleCodes = util.SplitString(networkDeviceRole, constant.SplitLineBreak)
 			}
+			networkType := constant.IpDemandNetworkTypeIpv4
+			if ipDemandBaselineExcelList[i].NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
+				networkType = constant.IpDemandNetworkTypeIpv6
+			}
 			ipDemandBaselines = append(ipDemandBaselines, entity.IPDemandBaseline{
 				VersionId:    versionId,
 				Vlan:         ipDemandBaselineExcelList[i].Vlan,
 				Explain:      ipDemandBaselineExcelList[i].Explain,
+				NetworkType:  networkType,
 				Description:  ipDemandBaselineExcelList[i].Description,
 				IPSuggestion: ipDemandBaselineExcelList[i].IPSuggestion,
 				AssignNum:    ipDemandBaselineExcelList[i].AssignNum,
@@ -991,14 +996,16 @@ func ImportIPDemandBaseline(context *gin.Context, versionId int64, f *excelize.F
 				return true
 			}
 			for _, originIPDemandBaseline := range originIPDemandBaselines {
-				originIPDemandMap[originIPDemandBaseline.Vlan] = originIPDemandBaseline
+				key := fmt.Sprintf("%s - %d", originIPDemandBaseline.Vlan, originIPDemandBaseline.NetworkType)
+				originIPDemandMap[key] = originIPDemandBaseline
 			}
 			for _, ipDemandBaseline := range ipDemandBaselines {
-				originIPDemandBaseline, ok := originIPDemandMap[ipDemandBaseline.Vlan]
+				key := fmt.Sprintf("%s - %d", ipDemandBaseline.Vlan, ipDemandBaseline.NetworkType)
+				originIPDemandBaseline, ok := originIPDemandMap[key]
 				if ok {
 					ipDemandBaseline.Id = originIPDemandBaseline.Id
 					updateIPDemandBaselines = append(updateIPDemandBaselines, ipDemandBaseline)
-					delete(originIPDemandMap, ipDemandBaseline.Vlan)
+					delete(originIPDemandMap, key)
 				} else {
 					insertIPDemandBaselines = append(insertIPDemandBaselines, ipDemandBaseline)
 				}
@@ -1035,7 +1042,8 @@ func ImportIPDemandBaseline(context *gin.Context, versionId int64, f *excelize.F
 func HandleIPDemandDeviceRoleRel(context *gin.Context, ipDemandBaselines []entity.IPDemandBaseline, networkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline, ipDemandBaselineExcelList []IPDemandBaselineExcel) bool {
 	ipDemandBaselineMap := make(map[string]int64)
 	for _, ipDemandBaseline := range ipDemandBaselines {
-		ipDemandBaselineMap[ipDemandBaseline.Vlan] = ipDemandBaseline.Id
+		key := fmt.Sprintf("%s - %d", ipDemandBaseline.Vlan, ipDemandBaseline.NetworkType)
+		ipDemandBaselineMap[key] = ipDemandBaseline.Id
 	}
 	networkDeviceRoleCodeMap := make(map[string]int64)
 	for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
@@ -1043,7 +1051,12 @@ func HandleIPDemandDeviceRoleRel(context *gin.Context, ipDemandBaselines []entit
 	}
 	var ipDemandDeviceRoleRels []entity.IPDemandDeviceRoleRel
 	for _, ipDemandBaselineExcel := range ipDemandBaselineExcelList {
-		ipDemandId := ipDemandBaselineMap[ipDemandBaselineExcel.Vlan]
+		networkType := constant.IpDemandNetworkTypeIpv4
+		if ipDemandBaselineExcel.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
+			networkType = constant.IpDemandNetworkTypeIpv6
+		}
+		key := fmt.Sprintf("%s - %d", ipDemandBaselineExcel.Vlan, networkType)
+		ipDemandId := ipDemandBaselineMap[key]
 		for _, networkDeviceRoleCode := range ipDemandBaselineExcel.NetworkDeviceRoleCodes {
 			deviceRoleId, ok := networkDeviceRoleCodeMap[networkDeviceRoleCode]
 			if !ok {

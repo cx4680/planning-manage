@@ -386,6 +386,7 @@ CREATE TABLE `ip_demand_baseline`
     `version_id`    bigint(20) DEFAULT NULL COMMENT '版本id',
     `vlan`          varchar(20)  DEFAULT NULL COMMENT 'vlan id',
     `explain`       varchar(500) DEFAULT NULL COMMENT '说明',
+    `network_type`  tinyint(4) DEFAULT NULL COMMENT '网络类型，0：ipv4，1：ipv6',
     `description`   varchar(500) DEFAULT NULL COMMENT '描述',
     `ip_suggestion` varchar(500) DEFAULT NULL COMMENT 'IP地址规划建议',
     `assign_num`    varchar(100) DEFAULT NULL COMMENT '分配数量',

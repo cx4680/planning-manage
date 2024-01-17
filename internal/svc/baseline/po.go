@@ -109,6 +109,7 @@ type NetworkDeviceBaselineExcel struct {
 type IPDemandBaselineExcel struct {
 	Vlan                   string   `excel:"name:Vlan Id;" json:"vlan"`                // vlan id
 	Explain                string   `excel:"name:说明;" json:"explain"`                  // 说明
+	NetworkType            string   `excel:"name:网络类型;" json:"networkType"`            // 网络类型
 	Description            string   `excel:"name:描述;" json:"description"`              // 描述
 	IPSuggestion           string   `excel:"name:IP地址规划建议;" json:"IPSuggestion"`       // IP地址规划建议
 	NetworkDeviceRoleCode  string   `excel:"name:关联设备组;" json:"networkDeviceRoleCode"` // 关联设备组

@@ -106,4 +106,9 @@ const (
 
 	RegionTypeCode = "regionType"
 	CellTypeCode   = "cellType"
+
+	IpDemandNetworkTypeIpv4Cn = "ipv4"
+	IpDemandNetworkTypeIpv4   = 0
+	IpDemandNetworkTypeIpv6Cn = "ipv6"
+	IpDemandNetworkTypeIpv6   = 1
 )
