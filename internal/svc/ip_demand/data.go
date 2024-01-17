@@ -1,10 +1,11 @@
 package ip_demand
 
 import (
-	"code.cestc.cn/ccos/common/planning-manage/internal/data"
-	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 )
 
 func SearchIpDemandPlanningByPlanId(planId int64) ([]entity.IPDemandPlanning, error) {
@@ -45,12 +46,12 @@ func SaveBatch(tx *gorm.DB, demandPlannings []*entity.IPDemandPlanning) error {
 
 func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExportResponse, error) {
 	var planManage entity.PlanManage
-	if err := data.DB.Where("id = ? and delete_state = 0", planId).Scan(&planManage).Error; err != nil {
+	if err := data.DB.Table(entity.PlanManageTable).Where("id = ? and delete_state = 0", planId).Scan(&planManage).Error; err != nil {
 		log.Errorf("[exportIpDemandPlanningByPlanId] get planManage by id err, %v", err)
 		return "", nil, err
 	}
 	var projectManage entity.ProjectManage
-	if err := data.DB.Where("id = ? and delete_state = 0", planManage.ProjectId).Scan(&projectManage).Error; err != nil {
+	if err := data.DB.Table(entity.ProjectManageTable).Where("id = ? and delete_state = 0", planManage.ProjectId).Scan(&projectManage).Error; err != nil {
 		log.Errorf("[exportIpDemandPlanningByPlanId] get projectManage by id err, %v", err)
 		return "", nil, err
 	}

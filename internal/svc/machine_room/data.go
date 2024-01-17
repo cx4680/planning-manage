@@ -13,7 +13,7 @@ func QueryMachineRoomByPlanId(planId int64) ([]entity.MachineRoom, error) {
 	var azId int64
 	if err := data.DB.Table(entity.PlanManageTable+" plan").Select("project.az_id").
 		Joins("left join project_manage project on plan.project_id = project.id").
-		Where("plan.id = ?", planId).Find(&azId).Error; err != nil {
+		Where("plan.id = ? and plan.delete_state = 0", planId).Find(&azId).Error; err != nil {
 		log.Errorf("[queryAzIdByPlanId] query azId error, %v", err)
 	}
 	if err := data.DB.Table(entity.MachineRoomTable).
@@ -28,7 +28,7 @@ func UpdateMachineRoomByPlanId(planId int64, machineRooms []entity.MachineRoom) 
 	var azId int64
 	if err := data.DB.Table(entity.PlanManageTable+" plan").Select("project.az_id").
 		Joins("left join project_manage project on plan.project_id = project.id").
-		Where("plan.id = ?", planId).Find(&azId).Error; err != nil {
+		Where("plan.id = ? and plan.delete_state = 0", planId).Find(&azId).Error; err != nil {
 		log.Errorf("[queryAzIdByPlanId] query azId error, %v", err)
 	}
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {

@@ -74,7 +74,7 @@ func QueryRegionAzCellByPlanId(planId int64) (RegionAzCell, error) {
 		Joins("left join region_manage region on project.region_id = region.id").
 		Joins("left join az_manage az on project.az_id = az.id").
 		Joins("left join cell_manage cell on project.cell_id = cell.id").
-		Where("plan.id = ?", planId).
+		Where("plan.id = ? and plan.delete_state = 0", planId).
 		Find(&regionAzCell).Error; err != nil {
 		log.Errorf("[queryRegionAzCellByPlanId] query region az cell error, %v", err)
 		return regionAzCell, err
