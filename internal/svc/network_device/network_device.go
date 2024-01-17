@@ -639,7 +639,7 @@ func DownloadNetworkShelve(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	if err = excel.NormalDownLoad(fileName, "网络设备上架表", "", false, response, c.Writer); err != nil {
+	if err = excel.NormalDownLoad(fileName, "网络设备上架清单", "", false, response, c.Writer); err != nil {
 		log.Errorf("下载错误：", err)
 	}
 	return

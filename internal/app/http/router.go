@@ -200,8 +200,8 @@ func Router(engine *gin.Engine) {
 			networkGroup.POST("/shelve/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传网络设备上架表", "uploadNetworkShelve", middleware.IMPORT, middleware.INFO)), network_device.UploadNetworkShelve)
 			// 保存网络设备上架表
 			networkGroup.POST("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备上架表", "saveNetworkShelve", middleware.UPDATE, middleware.INFO)), network_device.SaveNetworkShelve)
-			// 下载网络设备上架表
-			networkGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备上架表", "saveNetworkShelve", middleware.EXPORT, middleware.INFO)), network_device.DownloadNetworkShelve)
+			// 下载网络设备上架清单
+			networkGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备上架清单", "saveNetworkShelve", middleware.EXPORT, middleware.INFO)), network_device.DownloadNetworkShelve)
 		}
 
 		// IP需求
