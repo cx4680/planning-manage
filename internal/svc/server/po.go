@@ -41,6 +41,7 @@ type Server struct {
 	ServerArch         string           `gorm:"-" json:"ServerArch"`         // 架构
 	ServerBaselineList []*Baseline      `gorm:"-" json:"serverBaselineList"` // 可选择机型列表
 	MixedNodeRoleList  []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`  // 可混合部署角色列表
+	Upload             int              `gorm:"-" json:"upload"`             // 是否已上传
 }
 
 type MixedNodeRole struct {

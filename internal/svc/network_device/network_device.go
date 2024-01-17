@@ -541,19 +541,19 @@ func ListNetworkShelve(c *gin.Context) {
 	return
 }
 
-func DownloadNetworkShelve(c *gin.Context) {
+func DownloadNetworkShelveTemplate(c *gin.Context) {
 	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	if planId == 0 {
 		result.Failure(c, "planId不能为空", http.StatusBadRequest)
 		return
 	}
-	response, fileName, err := getNetworkShelveDownloadList(planId)
+	response, fileName, err := getDownloadNetworkShelveTemplate(planId)
 	if err != nil {
-		log.Errorf("ListNetworkShelve error, %v", err)
+		log.Errorf("DownloadNetworkShelveTemplate error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	if err = excel.NormalDownLoad(fileName, "网络设备上架表", "", false, response, c.Writer); err != nil {
+	if err = excel.NormalDownLoad(fileName, "网络设备上架模板", "", false, response, c.Writer); err != nil {
 		log.Errorf("下载错误：", err)
 	}
 	return
@@ -624,5 +624,23 @@ func SaveNetworkShelve(c *gin.Context) {
 		return
 	}
 	result.Success(c, nil)
+	return
+}
+
+func DownloadNetworkShelve(c *gin.Context) {
+	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
+	if planId == 0 {
+		result.Failure(c, "planId不能为空", http.StatusBadRequest)
+		return
+	}
+	response, fileName, err := getDownloadNetworkShelve(planId)
+	if err != nil {
+		log.Errorf("DownloadNetworkShelve error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if err = excel.NormalDownLoad(fileName, "网络设备上架表", "", false, response, c.Writer); err != nil {
+		log.Errorf("下载错误：", err)
+	}
 	return
 }
