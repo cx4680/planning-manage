@@ -787,7 +787,7 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 				cabinetIdleSlotListMap[v.CabinetId] = append(cabinetIdleSlotListMap[v.CabinetId],
 					&Cabinet{
 						CabinetInfo:     cabinetMap[v.CabinetId],
-						CabinetLocation: fmt.Sprintf("%d-%d", cabinetIdleSlotNumberMap[v.CabinetId], v.IdleSlotNumber),
+						CabinetLocation: fmt.Sprintf("%v-%v", cabinetMap[v.CabinetId].MachineRoomAbbr, cabinetMap[v.CabinetId].CabinetNum),
 						IdleSlot:        fmt.Sprintf("%d-%d", cabinetIdleSlotNumberMap[v.CabinetId], v.IdleSlotNumber),
 					})
 				cabinetIdleSlotNumberMap[v.CabinetId] = 0

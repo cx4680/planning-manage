@@ -1,6 +1,7 @@
 package plan
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
@@ -101,16 +102,30 @@ func UpdatePlan(request *Request) error {
 		return err
 	}
 	now := datetime.GetNow()
-	planEntity := &entity.PlanManage{
-		Id:           request.Id,
-		Name:         request.Name,
-		Type:         request.Type,
-		Stage:        request.Stage,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
-	}
-	if err := data.DB.Updates(&planEntity).Error; err != nil {
+	var planManage = &entity.PlanManage{}
+	if err := data.DB.Where("id = ?", request.Id).Find(planManage).Error; err != nil {
 		return err
+	}
+	if planManage.Id == 0 {
+		return errors.New("方案不存在")
+	}
+	planManage.Name = request.Name
+	planManage.Type = request.Type
+	planManage.Stage = request.Stage
+	planManage.UpdateUserId = request.UserId
+	planManage.UpdateTime = now
+	if err := data.DB.Updates(&planManage).Error; err != nil {
+		return err
+	}
+	if request.Type == constant.PlanStageDelivering {
+		if err := data.DB.Updates(&entity.ProjectManage{Id: planManage.ProjectId, Stage: constant.ProjectStageDelivery}).Error; err != nil {
+			return err
+		}
+	}
+	if request.Type == constant.PlanStageDelivered {
+		if err := data.DB.Updates(&entity.ProjectManage{Id: planManage.ProjectId, Stage: constant.ProjectStageDelivered}).Error; err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -262,7 +262,7 @@ func SaveDeviceList(c *gin.Context) {
 			}
 		}
 		// 更新方案表的状态
-		if err = plan.UpdatePlanStage(tx, planId, constant.Planned, userId, constant.BusinessPlanningEnd); err != nil {
+		if err = plan.UpdatePlanStage(tx, planId, constant.PlanStagePlanned, userId, constant.BusinessPlanningEnd); err != nil {
 			return err
 		}
 		// 批量保存网络设备清单
@@ -639,7 +639,7 @@ func DownloadNetworkShelve(c *gin.Context) {
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	if err = excel.NormalDownLoad(fileName, "网络设备上架表", "", false, response, c.Writer); err != nil {
+	if err = excel.NormalDownLoad(fileName, "网络设备上架清单", "", false, response, c.Writer); err != nil {
 		log.Errorf("下载错误：", err)
 	}
 	return
