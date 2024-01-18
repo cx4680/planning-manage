@@ -8,16 +8,16 @@ import (
 	"os"
 	"strconv"
 	"time"
-	
+
 	"github.com/xuri/excelize/v2"
-	
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
-	
+
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
-	
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
@@ -327,7 +327,7 @@ func SaveDeviceList(c *gin.Context) {
 						SegmentType:     ipDemandBaseline.Explain,
 						NetworkType:     ipDemandBaseline.NetworkType,
 						Vlan:            ipDemandBaseline.Vlan,
-						Cnum:            ipDemandBaseline.AssignNum,
+						CNum:            ipDemandBaseline.AssignNum,
 						Describe:        ipDemandBaseline.Description,
 						AddressPlanning: ipDemandBaseline.IpSuggestion,
 						CreateTime:      now,
