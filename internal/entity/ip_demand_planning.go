@@ -11,7 +11,7 @@ type IPDemandPlanning struct {
 	SegmentType     string    `gorm:"column:segment_type" json:"segmentType"`         // 网段类型
 	NetworkType     int       `gorm:"column:network_type" json:"networkType"`         // 网络类型，0：ipv4，1：ipv6
 	Vlan            string    `gorm:"column:vlan" json:"vlan"`                        // vlan id
-	Cnum            string    `gorm:"column:c_num" json:"cNum"`                       // C数量
+	CNum            string    `gorm:"column:c_num" json:"cNum"`                       // C数量
 	Address         string    `gorm:"column:address" json:"address"`                  // 地址段
 	Describe        string    `gorm:"column:describe" json:"describe"`                // 描述
 	AddressPlanning string    `gorm:"column:address_planning" json:"addressPlanning"` // IP地址规划建议

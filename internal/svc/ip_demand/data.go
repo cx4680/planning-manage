@@ -46,19 +46,30 @@ func SaveBatch(tx *gorm.DB, demandPlannings []*entity.IPDemandPlanning) error {
 
 func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExportResponse, error) {
 	var planManage entity.PlanManage
-	if err := data.DB.Table(entity.PlanManageTable).Where("id = ? and delete_state = 0", planId).Scan(&planManage).Error; err != nil {
+	if err := data.DB.Where("id = ? AND delete_state = 0", planId).Find(&planManage).Error; err != nil {
 		log.Errorf("[exportIpDemandPlanningByPlanId] get planManage by id err, %v", err)
 		return "", nil, err
 	}
 	var projectManage entity.ProjectManage
-	if err := data.DB.Table(entity.ProjectManageTable).Where("id = ? and delete_state = 0", planManage.ProjectId).Scan(&projectManage).Error; err != nil {
+	if err := data.DB.Where("id = ? AND delete_state = 0", planManage.ProjectId).Find(&projectManage).Error; err != nil {
 		log.Errorf("[exportIpDemandPlanningByPlanId] get projectManage by id err, %v", err)
 		return "", nil, err
 	}
-	var response []IpDemandPlanningExportResponse
-	if err := data.DB.Raw("select segment_type, `describe`, vlan, c_num, address, address_planning from ip_demand_planning where plan_id = ?", planId).Scan(&response).Error; err != nil {
+	var list []*entity.IPDemandPlanning
+	if err := data.DB.Where("plan_id = ?", planId).Find(&list).Error; err != nil {
 		log.Errorf("[exportIpDemandPlanningByPlanId] query db error, %v", err)
 		return "", nil, err
+	}
+	var response []IpDemandPlanningExportResponse
+	for _, v := range list {
+		response = append(response, IpDemandPlanningExportResponse{
+			SegmentType:     v.SegmentType,
+			Describe:        v.Describe,
+			Vlan:            v.Vlan,
+			CNum:            v.CNum,
+			Address:         v.Address,
+			AddressPlanning: v.AddressPlanning,
+		})
 	}
 	return projectManage.Name + "-" + planManage.Name + "-" + "IP需求清单", response, nil
 }

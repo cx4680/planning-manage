@@ -654,7 +654,7 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 	return nodeRoleCapMap, nil
 }
 
-func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
+func getServerShelveDownloadTemplate(planId int64) ([]ShelveDownload, string, error) {
 	//查询服务器规划表
 	serverPlanningList, err := getServerShelvePlanningList(planId)
 	if err != nil {
@@ -712,15 +712,15 @@ func getServerShelvePlanningList(planId int64) ([]*Server, error) {
 	if err := data.DB.Model(&entity.ServerPlanning{}).Where("plan_id = ?", planId).Order("shelve_priority ASC").Find(&serverPlanning).Error; err != nil {
 		return nil, err
 	}
-	var NodeRoleIdList []int64
-	var ServerBaselineIdList []int64
+	var nodeRoleIdList []int64
+	var serverBaselineIdList []int64
 	for _, v := range serverPlanning {
-		NodeRoleIdList = append(NodeRoleIdList, v.NodeRoleId)
-		ServerBaselineIdList = append(ServerBaselineIdList, v.ServerBaselineId)
+		nodeRoleIdList = append(nodeRoleIdList, v.NodeRoleId)
+		serverBaselineIdList = append(serverBaselineIdList, v.ServerBaselineId)
 	}
 	//查询节点角色表
 	var nodeRoleList []*entity.NodeRoleBaseline
-	if err := data.DB.Where("id IN (?)", NodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
+	if err := data.DB.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
 		return nil, err
 	}
 	var nodeRoleNameMap = make(map[int64]string)
@@ -729,7 +729,7 @@ func getServerShelvePlanningList(planId int64) ([]*Server, error) {
 	}
 	//查询服务器基线表
 	var serverBaseline []*entity.ServerBaseline
-	if err := data.DB.Where("id IN (?)", ServerBaselineIdList).Find(&serverBaseline).Error; err != nil {
+	if err := data.DB.Where("id IN (?)", serverBaselineIdList).Find(&serverBaseline).Error; err != nil {
 		return nil, err
 	}
 	var serverBaselineMap = make(map[int64]string)
@@ -874,7 +874,7 @@ func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 		})
 	}
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Delete(&entity.NetworkDeviceShelve{}, "plan_id = ?", planId).Error; err != nil {
+		if err := tx.Delete(&entity.ServerShelve{}, "plan_id = ?", planId).Error; err != nil {
 			return err
 		}
 		if err := tx.CreateInBatches(&serverShelveList, 10).Error; err != nil {
@@ -918,6 +918,65 @@ func saveServerShelve(request *Request) error {
 		return err
 	}
 	return nil
+}
+
+func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
+	var serverShelveList []*entity.ServerShelve
+	if err := data.DB.Where("plan_id = ?", planId).Find(&serverShelveList).Error; err != nil {
+		return nil, "", err
+	}
+	//查询节点角色表
+	var nodeRoleIdList []int64
+	for _, v := range serverShelveList {
+		nodeRoleIdList = append(nodeRoleIdList, v.NodeRoleId)
+	}
+	var nodeRoleList []*entity.NodeRoleBaseline
+	if err := data.DB.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
+		return nil, "", err
+	}
+	var nodeRoleNameMap = make(map[int64]string)
+	for _, v := range nodeRoleList {
+		nodeRoleNameMap[v.Id] = v.NodeRoleName
+	}
+	var response []ShelveDownload
+	for _, v := range serverShelveList {
+		response = append(response, ShelveDownload{
+			SortNumber:            v.SortNumber,
+			NodeRoleName:          nodeRoleNameMap[v.NodeRoleId],
+			NodeIp:                v.NodeIp,
+			Sn:                    v.Sn,
+			Model:                 v.Model,
+			MachineRoomAbbr:       v.MachineRoomAbbr,
+			MachineRoomNumber:     v.MachineRoomNumber,
+			ColumnNumber:          v.ColumnNumber,
+			CabinetAsw:            v.CabinetAsw,
+			CabinetNumber:         v.CabinetNumber,
+			CabinetOriginalNumber: v.CabinetOriginalNumber,
+			CabinetLocation:       v.CabinetLocation,
+			SlotPosition:          v.SlotPosition,
+			NetworkInterface:      v.NetworkInterface,
+			BmcUserName:           v.BmcUserName,
+			BmcPassword:           v.BmcPassword,
+			BmcIp:                 v.BmcIp,
+			BmcMac:                v.BmcMac,
+			Mask:                  v.Mask,
+			Gateway:               v.Gateway,
+		})
+	}
+	//构建文件名称
+	var planManage = &entity.PlanManage{}
+	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManage).Error; err != nil {
+		return nil, "", err
+	}
+	if planManage.Id == 0 {
+		return nil, "", errors.New("方案不存在")
+	}
+	var projectManage = &entity.ProjectManage{}
+	if err := data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
+		return nil, "", err
+	}
+	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器上架清单"
+	return response, fileName, nil
 }
 
 func checkNetworkShelve(shelveDownload *ShelveDownload) error {
