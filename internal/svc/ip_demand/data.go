@@ -4,6 +4,7 @@ import (
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
 
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 )
@@ -62,8 +63,14 @@ func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExp
 	}
 	var response []IpDemandPlanningExportResponse
 	for _, v := range list {
+		networkType := constant.IpDemandNetworkTypeIpv4Cn
+		if v.NetworkType == constant.IpDemandNetworkTypeIpv6 {
+			networkType = constant.IpDemandNetworkTypeIpv6Cn
+		}
 		response = append(response, IpDemandPlanningExportResponse{
+			LogicalGrouping: v.LogicalGrouping,
 			SegmentType:     v.SegmentType,
+			NetworkType:     networkType,
 			Describe:        v.Describe,
 			Vlan:            v.Vlan,
 			CNum:            v.CNum,
