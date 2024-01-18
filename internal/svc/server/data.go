@@ -931,7 +931,7 @@ func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 		nodeRoleIdList = append(nodeRoleIdList, v.NodeRoleId)
 	}
 	var nodeRoleList []*entity.NodeRoleBaseline
-	if err := data.DB.Where("id = ?", nodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
+	if err := data.DB.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
 		return nil, "", err
 	}
 	var nodeRoleNameMap = make(map[int64]string)
