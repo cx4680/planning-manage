@@ -178,7 +178,7 @@ func Router(engine *gin.Engine) {
 			// 保存服务器上架表
 			serverGroup.POST("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器上架表", "saveServerShelve", middleware.UPDATE, middleware.INFO)), server.SaveServerShelve)
 			// 下载服务器上架表模板
-			serverGroup.GET("/shelve/download/template/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表模板", "downloadServerShelveTemplate", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelve)
+			serverGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表模板", "downloadServerShelveTemplate", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelve)
 		}
 
 		// 网络规划
@@ -211,6 +211,9 @@ func Router(engine *gin.Engine) {
 		{
 			// 下载IP需求表
 			ipDemandGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载IP需求表", "ipDemandListDownload", middleware.EXPORT, middleware.INFO)), ip_demand.IpDemandListDownload)
+			// 查询IP规划列表
+			ipDemandGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询IP规划列表", "getIpDemandList", middleware.EXPORT, middleware.INFO)), ip_demand.List)
+
 		}
 
 		// 云产品

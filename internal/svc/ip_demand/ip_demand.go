@@ -27,3 +27,21 @@ func IpDemandListDownload(context *gin.Context) {
 	_ = excel.NormalDownLoad(fileName, "IP需求清单", "", false, exportResponseDataList, context.Writer)
 	return
 }
+
+func List(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindQuery(&request); err != nil {
+		log.Errorf("getIpDemandList bind param error: ", err)
+	}
+	if request.PlanId == 0 {
+		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+		return
+	}
+	_, list, err := exportIpDemandPlanningByPlanId(request.PlanId)
+	if err != nil {
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, list)
+	return
+}

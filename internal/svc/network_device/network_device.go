@@ -300,7 +300,7 @@ func SaveDeviceList(c *gin.Context) {
 				ipDemandPlanning.Vlan = dto.Vlan
 				assignNum, _ := utils.String2Float(dto.AssignNum)
 				cNum := assignNum * float64(num)
-				ipDemandPlanning.Cnum = fmt.Sprintf("%g", cNum)
+				ipDemandPlanning.CNum = fmt.Sprintf("%g", cNum)
 				ipDemandPlanning.Describe = dto.Description
 				ipDemandPlanning.AddressPlanning = dto.IpSuggestion
 				ipDemandPlanning.CreateTime = now
