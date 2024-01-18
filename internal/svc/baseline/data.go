@@ -1,8 +1,6 @@
 package baseline
 
 import (
-	"fmt"
-
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
@@ -313,8 +311,11 @@ func DeleteNodeRoleBaseline(nodeRoleBaselines []entity.NodeRoleBaseline) error {
 	return nil
 }
 
-func DeleteNodeRoleMixedDeploy() error {
-	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.NodeRoleMixedDeployTable)).Error; err != nil {
+func DeleteNodeRoleMixedDeploy(nodeRoleIds []int64) error {
+	if len(nodeRoleIds) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.NodeRoleMixedDeployTable).Where("node_role_id in (?)", nodeRoleIds).Delete(&entity.NodeRoleMixedDeploy{}).Error; err != nil {
 		log.Errorf("delete nodeRoleMixedDeploy error: %v", err)
 		return err
 	}
@@ -349,16 +350,22 @@ func UpdateCloudProductBaseline(cloudProductBaselines []entity.CloudProductBasel
 	return nil
 }
 
-func DeleteCloudProductDependRel() error {
-	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.CloudProductDependRelTable)).Error; err != nil {
+func DeleteCloudProductDependRel(cloudProductIds []int64) error {
+	if len(cloudProductIds) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CloudProductDependRelTable).Where("product_id in (?)", cloudProductIds).Delete(&entity.CloudProductDependRel{}).Error; err != nil {
 		log.Errorf("delete cloudProductDependRel error: %v", err)
 		return err
 	}
 	return nil
 }
 
-func DeleteCloudProductNodeRoleRel() error {
-	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.CloudProductNodeRoleRelTable)).Error; err != nil {
+func DeleteCloudProductNodeRoleRel(cloudProductIds []int64) error {
+	if len(cloudProductIds) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.CloudProductNodeRoleRelTable).Where("product_id in (?)", cloudProductIds).Delete(&entity.CloudProductNodeRoleRel{}).Error; err != nil {
 		log.Errorf("delete cloudProductNodeRoleRel error: %v", err)
 		return err
 	}
@@ -397,8 +404,11 @@ func DeleteServerBaseline(serverBaselines []entity.ServerBaseline) error {
 	return nil
 }
 
-func DeleteServerNodeRoleRel() error {
-	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.ServerNodeRoleRelTable)).Error; err != nil {
+func DeleteServerNodeRoleRel(serverIds []int64) error {
+	if len(serverIds) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.ServerNodeRoleRelTable).Where("server_id in (?)", serverIds).Delete(&entity.ServerNodeRoleRel{}).Error; err != nil {
 		log.Errorf("delete serverNodeRoleRel error: %v", err)
 		return err
 	}
@@ -415,8 +425,8 @@ func UpdateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.Network
 	return nil
 }
 
-func DeleteNetworkModelRoleRel() error {
-	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.NetworkModelRoleRelTable)).Error; err != nil {
+func DeleteNetworkModelRoleRel(networkDeviceRoleIds []int64) error {
+	if err := data.DB.Table(entity.NetworkModelRoleRelTable).Where("network_device_role_id in (?)", networkDeviceRoleIds).Delete(&entity.NetworkModelRoleRel{}).Error; err != nil {
 		log.Errorf("delete networkModelRoleRel error: %v", err)
 		return err
 	}
@@ -455,8 +465,11 @@ func DeleteNetworkDeviceBaseline(networkDeviceBaselines []entity.NetworkDeviceBa
 	return nil
 }
 
-func DeleteNetworkDeviceRoleRel() error {
-	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.NetworkDeviceRoleRelTable)).Error; err != nil {
+func DeleteNetworkDeviceRoleRel(networkDeviceIds []int64) error {
+	if len(networkDeviceIds) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.NetworkDeviceRoleRelTable).Where("device_id in (?)", networkDeviceIds).Delete(&entity.NetworkDeviceRoleRel{}).Error; err != nil {
 		log.Errorf("delete networkDeviceRoleRel error: %v", err)
 		return err
 	}
@@ -484,9 +497,12 @@ func DeleteIPDemandBaseline(ipDemandBaselines []entity.IPDemandBaseline) error {
 	return nil
 }
 
-func DeleteIPDemandDeviceRoleRel() error {
-	if err := data.DB.Exec(fmt.Sprintf("DELETE FROM %s", entity.IPDemandDeviceRoleRelTable)).Error; err != nil {
-		log.Errorf("batch insert ipDemandDeviceRoleRel error: %v", err)
+func DeleteIPDemandDeviceRoleRel(ipDemandIds []int64) error {
+	if len(ipDemandIds) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.IPDemandDeviceRoleRelTable).Where("ip_demand_id in (?)", ipDemandIds).Delete(&entity.IPDemandDeviceRoleRel{}).Error; err != nil {
+		log.Errorf("delete ipDemandDeviceRoleRel error: %v", err)
 		return err
 	}
 	return nil

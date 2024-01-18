@@ -217,14 +217,16 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 			originCloudProductMap := make(map[string]entity.CloudProductBaseline)
 			var insertCloudProductBaselines []entity.CloudProductBaseline
 			var updateCloudProductBaselines []entity.CloudProductBaseline
+			var originCloudProductIds []int64
 			for _, originCloudProductBaseline := range originCloudProductBaselines {
 				originCloudProductMap[originCloudProductBaseline.ProductCode] = originCloudProductBaseline
+				originCloudProductIds = append(originCloudProductIds, originCloudProductBaseline.Id)
 			}
-			if err := DeleteCloudProductDependRel(); err != nil {
+			if err = DeleteCloudProductDependRel(originCloudProductIds); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := DeleteCloudProductNodeRoleRel(); err != nil {
+			if err := DeleteCloudProductNodeRoleRel(originCloudProductIds); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -384,10 +386,12 @@ func ImportNodeRoleBaseline(context *gin.Context, versionId int64, f *excelize.F
 			originNodeRoleMap := make(map[string]entity.NodeRoleBaseline)
 			var updateNodeRoleBaselines []entity.NodeRoleBaseline
 			var insertNodeRoleBaselines []entity.NodeRoleBaseline
+			var originNodeRoleIds []int64
 			for _, originNodeRoleBaseline := range originNodeRoleBaselines {
 				originNodeRoleMap[originNodeRoleBaseline.NodeRoleCode] = originNodeRoleBaseline
+				originNodeRoleIds = append(originNodeRoleIds, originNodeRoleBaseline.Id)
 			}
-			if err := DeleteNodeRoleMixedDeploy(); err != nil {
+			if err = DeleteNodeRoleMixedDeploy(originNodeRoleIds); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -520,12 +524,14 @@ func ImportServerBaseline(context *gin.Context, versionId int64, f *excelize.Fil
 			originServerMap := make(map[string]entity.ServerBaseline)
 			var insertServerBaselines []entity.ServerBaseline
 			var updateServerBaselines []entity.ServerBaseline
-			if err := DeleteServerNodeRoleRel(); err != nil {
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
-			}
+			var originServerIds []int64
 			for _, originServerBaseline := range originServerBaselines {
 				originServerMap[originServerBaseline.BomCode] = originServerBaseline
+				originServerIds = append(originServerIds, originServerBaseline.Id)
+			}
+			if err = DeleteServerNodeRoleRel(originServerIds); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
 			}
 			for _, serverBaseline := range serverBaselines {
 				originServerBaseline, ok := originServerMap[serverBaseline.BomCode]
@@ -616,7 +622,7 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, versionId int64, f *e
 		return true
 	}
 	var networkDeviceRoleBaselineExcelList []NetworkDeviceRoleBaselineExcel
-	if err := excel.ImportBySheet(f, &networkDeviceRoleBaselineExcelList, NetworkDeviceRoleBaselineSheetName, 0, 1); err != nil {
+	if err = excel.ImportBySheet(f, &networkDeviceRoleBaselineExcelList, NetworkDeviceRoleBaselineSheetName, 0, 1); err != nil {
 		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return true
@@ -682,12 +688,14 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, versionId int64, f *e
 			originNetworkDeviceRoleMap := make(map[string]entity.NetworkDeviceRoleBaseline)
 			var insertNetworkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline
 			var updateNetworkDeviceRoleBaselines []entity.NetworkDeviceRoleBaseline
-			if err := DeleteNetworkModelRoleRel(); err != nil {
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
-			}
+			var originNetworkDeviceRoleIds []int64
 			for _, originNetworkDeviceRoleBaseline := range originNetworkDeviceRoleBaselines {
 				originNetworkDeviceRoleMap[originNetworkDeviceRoleBaseline.FuncCompoCode] = originNetworkDeviceRoleBaseline
+				originNetworkDeviceRoleIds = append(originNetworkDeviceRoleIds, originNetworkDeviceRoleBaseline.Id)
+			}
+			if err = DeleteNetworkModelRoleRel(originNetworkDeviceRoleIds); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
 			}
 			for _, networkDeviceRoleBaseline := range networkDeviceRoleBaselines {
 				originNetworkDeviceRoleBaseline, ok := originNetworkDeviceRoleMap[networkDeviceRoleBaseline.FuncCompoCode]
@@ -862,12 +870,14 @@ func ImportNetworkDeviceBaseline(context *gin.Context, versionId int64, f *excel
 			originNetworkDeviceMap := make(map[string]entity.NetworkDeviceBaseline)
 			var insertNetworkDeviceBaselines []entity.NetworkDeviceBaseline
 			var updateNetworkDeviceBaselines []entity.NetworkDeviceBaseline
-			if err := DeleteNetworkDeviceRoleRel(); err != nil {
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
-			}
+			var originNetworkDeviceIds []int64
 			for _, originNetworkDeviceBaseline := range originNetworkDeviceBaselines {
 				originNetworkDeviceMap[originNetworkDeviceBaseline.DeviceModel] = originNetworkDeviceBaseline
+				originNetworkDeviceIds = append(originNetworkDeviceIds, originNetworkDeviceBaseline.Id)
+			}
+			if err = DeleteNetworkDeviceRoleRel(originNetworkDeviceIds); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
 			}
 			for _, networkDeviceBaseline := range networkDeviceBaselines {
 				originNetworkDeviceBaseline, ok := originNetworkDeviceMap[networkDeviceBaseline.DeviceModel]
@@ -991,13 +1001,15 @@ func ImportIPDemandBaseline(context *gin.Context, versionId int64, f *excelize.F
 			originIPDemandMap := make(map[string]entity.IPDemandBaseline)
 			var insertIPDemandBaselines []entity.IPDemandBaseline
 			var updateIPDemandBaselines []entity.IPDemandBaseline
-			if err := DeleteIPDemandDeviceRoleRel(); err != nil {
-				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-				return true
-			}
+			var originIPDemandIds []int64
 			for _, originIPDemandBaseline := range originIPDemandBaselines {
 				key := fmt.Sprintf("%s - %d", originIPDemandBaseline.Vlan, originIPDemandBaseline.NetworkType)
 				originIPDemandMap[key] = originIPDemandBaseline
+				originIPDemandIds = append(originIPDemandIds, originIPDemandBaseline.Id)
+			}
+			if err = DeleteIPDemandDeviceRoleRel(originIPDemandIds); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
 			}
 			for _, ipDemandBaseline := range ipDemandBaselines {
 				key := fmt.Sprintf("%s - %d", ipDemandBaseline.Vlan, ipDemandBaseline.NetworkType)
