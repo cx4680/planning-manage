@@ -100,11 +100,21 @@ func getBrandsByVersionId(versionId int64) ([]string, error) {
 func getDeviceRoleGroupNumByPlanId(tx *gorm.DB, planId int64) ([]*DeviceRoleGroupNum, error) {
 	var roleNum []*DeviceRoleGroupNum
 	if err := tx.Table(entity.NetworkDeviceListTable).Select("count(DISTINCT logical_grouping) as groupNum", "network_device_role_id").
-		Where("plan_id = ?", planId).Group("network_device_role_id").Find(&roleNum).Error; err != nil {
+		Where("plan_id = ? and delete_state = 0", planId).Group("network_device_role_id").Find(&roleNum).Error; err != nil {
 		log.Errorf("[getDeviceRoleGroupNumByPlanId] error, %v", err)
 		return nil, err
 	}
 	return roleNum, nil
+}
+
+func getDeviceRoleLogicGroupByPlanId(tx *gorm.DB, planId int64) ([]*DeviceRoleLogicGroup, error) {
+	var logicGroups []*DeviceRoleLogicGroup
+	if err := tx.Table(entity.NetworkDeviceListTable).Select("DISTINCT logical_grouping", "network_device_role_id").
+		Where("plan_id = ? and delete_state = 0", planId).Find(&logicGroups).Error; err != nil {
+		log.Errorf("[getDeviceRoleLogicGroupByPlanId] error, %v", err)
+		return nil, err
+	}
+	return logicGroups, nil
 }
 
 func getModelsByVersionIdAndRoleAndBrand(versionId int64, id int64, brand string, deviceType int) ([]NetworkDeviceModel, error) {

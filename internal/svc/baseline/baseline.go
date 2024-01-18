@@ -1028,6 +1028,8 @@ func ImportIPDemandBaseline(context *gin.Context, versionId int64, f *excelize.F
 					return true
 				}
 			}
+			ipDemandBaselines = append(insertIPDemandBaselines, updateIPDemandBaselines...)
+			return HandleIPDemandDeviceRoleRel(context, ipDemandBaselines, networkDeviceRoleBaselines, ipDemandBaselineExcelList)
 		} else {
 			if err := BatchCreateIPDemandBaseline(ipDemandBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)

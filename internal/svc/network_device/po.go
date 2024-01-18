@@ -23,6 +23,11 @@ type DeviceRoleGroupNum struct {
 	GroupNum     int   `gorm:"column:groupNum" form:"groupNum"`
 }
 
+type DeviceRoleLogicGroup struct {
+	DeviceRoleId    int64  `gorm:"column:network_device_role_id" form:"deviceRoleId"`
+	LogicalGrouping string `gorm:"column:logical_grouping" form:"logicalGrouping"`
+}
+
 type Request struct {
 	PlanId                int64            `json:"planId" form:"planId"`
 	Brand                 string           `json:"brand" form:"brand"`

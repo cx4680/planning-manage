@@ -14,6 +14,7 @@ type IpDemandBaselineDto struct {
 	VersionId    int64  `form:"versionId"`
 	Vlan         string `form:"vlan"`
 	Explain      string `form:"explain"`
+	NetworkType  int    `form:"networkType"`
 	Description  string `form:"description"`
 	IpSuggestion string `form:"ipSuggestion"`
 	AssignNum    string `form:"assignNum"`

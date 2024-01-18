@@ -14,7 +14,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 
-	"code.cestc.cn/ccos/cnm/ops-base/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
@@ -249,9 +248,9 @@ func SaveDeviceList(c *gin.Context) {
 	if len(ipDemandBaselines) == 0 {
 		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.IpDemandBaselineEmpty)
 	}
-	// 转ip基线ID Map
-	ipBaselineIdMap := util.ListToMaps(ipDemandBaselines, "ID")
-	log.Infof("IP需求基线表转为map后的数据=%v", ipBaselineIdMap)
+	// // 转ip基线ID Map
+	// ipBaselineIdMap := util.ListToMaps(ipDemandBaselines, "ID")
+	// log.Infof("IP需求基线表转为map后的数据=%v", ipBaselineIdMap)
 	userId := user.GetUserId(c)
 	err = data.DB.Transaction(func(tx *gorm.DB) error {
 		if len(deviceList) > 0 {
@@ -269,45 +268,75 @@ func SaveDeviceList(c *gin.Context) {
 		if err = SaveBatch(tx, networkDeviceList); err != nil {
 			return err
 		}
-		// 根据方案ID查询网络设备清单
-		deviceRoleNum, err := getDeviceRoleGroupNumByPlanId(tx, planId)
-		// 转设备角色id和分组数 map
-		deviceRoleIdMap := util.ListToMap(deviceRoleNum, "DeviceRoleId")
-		log.Infof("deviceRoleIdMap=%v", deviceRoleIdMap)
-		for _, value := range ipBaselineIdMap {
-			var num = 0
-			dto := new(ip_demand.IpDemandBaselineDto)
-			var needCount bool
-			// 根据IP需求规划表的关联设备组进行 网络设备清单分组累加
-			for i, val := range value {
-				v := val.(*ip_demand.IpDemandBaselineDto)
-				log.Infof("IpDemandBaselineDto=%v", v)
-				if i == 0 {
-					dto = v
+		// // 根据方案ID查询网络设备清单
+		// deviceRoleNum, err := getDeviceRoleGroupNumByPlanId(tx, planId)
+		// // 转设备角色id和分组数 map
+		// deviceRoleIdMap := util.ListToMap(deviceRoleNum, "DeviceRoleId")
+		// log.Infof("deviceRoleIdMap=%v", deviceRoleIdMap)
+		// for _, value := range ipBaselineIdMap {
+		// 	var num = 0
+		// 	dto := new(ip_demand.IpDemandBaselineDto)
+		// 	var needCount bool
+		// 	// 根据IP需求规划表的关联设备组进行 网络设备清单分组累加
+		// 	for i, val := range value {
+		// 		v := val.(*ip_demand.IpDemandBaselineDto)
+		// 		log.Infof("IpDemandBaselineDto=%v", v)
+		// 		if i == 0 {
+		// 			dto = v
+		// 		}
+		// 		deviceRoleId := v.DeviceRoleId
+		// 		groupNum, ok := deviceRoleIdMap[strconv.FormatInt(deviceRoleId, 10)]
+		// 		if ok {
+		// 			needCount = true
+		// 			deviceGroupNum := groupNum.(*DeviceRoleGroupNum)
+		// 			num += deviceGroupNum.GroupNum
+		// 		}
+		// 	}
+		// 	if needCount {
+		// 		ipDemandPlanning := new(entity.IPDemandPlanning)
+		// 		ipDemandPlanning.PlanId = planId
+		// 		ipDemandPlanning.SegmentType = dto.Explain
+		// 		ipDemandPlanning.Vlan = dto.Vlan
+		// 		assignNum, _ := utils.String2Float(dto.AssignNum)
+		// 		cNum := assignNum * float64(num)
+		// 		ipDemandPlanning.Cnum = fmt.Sprintf("%g", cNum)
+		// 		ipDemandPlanning.Describe = dto.Description
+		// 		ipDemandPlanning.AddressPlanning = dto.IpSuggestion
+		// 		ipDemandPlanning.CreateTime = now
+		// 		ipDemandPlanning.UpdateTime = now
+		// 		ipDemandPlannings = append(ipDemandPlannings, ipDemandPlanning)
+		// 	}
+		// }
+
+		logicGroups, err := getDeviceRoleLogicGroupByPlanId(tx, planId)
+		networkDevicePlan, err := SearchDevicePlanByPlanId(planId)
+		if err != nil {
+			result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+			return err
+		}
+		for _, ipDemandBaseline := range ipDemandBaselines {
+			for _, logicGroup := range logicGroups {
+				if ipDemandBaseline.DeviceRoleId == logicGroup.DeviceRoleId {
+					if networkDevicePlan.Ipv6 == constant.Ipv6No && ipDemandBaseline.NetworkType == constant.IpDemandNetworkTypeIpv6 {
+						// ipv4交付，跳过vlan id为ipv6的
+						continue
+					}
+					ipDemandPlannings = append(ipDemandPlannings, &entity.IPDemandPlanning{
+						PlanId:          planId,
+						LogicalGrouping: logicGroup.LogicalGrouping,
+						SegmentType:     ipDemandBaseline.Explain,
+						NetworkType:     ipDemandBaseline.NetworkType,
+						Vlan:            ipDemandBaseline.Vlan,
+						Cnum:            ipDemandBaseline.AssignNum,
+						Describe:        ipDemandBaseline.Description,
+						AddressPlanning: ipDemandBaseline.IpSuggestion,
+						CreateTime:      now,
+						UpdateTime:      now,
+					})
 				}
-				deviceRoleId := v.DeviceRoleId
-				groupNum, ok := deviceRoleIdMap[strconv.FormatInt(deviceRoleId, 10)]
-				if ok {
-					needCount = true
-					deviceGroupNum := groupNum.(*DeviceRoleGroupNum)
-					num += deviceGroupNum.GroupNum
-				}
-			}
-			if needCount {
-				ipDemandPlanning := new(entity.IPDemandPlanning)
-				ipDemandPlanning.PlanId = planId
-				ipDemandPlanning.SegmentType = dto.Explain
-				ipDemandPlanning.Vlan = dto.Vlan
-				assignNum, _ := utils.String2Float(dto.AssignNum)
-				cNum := assignNum * float64(num)
-				ipDemandPlanning.Cnum = fmt.Sprintf("%g", cNum)
-				ipDemandPlanning.Describe = dto.Description
-				ipDemandPlanning.AddressPlanning = dto.IpSuggestion
-				ipDemandPlanning.CreateTime = now
-				ipDemandPlanning.UpdateTime = now
-				ipDemandPlannings = append(ipDemandPlannings, ipDemandPlanning)
 			}
 		}
+
 		// ip需求表保存
 		if len(ipDemands) > 0 {
 			err = ip_demand.DeleteIpDemandPlanningByPlanId(tx, planId)

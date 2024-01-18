@@ -27,7 +27,7 @@ func DeleteIpDemandPlanningByPlanId(tx *gorm.DB, planId int64) error {
 
 func GetIpDemandBaselineByVersionId(versionId int64) ([]*IpDemandBaselineDto, error) {
 	var demandBaseline []*IpDemandBaselineDto
-	if err := data.DB.Table(entity.IPDemandBaselineTable+" a").Select("a.id", "a.version_id", "a.vlan", "a.explain", "a.description", "a.ip_suggestion", "a.assign_num", "a.remark", "b.device_role_id").
+	if err := data.DB.Table(entity.IPDemandBaselineTable+" a").Select("a.id", "a.version_id", "a.vlan", "a.explain", "a.network_type", "a.description", "a.ip_suggestion", "a.assign_num", "a.remark", "b.device_role_id").
 		Joins("left join ip_demand_device_role_rel b on a.id = b.ip_demand_id").
 		Where("a.version_id = ?", versionId).Find(&demandBaseline).Error; err != nil {
 		log.Errorf("[GetIpDemandBaselineByVersionId] error, %v", err)

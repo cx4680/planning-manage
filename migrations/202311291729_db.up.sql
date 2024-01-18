@@ -433,17 +433,19 @@ CREATE TABLE `cloud_product_planning`
 
 CREATE TABLE `ip_demand_planning`
 (
-    `id`               BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `plan_id`          bigint(20) NOT NULL COMMENT '方案ID',
-    `segment_type`     varchar(255) DEFAULT NULL COMMENT '网段类型',
-    `vlan`             varchar(45)  DEFAULT NULL COMMENT 'VLAN ID',
-    `c_num`            varchar(45)  DEFAULT NULL COMMENT 'C数量',
-    `address`          varchar(255) DEFAULT NULL COMMENT '地址段',
-    `describe`         varchar(255) DEFAULT NULL COMMENT '描述',
-    `address_planning` varchar(255) DEFAULT NULL COMMENT 'IP地址规划建议',
-    `create_time`      datetime     DEFAULT NULL COMMENT '创建时间',
-    `update_time`      datetime     DEFAULT NULL COMMENT '更新时间',
-    KEY                `IDX_PLAN_ID` (`plan_id`),
+    `id`                 BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `plan_id`            bigint(20) NOT NULL COMMENT '方案ID',
+    `logical_grouping`   varchar(255)  DEFAULT NULL COMMENT '逻辑分组',
+    `segment_type`       varchar(255) DEFAULT NULL COMMENT '网段类型',
+    `network_type`       tinyint(4) DEFAULT NULL COMMENT '网络类型，0：ipv4，1：ipv6',
+    `vlan`               varchar(45)  DEFAULT NULL COMMENT 'VLAN ID',
+    `c_num`              varchar(45)  DEFAULT NULL COMMENT 'C数量',
+    `address`            varchar(255) DEFAULT NULL COMMENT '地址段',
+    `describe`           varchar(255) DEFAULT NULL COMMENT '描述',
+    `address_planning`   varchar(255) DEFAULT NULL COMMENT 'IP地址规划建议',
+    `create_time`        datetime     DEFAULT NULL COMMENT '创建时间',
+    `update_time`        datetime     DEFAULT NULL COMMENT '更新时间',
+    KEY                  `IDX_PLAN_ID` (`plan_id`),
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='Ip需求规划表';
 
