@@ -1,6 +1,7 @@
 package ip_demand
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
 
@@ -9,8 +10,8 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 )
 
-func SearchIpDemandPlanningByPlanId(planId int64) ([]entity.IPDemandPlanning, error) {
-	var ipDemands []entity.IPDemandPlanning
+func SearchIpDemandPlanningByPlanId(planId int64) ([]entity.IpDemandPlanning, error) {
+	var ipDemands []entity.IpDemandPlanning
 	if err := data.DB.Where("plan_id = ?", planId).Find(&ipDemands).Error; err != nil {
 		log.Errorf("[searchIpDemandPlanningByPlanId] error, %v", err)
 		return nil, err
@@ -19,7 +20,7 @@ func SearchIpDemandPlanningByPlanId(planId int64) ([]entity.IPDemandPlanning, er
 }
 
 func DeleteIpDemandPlanningByPlanId(tx *gorm.DB, planId int64) error {
-	if err := tx.Delete(&entity.IPDemandPlanning{}, "plan_id = ?", planId).Error; err != nil {
+	if err := tx.Delete(&entity.IpDemandPlanning{}, "plan_id = ?", planId).Error; err != nil {
 		log.Errorf("[DeleteIpDemandPlanningByPlanId] error, %v", err)
 		return err
 	}
@@ -37,7 +38,7 @@ func GetIpDemandBaselineByVersionId(versionId int64) ([]*IpDemandBaselineDto, er
 	return demandBaseline, nil
 }
 
-func SaveBatch(tx *gorm.DB, demandPlannings []*entity.IPDemandPlanning) error {
+func SaveBatch(tx *gorm.DB, demandPlannings []*entity.IpDemandPlanning) error {
 	if err := tx.Create(&demandPlannings).Error; err != nil {
 		log.Errorf("batch insert demandPlannings error: ", err)
 		return err
@@ -56,13 +57,13 @@ func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExp
 		log.Errorf("[exportIpDemandPlanningByPlanId] get projectManage by id err, %v", err)
 		return "", nil, err
 	}
-	var list []*entity.IPDemandPlanning
-	if err := data.DB.Where("plan_id = ?", planId).Find(&list).Error; err != nil {
+	var ipDemandPlanningList []*entity.IpDemandPlanning
+	if err := data.DB.Where("plan_id = ?", planId).Find(&ipDemandPlanningList).Error; err != nil {
 		log.Errorf("[exportIpDemandPlanningByPlanId] query db error, %v", err)
 		return "", nil, err
 	}
 	var response []IpDemandPlanningExportResponse
-	for _, v := range list {
+	for _, v := range ipDemandPlanningList {
 		networkType := constant.IpDemandNetworkTypeIpv4Cn
 		if v.NetworkType == constant.IpDemandNetworkTypeIpv6 {
 			networkType = constant.IpDemandNetworkTypeIpv6Cn
@@ -79,4 +80,40 @@ func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExp
 		})
 	}
 	return projectManage.Name + "-" + planManage.Name + "-" + "IP需求清单", response, nil
+}
+
+func getIpDemandPlanningList(planId int64) ([]*entity.IpDemandPlanning, error) {
+	var list []*entity.IpDemandPlanning
+	if err := data.DB.Where("plan_id = ?", planId).Find(&list).Error; err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+func uploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlanningExportResponse) error {
+	var ipDemandPlanningList []*entity.IpDemandPlanning
+	now := datetime.GetNow()
+	for _, v := range ipDemandPlanningExportResponse {
+		networkType := constant.IpDemandNetworkTypeIpv4
+		if v.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
+			networkType = constant.IpDemandNetworkTypeIpv6
+		}
+		ipDemandPlanningList = append(ipDemandPlanningList, &entity.IpDemandPlanning{
+			PlanId:          planId,
+			LogicalGrouping: v.LogicalGrouping,
+			SegmentType:     v.SegmentType,
+			NetworkType:     networkType,
+			Vlan:            v.Vlan,
+			CNum:            v.CNum,
+			Address:         v.Address,
+			Describe:        v.Describe,
+			AddressPlanning: v.AddressPlanning,
+			CreateTime:      now,
+			UpdateTime:      now,
+		})
+	}
+	if err := data.DB.Create(ipDemandPlanningList).Error; err != nil {
+		return err
+	}
+	return nil
 }
