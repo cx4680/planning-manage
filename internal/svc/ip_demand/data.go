@@ -1,6 +1,8 @@
 package ip_demand
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
+	"errors"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
 	"time"
@@ -46,7 +48,7 @@ func SaveBatch(tx *gorm.DB, demandPlannings []*entity.IpDemandPlanning) error {
 	return nil
 }
 
-func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExportResponse, error) {
+func ExportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExportResponse, error) {
 	var planManage entity.PlanManage
 	if err := data.DB.Where("id = ? AND delete_state = 0", planId).Find(&planManage).Error; err != nil {
 		log.Errorf("[exportIpDemandPlanningByPlanId] get planManage by id err, %v", err)
@@ -81,7 +83,7 @@ func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExp
 	return projectManage.Name + "-" + planManage.Name + "-" + "IP需求清单", response, nil
 }
 
-func getIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
+func GetIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
 	ipDemandPlanningList, err := SearchIpDemandPlanningByPlanId(planId)
 	if err != nil {
 		return nil, err
@@ -100,8 +102,11 @@ func getIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
 	return list, nil
 }
 
-func uploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlanningExportResponse) error {
+func UploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlanningExportResponse) error {
 	for _, v := range ipDemandPlanningExportResponse {
+		if util.IsBlank(v.Address) {
+			return errors.New("地址段不能为空")
+		}
 		networkType := constant.IpDemandNetworkTypeIpv4
 		if v.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
 			networkType = constant.IpDemandNetworkTypeIpv6
@@ -114,7 +119,7 @@ func uploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlann
 	return nil
 }
 
-func saveIpDemand(request *Request) error {
+func SaveIpDemand(request *Request) error {
 	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningGlobalConfiguration}).Error; err != nil {
 		return err
 	}

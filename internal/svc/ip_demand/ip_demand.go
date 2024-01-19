@@ -23,7 +23,7 @@ func IpDemandListDownload(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	fileName, exportResponseDataList, err := exportIpDemandPlanningByPlanId(planId)
+	fileName, exportResponseDataList, err := ExportIpDemandPlanningByPlanId(planId)
 	if err != nil {
 		log.Errorf("[exportIpDemandPlanningByPlanId] error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
@@ -42,7 +42,7 @@ func List(c *gin.Context) {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
 		return
 	}
-	list, err := getIpDemandPlanningList(request.PlanId)
+	list, err := GetIpDemandPlanningList(request.PlanId)
 	if err != nil {
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
@@ -51,7 +51,7 @@ func List(c *gin.Context) {
 	return
 }
 
-func UploadIpDemand(c *gin.Context) {
+func Upload(c *gin.Context) {
 	planId, err := strconv.ParseInt(c.Param("planId"), 10, 64)
 	if planId == 0 {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
@@ -90,7 +90,7 @@ func UploadIpDemand(c *gin.Context) {
 		result.Failure(c, "解析文件错误", http.StatusInternalServerError)
 		return
 	}
-	if err = uploadIpDemand(planId, ipDemandPlanningExportResponse); err != nil {
+	if err = UploadIpDemand(planId, ipDemandPlanningExportResponse); err != nil {
 		log.Errorf("UploadNetworkShelve error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
@@ -99,12 +99,12 @@ func UploadIpDemand(c *gin.Context) {
 	return
 }
 
-func SaveIpDemand(c *gin.Context) {
+func Save(c *gin.Context) {
 	request := &Request{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		log.Error(err)
 	}
-	if err := saveIpDemand(request); err != nil {
+	if err := SaveIpDemand(request); err != nil {
 		log.Errorf("SaveNetworkShelve error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return

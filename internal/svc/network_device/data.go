@@ -24,7 +24,7 @@ func SearchDevicePlanByPlanId(planId int64) (*entity.NetworkDevicePlanning, erro
 	return &devicePlan, nil
 }
 
-func searchDeviceListByPlanId(planId int64) ([]entity.NetworkDeviceList, error) {
+func SearchDeviceListByPlanId(planId int64) ([]entity.NetworkDeviceList, error) {
 	var deviceList []entity.NetworkDeviceList
 	if err := data.DB.Where("plan_id = ? AND delete_state = 0", planId).Find(&deviceList).Error; err != nil {
 		log.Errorf("[searchDeviceListByPlanId] query device list error, %v", err)
@@ -41,7 +41,7 @@ func SaveBatch(tx *gorm.DB, networkDeviceList []*entity.NetworkDeviceList) error
 	return nil
 }
 
-func expireDeviceListByPlanId(tx *gorm.DB, planId int64) error {
+func ExpireDeviceListByPlanId(tx *gorm.DB, planId int64) error {
 	if err := tx.Model(&entity.NetworkDeviceList{}).Where("plan_id = ?", planId).Updates(map[string]interface{}{"delete_state": 1, "update_time": time.Now()}).Error; err != nil {
 		log.Errorf("[expireDeviceListByPlanId] expire device list error, %v", err)
 		return err
@@ -49,7 +49,7 @@ func expireDeviceListByPlanId(tx *gorm.DB, planId int64) error {
 	return nil
 }
 
-func searchDeviceRoleBaselineByVersionId(versionId int64) ([]entity.NetworkDeviceRoleBaseline, error) {
+func SearchDeviceRoleBaselineByVersionId(versionId int64) ([]entity.NetworkDeviceRoleBaseline, error) {
 	var deviceRoleBaselineList []entity.NetworkDeviceRoleBaseline
 	if err := data.DB.Where("version_id = ?", versionId).Find(&deviceRoleBaselineList).Error; err != nil {
 		log.Errorf("[searchDeviceRoleBaselineByVersionId] query device role baseline list error, %v", err)
@@ -58,7 +58,7 @@ func searchDeviceRoleBaselineByVersionId(versionId int64) ([]entity.NetworkDevic
 	return deviceRoleBaselineList, nil
 }
 
-func searchModelRoleRelByRoleIdAndNetworkModel(roleId int64, networkModel int) ([]entity.NetworkModelRoleRel, error) {
+func SearchModelRoleRelByRoleIdAndNetworkModel(roleId int64, networkModel int) ([]entity.NetworkModelRoleRel, error) {
 	var modelRoleRel []entity.NetworkModelRoleRel
 	if err := data.DB.Where("network_device_role_id = ? AND network_model = ?", roleId, networkModel).Find(&modelRoleRel).Error; err != nil {
 		log.Errorf("[searchModelRoleRelByRoleIdAndNetworkModel] error, %v", err)
@@ -67,7 +67,7 @@ func searchModelRoleRelByRoleIdAndNetworkModel(roleId int64, networkModel int) (
 	return modelRoleRel, nil
 }
 
-func createDevicePlan(request *Request) error {
+func CreateDevicePlan(request *Request) error {
 	networkPlan := entity.NetworkDevicePlanning{
 		PlanId:                request.PlanId,
 		Brand:                 request.Brand,
@@ -88,7 +88,7 @@ func createDevicePlan(request *Request) error {
 	return nil
 }
 
-func getBrandsByVersionId(versionId int64) ([]string, error) {
+func GetBrandsByVersionId(versionId int64) ([]string, error) {
 	var brands []string
 	if err := data.DB.Model(&entity.NetworkDeviceBaseline{}).Distinct("manufacturer").Where("version_id = ?", versionId).Find(&brands).Error; err != nil {
 		log.Errorf("[getBrandsByVersionIdAndNetworkVersion] query device brands error, %v", err)
@@ -107,7 +107,7 @@ func getDeviceRoleGroupNumByPlanId(tx *gorm.DB, planId int64) ([]*DeviceRoleGrou
 	return roleNum, nil
 }
 
-func getDeviceRoleLogicGroupByPlanId(tx *gorm.DB, planId int64) ([]*DeviceRoleLogicGroup, error) {
+func GetDeviceRoleLogicGroupByPlanId(tx *gorm.DB, planId int64) ([]*DeviceRoleLogicGroup, error) {
 	var logicGroups []*DeviceRoleLogicGroup
 	if err := tx.Table(entity.NetworkDeviceListTable).Select("DISTINCT logical_grouping", "network_device_role_id").
 		Where("plan_id = ? and delete_state = 0", planId).Find(&logicGroups).Error; err != nil {
@@ -117,7 +117,7 @@ func getDeviceRoleLogicGroupByPlanId(tx *gorm.DB, planId int64) ([]*DeviceRoleLo
 	return logicGroups, nil
 }
 
-func getModelsByVersionIdAndRoleAndBrand(versionId int64, id int64, brand string, deviceType int) ([]NetworkDeviceModel, error) {
+func GetModelsByVersionIdAndRoleAndBrand(versionId int64, id int64, brand string, deviceType int) ([]NetworkDeviceModel, error) {
 	var deviceModel []NetworkDeviceModel
 	if err := data.DB.Table(entity.NetworkDeviceBaselineTable+" a").Select("a.device_model", "a.conf_overview").
 		Joins("left join network_device_role_rel b on a.id = b.device_id").
@@ -129,7 +129,7 @@ func getModelsByVersionIdAndRoleAndBrand(versionId int64, id int64, brand string
 	return deviceModel, nil
 }
 
-func updateDevicePlan(request *Request, devicePlanning entity.NetworkDevicePlanning) error {
+func UpdateDevicePlan(request *Request, devicePlanning entity.NetworkDevicePlanning) error {
 	devicePlanning.UpdateTime = time.Now()
 	devicePlanning.Brand = request.Brand
 	devicePlanning.AwsServerNum = request.AwsServerNum
@@ -146,7 +146,7 @@ func updateDevicePlan(request *Request, devicePlanning entity.NetworkDevicePlann
 	return nil
 }
 
-func exportNetworkDeviceListByPlanId(planId int64) (string, []NetworkDeviceListExportResponse, error) {
+func ExportNetworkDeviceListByPlanId(planId int64) (string, []NetworkDeviceListExportResponse, error) {
 	var planManage entity.PlanManage
 	if err := data.DB.Where("id = ? and delete_state = 0", planId).Find(&planManage).Error; err != nil {
 		log.Errorf("[exportNetworkDeviceListByPlanId] get planManage by id err, %v", err)
@@ -169,7 +169,7 @@ func exportNetworkDeviceListByPlanId(planId int64) (string, []NetworkDeviceListE
 	var response []NetworkDeviceListExportResponse
 	for _, roleNum := range roleIdNum {
 		roleId := roleNum.NetworkDeviceRoleId
-		networkDevice, _ := getNetworkDeviceListByPlanIdAndRoleId(planId, roleId)
+		networkDevice, _ := GetNetworkDeviceListByPlanIdAndRoleId(planId, roleId)
 		var exportDto = NetworkDeviceListExportResponse{
 			networkDevice.NetworkDeviceRoleName,
 			networkDevice.NetworkDeviceRole,
@@ -183,7 +183,7 @@ func exportNetworkDeviceListByPlanId(planId int64) (string, []NetworkDeviceListE
 	return projectManage.Name + "-" + planManage.Name + "-" + "网络设备清单", response, nil
 }
 
-func getNetworkDeviceListByPlanIdAndRoleId(planId int64, roleId int64) (entity.NetworkDeviceList, error) {
+func GetNetworkDeviceListByPlanIdAndRoleId(planId int64, roleId int64) (entity.NetworkDeviceList, error) {
 	var networkDevice entity.NetworkDeviceList
 	if err := data.DB.Where("plan_id = ? AND delete_state = 0 AND network_device_role_id = ?", planId, roleId).Find(&networkDevice).Error; err != nil {
 		log.Errorf("[getNetworkDeviceListByPlanIdAndRoleId] query db error, %v", err)
@@ -192,7 +192,7 @@ func getNetworkDeviceListByPlanIdAndRoleId(planId int64, roleId int64) (entity.N
 	return networkDevice, nil
 }
 
-func getNetworkShelveList(planId int64) ([]*entity.NetworkDeviceShelve, error) {
+func GetNetworkShelveList(planId int64) ([]*entity.NetworkDeviceShelve, error) {
 	var networkDeviceShelve []*entity.NetworkDeviceShelve
 	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceShelve).Error; err != nil {
 		return nil, err
@@ -200,7 +200,7 @@ func getNetworkShelveList(planId int64) ([]*entity.NetworkDeviceShelve, error) {
 	return networkDeviceShelve, nil
 }
 
-func getDownloadNetworkShelveTemplate(planId int64) ([]NetworkDeviceShelveDownload, string, error) {
+func GetDownloadNetworkShelveTemplate(planId int64) ([]NetworkDeviceShelveDownload, string, error) {
 	var networkDeviceList []*entity.NetworkDeviceList
 	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceList).Error; err != nil {
 		return nil, "", err
@@ -232,7 +232,7 @@ func getDownloadNetworkShelveTemplate(planId int64) ([]NetworkDeviceShelveDownlo
 	return response, fileName, nil
 }
 
-func uploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDeviceShelveDownload, userId string) error {
+func UploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDeviceShelveDownload, userId string) error {
 	if len(networkDeviceShelveDownload) == 0 {
 		return errors.New("数据为空")
 	}
@@ -270,14 +270,14 @@ func uploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 	return nil
 }
 
-func saveNetworkShelve(request *Request) error {
+func SaveNetworkShelve(request *Request) error {
 	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningServer}).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func getDownloadNetworkShelve(planId int64) ([]NetworkDeviceShelveDownload, string, error) {
+func GetDownloadNetworkShelve(planId int64) ([]NetworkDeviceShelveDownload, string, error) {
 	var networkDeviceShelve []*entity.NetworkDeviceShelve
 	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceShelve).Error; err != nil {
 		return nil, "", err

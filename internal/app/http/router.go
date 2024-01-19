@@ -199,9 +199,9 @@ func Router(engine *gin.Engine) {
 			// 下载网络设备上架模板
 			networkGroup.GET("/shelve/download/template/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载网络设备上架模板", "downloadNetworkShelve", middleware.EXPORT, middleware.INFO)), network_device.DownloadNetworkShelveTemplate)
 			// 上传网络设备上架表
-			networkGroup.POST("/shelve/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传网络设备上架表", "uploadNetworkShelve", middleware.IMPORT, middleware.INFO)), network_device.UploadNetworkShelve)
+			networkGroup.POST("/shelve/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传网络设备上架表", "uploadNetworkShelve", middleware.IMPORT, middleware.INFO)), network_device.UploadShelve)
 			// 保存网络设备上架表
-			networkGroup.POST("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备上架表", "saveNetworkShelve", middleware.UPDATE, middleware.INFO)), network_device.SaveNetworkShelve)
+			networkGroup.POST("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备上架表", "saveNetworkShelve", middleware.UPDATE, middleware.INFO)), network_device.SaveShelve)
 			// 下载网络设备上架清单
 			networkGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备上架清单", "saveNetworkShelve", middleware.EXPORT, middleware.INFO)), network_device.DownloadNetworkShelve)
 		}
@@ -214,9 +214,9 @@ func Router(engine *gin.Engine) {
 			// 查询IP规划列表
 			ipDemandGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询IP规划列表", "getIpDemandList", middleware.EXPORT, middleware.INFO)), ip_demand.List)
 			// 上传IP需求表
-			ipDemandGroup.POST("/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传IP需求表", "uploadIpDemand", middleware.IMPORT, middleware.INFO)), ip_demand.UploadIpDemand)
+			ipDemandGroup.POST("/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传IP需求表", "uploadIpDemand", middleware.IMPORT, middleware.INFO)), ip_demand.Upload)
 			// 保存IP需求表
-			ipDemandGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("保存IP需求表", "saveIpDemand", middleware.IMPORT, middleware.INFO)), ip_demand.SaveIpDemand)
+			ipDemandGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("保存IP需求表", "saveIpDemand", middleware.IMPORT, middleware.INFO)), ip_demand.Save)
 		}
 
 		// 云产品

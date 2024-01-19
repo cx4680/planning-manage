@@ -78,7 +78,7 @@ func GetBrandsByPlanId(c *gin.Context) {
 		return
 	}
 	// 根据服务版本id查询网络设备基线表查厂商  去重
-	brands, err := getBrandsByVersionId(versionId)
+	brands, err := GetBrandsByVersionId(versionId)
 	if err != nil {
 		log.Errorf("[getBrandsByPlanId] search brands by planId error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -105,7 +105,7 @@ func ListNetworkDevices(c *gin.Context) {
 	var response []NetworkDevices
 	// 根据方案ID查询网络设备规划表 没有则保存，有则更新
 	planId := request.PlanId
-	deviceList, err := searchDeviceListByPlanId(planId)
+	deviceList, err := SearchDeviceListByPlanId(planId)
 	if err != nil {
 		log.Errorf("[searchDeviceListByPlanId] search device list by planId error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -136,7 +136,7 @@ func ListNetworkDevices(c *gin.Context) {
 				ConfOverview:          device.ConfOverview,
 			}
 			// 单独处理下型号列表
-			deviceModels, _ := getModelsByVersionIdAndRoleAndBrand(versionId, device.NetworkDeviceRoleId, request.Brand, request.DeviceType)
+			deviceModels, _ := GetModelsByVersionIdAndRoleAndBrand(versionId, device.NetworkDeviceRoleId, request.Brand, request.DeviceType)
 			networkDevice.DeviceModels = deviceModels
 			response = append(response, networkDevice)
 		}
@@ -153,7 +153,7 @@ func ListNetworkDevices(c *gin.Context) {
 		nodeRoleServerNumMap[value.NodeRoleId] = value.Number
 	}
 	// 根据版本号查询出网络设备角色基线数据
-	deviceRoleBaseline, err := searchDeviceRoleBaselineByVersionId(versionId)
+	deviceRoleBaseline, err := SearchDeviceRoleBaselineByVersionId(versionId)
 	if err != nil {
 		log.Errorf("[searchDeviceRoleBaselineByVersionId] search device role baseline error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -179,9 +179,9 @@ func ListNetworkDevices(c *gin.Context) {
 		return
 	}
 	if devicePlan.Id == 0 {
-		err = createDevicePlan(request)
+		err = CreateDevicePlan(request)
 	} else {
-		err = updateDevicePlan(request, *devicePlan)
+		err = UpdateDevicePlan(request, *devicePlan)
 	}
 	if err != nil {
 		log.Errorf("[saveOrUpdateDevicePlan] save or update device plan error, %v", err)
@@ -225,7 +225,7 @@ func SaveDeviceList(c *gin.Context) {
 		device.DeleteState = 0
 		networkDeviceList = append(networkDeviceList, device)
 	}
-	deviceList, err := searchDeviceListByPlanId(planId)
+	deviceList, err := SearchDeviceListByPlanId(planId)
 	if err != nil {
 		log.Errorf("[searchDeviceListByPlanId] search device list by planId error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -255,7 +255,7 @@ func SaveDeviceList(c *gin.Context) {
 	err = data.DB.Transaction(func(tx *gorm.DB) error {
 		if len(deviceList) > 0 {
 			// 失效库里保存的
-			err = expireDeviceListByPlanId(tx, planId)
+			err = ExpireDeviceListByPlanId(tx, planId)
 			if err != nil {
 				return err
 			}
@@ -308,7 +308,7 @@ func SaveDeviceList(c *gin.Context) {
 		// 	}
 		// }
 
-		logicGroups, err := getDeviceRoleLogicGroupByPlanId(tx, planId)
+		logicGroups, err := GetDeviceRoleLogicGroupByPlanId(tx, planId)
 		networkDevicePlan, err := SearchDevicePlanByPlanId(planId)
 		if err != nil {
 			result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -363,7 +363,7 @@ func NetworkDeviceListDownload(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	fileName, exportResponseDataList, err := exportNetworkDeviceListByPlanId(planId)
+	fileName, exportResponseDataList, err := ExportNetworkDeviceListByPlanId(planId)
 	if err != nil {
 		log.Errorf("[exportIpDemandPlanningByPlanId] error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
@@ -455,7 +455,7 @@ func dealNetworkModel(versionId int64, request *Request, networkModel int, roleB
 	awsServerNum := request.AwsServerNum
 	deviceType := request.DeviceType
 	var response []NetworkDevices
-	deviceModels, _ := getModelsByVersionIdAndRoleAndBrand(versionId, id, brand, deviceType)
+	deviceModels, _ := GetModelsByVersionIdAndRoleAndBrand(versionId, id, brand, deviceType)
 	var deviceModel string
 	var confOverview string
 	if len(deviceModels) == 0 {
@@ -473,7 +473,7 @@ func dealNetworkModel(versionId int64, request *Request, networkModel int, roleB
 		3.取其中一条判断是节点角色还是网络设备角色（这里默认每个网络设备角色的关联类型要么全是节点角色，要么全是网络设备角色）
 		4.循环关联表数据向nodeRoles添加数据 要注意数量
 		*/
-		modelRoleRels, err := searchModelRoleRelByRoleIdAndNetworkModel(id, request.NetworkModel)
+		modelRoleRels, err := SearchModelRoleRelByRoleIdAndNetworkModel(id, request.NetworkModel)
 		if err != nil {
 			return nil, err
 		}
@@ -559,7 +559,7 @@ func ListNetworkShelve(c *gin.Context) {
 		result.Failure(c, "planId不能为空", http.StatusBadRequest)
 		return
 	}
-	networkShelveList, err := getNetworkShelveList(request.PlanId)
+	networkShelveList, err := GetNetworkShelveList(request.PlanId)
 	if err != nil {
 		log.Errorf("ListNetworkShelve error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -575,7 +575,7 @@ func DownloadNetworkShelveTemplate(c *gin.Context) {
 		result.Failure(c, "planId不能为空", http.StatusBadRequest)
 		return
 	}
-	response, fileName, err := getDownloadNetworkShelveTemplate(planId)
+	response, fileName, err := GetDownloadNetworkShelveTemplate(planId)
 	if err != nil {
 		log.Errorf("DownloadNetworkShelveTemplate error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -587,7 +587,7 @@ func DownloadNetworkShelveTemplate(c *gin.Context) {
 	return
 }
 
-func UploadNetworkShelve(c *gin.Context) {
+func UploadShelve(c *gin.Context) {
 	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	if planId == 0 {
 		result.Failure(c, "planId不能为空", http.StatusBadRequest)
@@ -627,7 +627,7 @@ func UploadNetworkShelve(c *gin.Context) {
 		return
 	}
 	userId := user.GetUserId(c)
-	if err = uploadNetworkShelve(planId, networkDeviceShelveDownload, userId); err != nil {
+	if err = UploadNetworkShelve(planId, networkDeviceShelveDownload, userId); err != nil {
 		log.Errorf("UploadNetworkShelve error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
@@ -636,7 +636,7 @@ func UploadNetworkShelve(c *gin.Context) {
 	return
 }
 
-func SaveNetworkShelve(c *gin.Context) {
+func SaveShelve(c *gin.Context) {
 	request := &Request{}
 	if err := c.ShouldBindJSON(&request); err != nil {
 		log.Error(err)
@@ -646,7 +646,7 @@ func SaveNetworkShelve(c *gin.Context) {
 		return
 	}
 	request.UserId = user.GetUserId(c)
-	if err := saveNetworkShelve(request); err != nil {
+	if err := SaveNetworkShelve(request); err != nil {
 		log.Errorf("SaveNetworkShelve error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
@@ -661,7 +661,7 @@ func DownloadNetworkShelve(c *gin.Context) {
 		result.Failure(c, "planId不能为空", http.StatusBadRequest)
 		return
 	}
-	response, fileName, err := getDownloadNetworkShelve(planId)
+	response, fileName, err := GetDownloadNetworkShelve(planId)
 	if err != nil {
 		log.Errorf("DownloadNetworkShelve error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
