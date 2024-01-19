@@ -195,7 +195,7 @@ func ListNetworkDevices(c *gin.Context) {
 func SaveDeviceList(c *gin.Context) {
 	req := &Request{}
 	var networkDeviceList []*entity.NetworkDeviceList
-	var ipDemandPlannings []*entity.IPDemandPlanning
+	var ipDemandPlannings []*entity.IpDemandPlanning
 	now := datetime.GetNow()
 	if err := c.ShouldBind(&req); err != nil {
 		log.Errorf("save network devices bind param error: ", err)
@@ -321,7 +321,7 @@ func SaveDeviceList(c *gin.Context) {
 						// ipv4交付，跳过vlan id为ipv6的
 						continue
 					}
-					ipDemandPlannings = append(ipDemandPlannings, &entity.IPDemandPlanning{
+					ipDemandPlannings = append(ipDemandPlannings, &entity.IpDemandPlanning{
 						PlanId:          planId,
 						LogicalGrouping: logicGroup.LogicalGrouping,
 						SegmentType:     ipDemandBaseline.Explain,
@@ -628,7 +628,7 @@ func UploadNetworkShelve(c *gin.Context) {
 	}
 	userId := user.GetUserId(c)
 	if err = uploadNetworkShelve(planId, networkDeviceShelveDownload, userId); err != nil {
-		log.Errorf("ListNetworkShelve error, %v", err)
+		log.Errorf("UploadNetworkShelve error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -2,9 +2,9 @@ package entity
 
 import "time"
 
-const IPDemandPlanningTable = "ip_demand_planning"
+const IpDemandPlanningTable = "ip_demand_planning"
 
-type IPDemandPlanning struct {
+type IpDemandPlanning struct {
 	Id              int64     `gorm:"column:id" json:"id"`                            // 主键id
 	PlanId          int64     `gorm:"column:plan_id" json:"planId"`                   // 方案ID
 	LogicalGrouping string    `gorm:"column:logical_grouping" json:"logicalGrouping"` // 逻辑分组
@@ -19,6 +19,6 @@ type IPDemandPlanning struct {
 	UpdateTime      time.Time `gorm:"column:update_time" json:"updateTime"`           // 更新时间
 }
 
-func (entity *IPDemandPlanning) TableName() string {
-	return IPDemandPlanningTable
+func (entity *IpDemandPlanning) TableName() string {
+	return IpDemandPlanningTable
 }

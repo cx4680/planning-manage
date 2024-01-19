@@ -168,7 +168,7 @@ func Router(engine *gin.Engine) {
 			// 下载服务器规划清单
 			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.EXPORT, middleware.INFO)), server.Download)
 			// 查询服务器上架表
-			serverGroup.GET("/shelve/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器上架表", "getNetworkShelveList", middleware.LIST, middleware.INFO)), server.ListServerShelvePlanning)
+			serverGroup.GET("/shelve/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器上架表", "getServerShelveList", middleware.LIST, middleware.INFO)), server.ListServerShelvePlanning)
 			// 下载服务器上架表模板
 			serverGroup.GET("/shelve/download/template/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表模板", "downloadServerShelveTemplate", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelveTemplate)
 			// 上传服务器上架表
@@ -177,8 +177,8 @@ func Router(engine *gin.Engine) {
 			serverGroup.POST("/shelve/planning/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器规划表", "saveServerPlanning", middleware.UPDATE, middleware.INFO)), server.SaveServerPlanning)
 			// 保存服务器上架表
 			serverGroup.POST("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器上架表", "saveServerShelve", middleware.UPDATE, middleware.INFO)), server.SaveServerShelve)
-			// 下载服务器上架表模板
-			serverGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表模板", "downloadServerShelveTemplate", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelve)
+			// 下载服务器上架清单
+			serverGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架清单", "downloadServerShelve", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelve)
 		}
 
 		// 网络规划
@@ -213,7 +213,8 @@ func Router(engine *gin.Engine) {
 			ipDemandGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载IP需求表", "ipDemandListDownload", middleware.EXPORT, middleware.INFO)), ip_demand.IpDemandListDownload)
 			// 查询IP规划列表
 			ipDemandGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询IP规划列表", "getIpDemandList", middleware.EXPORT, middleware.INFO)), ip_demand.List)
-
+			// 上传IP需求表
+			networkGroup.POST("/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传IP需求表", "uploadIpDemand", middleware.IMPORT, middleware.INFO)), ip_demand.UploadIpDemand)
 		}
 
 		// 云产品
