@@ -33,8 +33,8 @@ const (
 	PlanStagePlan       = "plan"       // 待规划
 	PlanStagePlanning   = "planning"   // 规划中
 	PlanStagePlanned    = "planned"    // 规划完成
-	PlanStageDelivering = "delivering" //交付中
-	PlanStageDelivered  = "delivered"  //交付完成
+	PlanStageDelivering = "delivering" // 交付中
+	PlanStageDelivered  = "delivered"  // 交付完成
 
 	BusinessPlanningStart         = 0 // 业务规划开始阶段
 	BusinessPlanningCloudProduct  = 1 // 业务规划-云产品配置阶段
@@ -49,6 +49,10 @@ const (
 	DeliverPlanningIp                  = 4 // 交付规划-IP规划
 	DeliverPlanningGlobalConfiguration = 5 // 交付规划-全局配置
 	DeliverPlanningEnd                 = 6 // 交付规划-全局配置
+
+	General   = "general"   // 普通方案
+	Alternate = "alternate" // 备选方案
+	Delivery  = "delivery"  // 交付方案
 
 	SplitLineBreak    = "\n"
 	SplitLineAsterisk = "*"

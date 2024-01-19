@@ -1,6 +1,7 @@
 package project
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
@@ -98,7 +99,7 @@ func CreateProject(request *Request) error {
 		CellId:          request.CellId,
 		CustomerId:      request.CustomerId,
 		Type:            request.Type,
-		Stage:           "planning",
+		Stage:           constant.ProjectStagePlanning,
 		DeleteState:     0,
 		CreateUserId:    request.UserId,
 		CreateTime:      now,
