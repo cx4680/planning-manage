@@ -1,15 +1,14 @@
 package ip_demand
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
 	"time"
-
-	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
-	"code.cestc.cn/ccos/common/planning-manage/internal/data"
-	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 )
 
 func SearchIpDemandPlanningByPlanId(planId int64) ([]*entity.IpDemandPlanning, error) {
@@ -103,18 +102,23 @@ func GetIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
 }
 
 func UploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlanningExportResponse) error {
-	for _, v := range ipDemandPlanningExportResponse {
-		if util.IsBlank(v.Address) {
-			return errors.New("地址段不能为空")
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		for _, v := range ipDemandPlanningExportResponse {
+			if util.IsBlank(v.Address) {
+				return errors.New("地址段不能为空")
+			}
+			networkType := constant.IpDemandNetworkTypeIpv4
+			if v.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
+				networkType = constant.IpDemandNetworkTypeIpv6
+			}
+			if err := tx.Model(&entity.IpDemandPlanning{}).Where("plan_id = ? AND logical_grouping = ? AND network_type = ? AND vlan = ?", planId, v.LogicalGrouping, networkType, v.Vlan).
+				Updates(map[string]interface{}{"address": v.Address, "update_time": time.Now()}).Error; err != nil {
+				return err
+			}
 		}
-		networkType := constant.IpDemandNetworkTypeIpv4
-		if v.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
-			networkType = constant.IpDemandNetworkTypeIpv6
-		}
-		if err := data.DB.Model(&entity.IpDemandPlanning{}).Where("plan_id = ? AND logical_grouping = ? AND network_type = ? AND vlan = ?", planId, v.LogicalGrouping, networkType, v.Vlan).
-			Updates(map[string]interface{}{"address": v.Address, "update_time": time.Now()}).Error; err != nil {
-			return err
-		}
+		return nil
+	}); err != nil {
+		return err
 	}
 	return nil
 }
