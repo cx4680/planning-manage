@@ -38,7 +38,7 @@ type Server struct {
 	NodeRoleAnnotation string           `gorm:"-" json:"nodeRoleAnnotation"` // 节点说明
 	SupportDpdk        int              `gorm:"-" json:"supportDpdk"`        // 是否支持DPDK, 0:否，1：是
 	ServerBomCode      string           `gorm:"-" json:"serverBomCode"`      // BOM编码
-	ServerArch         string           `gorm:"-" json:"ServerArch"`         // 架构
+	ServerArch         string           `gorm:"-" json:"serverArch"`         // 架构
 	ServerBaselineList []*Baseline      `gorm:"-" json:"serverBaselineList"` // 可选择机型列表
 	MixedNodeRoleList  []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`  // 可混合部署角色列表
 	Upload             int              `gorm:"-" json:"upload"`             // 是否已上传
