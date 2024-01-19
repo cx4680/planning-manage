@@ -10,8 +10,8 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 )
 
-func SearchIpDemandPlanningByPlanId(planId int64) ([]entity.IpDemandPlanning, error) {
-	var ipDemands []entity.IpDemandPlanning
+func SearchIpDemandPlanningByPlanId(planId int64) ([]*entity.IpDemandPlanning, error) {
+	var ipDemands []*entity.IpDemandPlanning
 	if err := data.DB.Where("plan_id = ?", planId).Find(&ipDemands).Error; err != nil {
 		log.Errorf("[searchIpDemandPlanningByPlanId] error, %v", err)
 		return nil, err
@@ -75,7 +75,6 @@ func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExp
 			Describe:        v.Describe,
 			Vlan:            v.Vlan,
 			CNum:            v.CNum,
-			Address:         v.Address,
 			AddressPlanning: v.AddressPlanning,
 		})
 	}
@@ -83,8 +82,8 @@ func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExp
 }
 
 func getIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
-	var ipDemandPlanningList []*entity.IpDemandPlanning
-	if err := data.DB.Where("plan_id = ?", planId).Find(&ipDemandPlanningList).Error; err != nil {
+	ipDemandPlanningList, err := SearchIpDemandPlanningByPlanId(planId)
+	if err != nil {
 		return nil, err
 	}
 	var list []*IpDemandPlanning
