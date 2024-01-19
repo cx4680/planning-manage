@@ -1,5 +1,7 @@
 package ip_demand
 
+import "code.cestc.cn/ccos/common/planning-manage/internal/entity"
+
 type Request struct {
 	PlanId int64 `form:"planId"`
 }
@@ -16,7 +18,7 @@ type IpDemandPlanningExportResponse struct {
 }
 
 type IpDemandBaselineDto struct {
-	ID           int64  `form:"id"`
+	Id           int64  `form:"id"`
 	VersionId    int64  `form:"versionId"`
 	Vlan         string `form:"vlan"`
 	Explain      string `form:"explain"`
@@ -26,4 +28,9 @@ type IpDemandBaselineDto struct {
 	AssignNum    string `form:"assignNum"`
 	Remark       string `form:"remark"`
 	DeviceRoleId int64  `form:"deviceRoleId"`
+}
+
+type IpDemandPlanning struct {
+	*entity.IpDemandPlanning
+	NetworkTypeCn string `json:"networkTypeCn"`
 }

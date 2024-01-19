@@ -82,10 +82,21 @@ func exportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExp
 	return projectManage.Name + "-" + planManage.Name + "-" + "IP需求清单", response, nil
 }
 
-func getIpDemandPlanningList(planId int64) ([]*entity.IpDemandPlanning, error) {
-	var list []*entity.IpDemandPlanning
-	if err := data.DB.Where("plan_id = ?", planId).Find(&list).Error; err != nil {
+func getIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
+	var ipDemandPlanningList []*entity.IpDemandPlanning
+	if err := data.DB.Where("plan_id = ?", planId).Find(&ipDemandPlanningList).Error; err != nil {
 		return nil, err
+	}
+	var list []*IpDemandPlanning
+	for _, v := range ipDemandPlanningList {
+		networkType := constant.IpDemandNetworkTypeIpv4Cn
+		if v.NetworkType == constant.IpDemandNetworkTypeIpv6 {
+			networkType = constant.IpDemandNetworkTypeIpv6Cn
+		}
+		list = append(list, &IpDemandPlanning{
+			IpDemandPlanning: v,
+			NetworkTypeCn:    networkType,
+		})
 	}
 	return list, nil
 }
