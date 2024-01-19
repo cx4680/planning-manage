@@ -1,6 +1,7 @@
 package ip_demand
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -100,7 +101,8 @@ func Upload(c *gin.Context) {
 		result.Failure(c, "解析文件错误", http.StatusInternalServerError)
 		return
 	}
-	if err = UploadIpDemand(planId, ipDemandPlanningExportResponse); err != nil {
+	userId := user.GetUserId(c)
+	if err = UploadIpDemand(planId, ipDemandPlanningExportResponse, userId); err != nil {
 		log.Errorf("UploadNetworkShelve error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return

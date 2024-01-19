@@ -182,3 +182,21 @@ CREATE TABLE `large_network_segment_config`
     `update_time`                        datetime                                DEFAULT NULL COMMENT '更新时间',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='大网网段配置表';
+
+
+CREATE TABLE `ip_demand_shelve`
+(
+    `id`               BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `plan_id`          bigint(20) NOT NULL COMMENT '方案ID',
+    `logical_grouping` varchar(255) DEFAULT NULL COMMENT '逻辑分组',
+    `segment_type`     varchar(255) DEFAULT NULL COMMENT '网段类型',
+    `network_type`     tinyint(4) DEFAULT NULL COMMENT '网络类型，0：ipv4，1：ipv6',
+    `vlan`             varchar(45)  DEFAULT NULL COMMENT 'VLAN ID',
+    `c_num`            varchar(45)  DEFAULT NULL COMMENT 'C数量',
+    `address`          varchar(255) DEFAULT NULL COMMENT '地址段',
+    `describe`         varchar(255) DEFAULT NULL COMMENT '描述',
+    `address_planning` varchar(255) DEFAULT NULL COMMENT 'IP地址规划建议',
+    `create_user_id`   varchar(255) NULL DEFAULT NULL COMMENT '创建人id',
+    `create_time`      datetime NULL DEFAULT NULL COMMENT '创建时间',
+    PRIMARY KEY (`id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='Ip需求规划表';

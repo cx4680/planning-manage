@@ -3,12 +3,12 @@ package ip_demand
 import (
 	"errors"
 	"time"
-	
+
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
-	
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
-	
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
@@ -104,8 +104,9 @@ func GetIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
 	return list, nil
 }
 
-func UploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlanningExportResponse) error {
+func UploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlanningExportResponse, userId string) error {
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		var ipDemandShelveList []*entity.IpDemandShelve
 		for _, v := range ipDemandPlanningExportResponse {
 			if util.IsBlank(v.Address) {
 				return errors.New("地址段不能为空")
@@ -114,8 +115,23 @@ func UploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlann
 			if v.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
 				networkType = constant.IpDemandNetworkTypeIpv6
 			}
-			if err := tx.Model(&entity.IpDemandPlanning{}).Where("plan_id = ? AND logical_grouping = ? AND network_type = ? AND vlan = ?", planId, v.LogicalGrouping, networkType, v.Vlan).
-				Updates(map[string]interface{}{"address": v.Address, "update_time": time.Now()}).Error; err != nil {
+			ipDemandShelveList = append(ipDemandShelveList, &entity.IpDemandShelve{
+				PlanId:          planId,
+				LogicalGrouping: v.LogicalGrouping,
+				SegmentType:     v.SegmentType,
+				NetworkType:     networkType,
+				Vlan:            v.Vlan,
+				CNum:            v.CNum,
+				Address:         v.Address,
+				Describe:        v.Describe,
+				AddressPlanning: v.AddressPlanning,
+				CreateUserId:    userId,
+				CreateTime:      time.Now(),
+			})
+			if err := tx.Delete(&entity.IpDemandShelve{}, "plan_id = ?", planId).Error; err != nil {
+				return err
+			}
+			if err := tx.CreateInBatches(&ipDemandShelveList, 10).Error; err != nil {
 				return err
 			}
 		}
