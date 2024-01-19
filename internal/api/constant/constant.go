@@ -9,9 +9,10 @@ const (
 	Current      = "current"
 	CurrentValue = 1
 
-	Comma  = ","
-	Colon  = ":"
-	Hyphen = "-"
+	Comma        = ","
+	Colon        = ":"
+	Hyphen       = "-"
+	ForwardSlash = "/"
 
 	EnvGlobalBaseDomain = "GLOBAL_BASE_DOMAIN"
 	BaseDomain          = "BASE_DOMAIN"
@@ -26,9 +27,9 @@ const (
 	TripleNetworkSeparation = 3 // 三网分离
 	TriplePlay              = 1 // 三网合一
 
-	ProjectStagePlanning  = "planning"  //规划阶段
-	ProjectStageDelivery  = "delivery"  //交付阶段
-	ProjectStageDelivered = "delivered" //已交付
+	ProjectStagePlanning  = "planning"  // 规划阶段
+	ProjectStageDelivery  = "delivery"  // 交付阶段
+	ProjectStageDelivered = "delivered" // 已交付
 
 	PlanStagePlan       = "plan"       // 待规划
 	PlanStagePlanning   = "planning"   // 规划中
@@ -121,4 +122,11 @@ const (
 	IpDemandNetworkTypeIpv4   = 0
 	IpDemandNetworkTypeIpv6Cn = "ipv6"
 	IpDemandNetworkTypeIpv6   = 1
+
+	AccessNetworkDeviceRoleKeyword = "接入"
+
+	NetworkDevicePxeVlanId     = "89"
+	NetworkDeviceManageVlanId  = "91"
+	NetworkDeviceBizVlanId     = "92"
+	NetworkDeviceStorageVlanId = "909"
 )

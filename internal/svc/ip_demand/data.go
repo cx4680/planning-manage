@@ -1,11 +1,13 @@
 package ip_demand
 
 import (
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
+	"time"
+
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
-	"time"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
@@ -119,8 +121,23 @@ func UploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlann
 	return nil
 }
 
-func SaveIpDemand(request *Request) error {
-	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningGlobalConfiguration}).Error; err != nil {
+func SaveIpDemand(tx *gorm.DB, planId int64) error {
+	if err := tx.Updates(&entity.PlanManage{Id: planId, DeliverPlanStage: constant.DeliverPlanningGlobalConfiguration}).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetNetworkShelveList(planId int64) ([]*entity.NetworkDeviceShelve, error) {
+	var networkDeviceShelve []*entity.NetworkDeviceShelve
+	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceShelve).Error; err != nil {
+		return nil, err
+	}
+	return networkDeviceShelve, nil
+}
+
+func CreateNetworkDeviceIp(tx *gorm.DB, networkDeviceIps []entity.NetworkDeviceIp) error {
+	if err := tx.Table(entity.NetworkDeviceIpTable).Create(networkDeviceIps).Error; err != nil {
 		return err
 	}
 	return nil

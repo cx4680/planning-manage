@@ -300,3 +300,11 @@ func UpdateLargeNetworkSegmentConfigById(userId string, id int64, request LargeN
 	}
 	return nil
 }
+
+func QueryNetworkDeviceIpByPlanId(planId int64) ([]entity.NetworkDeviceIp, error) {
+	var networkDeviceIps []entity.NetworkDeviceIp
+	if err := data.DB.Table(entity.NetworkDeviceIpTable).Where("plan_id = ?", planId).Find(&networkDeviceIps).Error; err != nil {
+		return networkDeviceIps, err
+	}
+	return networkDeviceIps, nil
+}

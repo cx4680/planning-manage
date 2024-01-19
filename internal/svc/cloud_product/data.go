@@ -1,13 +1,15 @@
 package cloud_product
 
 import (
+	"strings"
+	"time"
+
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"gorm.io/gorm"
-	"strings"
-	"time"
 )
 
 func getVersionListByProjectId(projectId int64) ([]entity.SoftwareVersion, error) {
@@ -87,7 +89,7 @@ func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId
 	}
 
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		//删除原有的清单
+		// 删除原有的清单
 		if err := tx.Delete(&entity.CloudProductPlanning{}, "plan_id=?", request.PlanId).Error; err != nil {
 			log.Errorf("[saveCloudProductPlanning] delete cloudProductPlanning by planId error,%v", err)
 			return err
@@ -114,10 +116,10 @@ func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId
 	return nil
 }
 
-func listCloudProductPlanningByPlanId(planId int64) ([]entity.CloudProductPlanning, error) {
+func ListCloudProductPlanningByPlanId(planId int64) ([]entity.CloudProductPlanning, error) {
 	var cloudProductPlanningList []entity.CloudProductPlanning
 	if err := data.DB.Table(entity.CloudProductPlanningTable).Where("plan_id=?", planId).Scan(&cloudProductPlanningList).Error; err != nil {
-		log.Errorf("[listCloudProductPlanningByPlanId] error, %v", err)
+		log.Errorf("[ListCloudProductPlanningByPlanId] error, %v", err)
 		return nil, err
 	}
 	return cloudProductPlanningList, nil

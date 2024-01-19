@@ -338,53 +338,57 @@ func CompleteGlobalConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	vlanIdConfig, err := QueryVlanIdConfigByPlanId(planId)
-	if err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+	if CheckParamCompleteGlobalConfig(context, planId) {
 		return
-	}
-	if vlanIdConfig.Id == 0 {
-		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.VlanIdConfigEmpty)
-	}
-	cellConfig, err := QueryCellConfigByPlanId(planId)
-	if err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	if cellConfig.Id == 0 {
-		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.CellConfigEmpty)
-	}
-	routePlanningConfig, err := QueryRoutePlanningConfigByPlanId(planId)
-	if err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	if routePlanningConfig.Id == 0 {
-		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.RoutePlanningConfigEmpty)
-	}
-	largeNetworkSegmentConfig, err := QueryLargeNetworkSegmentConfigByPlanId(planId)
-	if err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	if largeNetworkSegmentConfig.Id == 0 {
-		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.LargeNetworkSegmentConfigEmpty)
 	}
 	userId := user.GetUserId(context)
-	err = data.DB.Transaction(func(tx *gorm.DB) error {
-		// 更新方案表的状态
-		if err = plan.UpdatePlanStage(tx, planId, constant.PlanStageDelivered, userId, constant.DeliverPlanningEnd); err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
+	if err = plan.UpdatePlanStage(data.DB, planId, constant.PlanStageDelivered, userId, constant.DeliverPlanningEnd); err != nil {
 		log.Errorf("[CompleteGlobalConfig] complete global config error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
 	result.Success(context, nil)
 	return
+}
+
+func CheckParamCompleteGlobalConfig(context *gin.Context, planId int64) bool {
+	vlanIdConfig, err := QueryVlanIdConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return true
+	}
+	if vlanIdConfig.Id == 0 {
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.VlanIdConfigEmpty)
+		return true
+	}
+	cellConfig, err := QueryCellConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return true
+	}
+	if cellConfig.Id == 0 {
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.CellConfigEmpty)
+		return true
+	}
+	routePlanningConfig, err := QueryRoutePlanningConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return true
+	}
+	if routePlanningConfig.Id == 0 {
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.RoutePlanningConfigEmpty)
+		return true
+	}
+	largeNetworkSegmentConfig, err := QueryLargeNetworkSegmentConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return true
+	}
+	if largeNetworkSegmentConfig.Id == 0 {
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.LargeNetworkSegmentConfigEmpty)
+		return true
+	}
+	return false
 }
 
 func DownloadPlanningFile(context *gin.Context) {
@@ -415,6 +419,16 @@ func DownloadPlanningFile(context *gin.Context) {
 		log.Errorf("export excel error: %v", err)
 		return
 	}
+	// networkDeviceIps, err := QueryNetworkDeviceIpByPlanId(planId)
+	// if err != nil {
+	// 	log.Errorf("query network device ip by plan id error: %v", err)
+	// 	result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+	// 	return
+	// }
+	// if err = excel.NormalBuildDataRow(&excelFile, "Sheet1", "", "", 0, false, false, reflect.ValueOf(&networkDeviceIps)); err != nil {
+	// 	log.Errorf("export excel error: %v", err)
+	// 	return
+	// }
 	// if err = excelFile.F.SaveAs("/Users/blue/Desktop/规划文件模板.xlsx"); err != nil {
 	// 	log.Errorf("excelize save error: %v", err)
 	// 	return

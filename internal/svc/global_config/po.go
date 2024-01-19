@@ -174,3 +174,70 @@ type GlobalConfigExcel struct {
 	BizExternalLargeNetworkSegment string `excel:"cellPosition:H4;" json:"bizExternalLargeNetworkSegment"` // 业务外网大网网段
 	BmcNetworkSegmentRoute         string `excel:"cellPosition:H5;" json:"bmcNetworkSegmentRoute"`         // bmc规划网段明细路由
 }
+
+type GlobalConfigNetworkDeviceExcel struct {
+	LogicalGrouping               string `excel:"name:交换机组名;index:0;" json:"LogicalGrouping"`                     // 网络设备逻辑分组
+	MachineRoomAbbr               string `excel:"name:机房;index:1;" json:"machineRoomAbbr"`                        // 机房缩写
+	CabinetNum                    string `excel:"name:机架;index:2;" json:"cabinetNum"`                             // 机柜编号
+	SlotNum                       string `excel:"name:机位;index:3;" json:"slotNum"`                                // 机位槽位号
+	CabinetAsw                    string `excel:"name:所管理的机架;index:4;" json:"cabinetAsw"`                         // 所管理的机架
+	PxeSubnet                     string `excel:"name:PXE子网;index:5;" json:"pxeSubnet"`                           // PXE子网
+	PxeSubnetRange                string `excel:"name:PXE子网范围;index:6;" json:"pxeSubnetRange"`                    // PXE子网范围
+	PxeNetworkGateway             string `excel:"name:PXE网网关;index:7;" json:"pxeNetworkGateway"`                  // PXE网网关
+	ManageSubnet                  string `excel:"name:管理网子网;index:8;" json:"manageSubnet"`                        // 管理网子网
+	ManageNetworkGateway          string `excel:"name:管理网网关;index:9;" json:"manageNetworkGateway"`                // 管理网网关
+	ManageIpv6Subnet              string `excel:"name:管理网IPV6子网;index:10;" json:"manageIpv6Subnet"`               // 管理网IPV6子网
+	ManageIpv6NetworkGateway      string `excel:"name:管理网IPV6网关;index:11;" json:"manageIpv6NetworkGateway"`       // 管理网IPV6网关
+	BizSubnet                     string `excel:"name:业务网子网;index:12;" json:"bizSubnet"`                          // 业务网子网
+	BizNetworkGateway             string `excel:"name:业务网网关;index:13;" json:"bizNetworkGateway"`                  // 业务网网关
+	StorageFrontNetwork           string `excel:"name:存储前端网;index:14;" json:"storageFrontNetwork"`                // 存储前端网
+	StorageFrontNetworkGateway    string `excel:"name:存储前端网网关;index:15;" json:"storageFrontNetworkGateway"`       // 存储前端网网关
+	BizExternalSubnet             string `excel:"name:业务外网子网;index:16;" json:"bizExternalSubnet"`                 // 业务外网子网
+	BizExternalNetworkGateway     string `excel:"name:业务外网网关;index:17;" json:"bizExternalNetworkGateway"`         // 业务外网网关
+	BmcSubnet                     string `excel:"name:bmc子网;index:18;" json:"bmcSubnet"`                          // bmc子网
+	BmcNetworkGateway             string `excel:"name:bmc网关;index:19;" json:"bmcNetworkGateway"`                  // BMC网网关
+	BizExternalIpv6Subnet         string `excel:"name:业务外网ipv6子网;index:20;" json:"bizExternalIpv6Subnet"`         // 业务外网ipv6子网
+	BizExternalIpv6NetworkGateway string `excel:"name:业务外网ipv6网关;index:21;" json:"bizExternalIpv6NetworkGateway"` // 业务外网ipv6网关
+}
+
+type GlobalConfigServerExcel struct {
+	Sn                       string `excel:"name:SN号;index:0;" json:"sn"`                               // SN号
+	MachineRoomAbbr          string `excel:"name:机房;index:1;" json:"machineRoomAbbr"`                   // 机房缩写
+	CabinetNum               string `excel:"name:机架;index:2;" json:"cabinetNum"`                        // 机柜编号
+	SlotNum                  string `excel:"name:机位;index:3;" json:"slotNum"`                           // 机位槽位号
+	KernelArch               string `excel:"name:内核架构;index:4;" json:"kernelArch"`                      // 内核架构
+	HostName                 string `excel:"name:主机名;index:5;" json:"hostName"`                         // 主机名
+	NetworkMode              string `excel:"name:网络模式;index:6;" json:"networkMode"`                     // 网络模式
+	Role                     string `excel:"name:角色;index:7;" json:"role"`                              // 角色
+	NodeTwoLayerNetwork      string `excel:"name:节点纯二层网络;index:8;" json:"nodeTwoLayerNetwork"`          // 节点纯二层网络
+	HostGroup                string `excel:"name:主机分组;index:9;" json:"hostGroup"`                       // 主机分组
+	OpenDpdk                 string `excel:"name:是否开启dpdk;index:10;" json:"openDpdk"`                   // 是否开启dpdk
+	ManegeNetworkIP          string `excel:"name:管理网IP;index:11;" json:"manegeNetworkIP"`               // 管理网IP
+	ManageNetworkIpv6IP      string `excel:"name:管理网IPV6;index:12;" json:"manageNetworkIpv6IP"`         // 管理网IPV6
+	BizIntranetIP            string `excel:"name:业务内网IP;index:13;" json:"bizIntranetIP"`                // 业务内网IP
+	BizExternalNetworkIP     string `excel:"name:业务外网IP;index:14;" json:"bizExternalNetworkIP"`         // 业务外网IP
+	StorageNetworkIP         string `excel:"name:存储网IP;index:15;" json:"storageNetworkIP"`              // 存储网IP
+	BmcNetworkIP             string `excel:"name:BMC网IP;index:16;" json:"bmcNetworkIP"`                 // BMC网IP
+	ManageNetworkInterface   string `excel:"name:管理网网口;index:17;" json:"manageNetworkInterface"`        // 管理网网口
+	ManageNetworkBondMode    string `excel:"name:管理网BOND模式;index:18;" json:"manageNetworkBondMode"`     // 管理网BOND模式
+	BizIntranetInterface     string `excel:"name:业务内网网口;index:19;" json:"bizIntranetInterface"`         // 业务内网网口
+	BizIntranetBondMode      string `excel:"name:业务内网BOND模式;index:20;" json:"bizIntranetBondMode"`      // 业务内网BOND模式
+	StorageNetworkInterface  string `excel:"name:存储网网口;index:21;" json:"storageNetworkInterface"`       // 存储网网口
+	StorageNetworkBondMode   string `excel:"name:存储网BOND模式;index:22;" json:"storageNetworkBondMode"`    // 存储网BOND模式
+	BmcNetworkInterface      string `excel:"name:BMC网网口;index:23;" json:"bmcNetworkInterface"`          // BMC网网口
+	BizExternalInterface     string `excel:"name:业务外网网口;index:24;" json:"bizExternalInterface"`         // 业务外网网口
+	BizExternalBondMode      string `excel:"name:业务外网BOND模式;index:25;" json:"bizExternalBondMode"`      // 业务外网BOND模式
+	BcmNetworkInterface      string `excel:"name:BMC网网口;index:26;" json:"bcmNetworkInterface"`          // BMC网网口
+	BmcNetworkBondMode       string `excel:"name:BMC网BOND模式;index:27;" json:"bcmNetworkBondMode"`       // BMC网BOND模式
+	PxeMacAddress            string `excel:"name:PXE-MAC地址;index:28;" json:"pxeMacAddress"`             // PXE-MAC地址
+	BmcIp                    string `excel:"name:BMC-IP;index:29;" json:"bmcIp"`                        // BMC-IP
+	BmcUserName              string `excel:"name:BMC用户名;index:30;" json:"bmcUserName"`                  // BMC用户名
+	BmcPassword              string `excel:"name:BMC密码;index:31;" json:"bmcPassword"`                   // BMC密码
+	BmcSecuritySuite         string `excel:"name:BMC安全套件;index:32;" json:"bmcSecuritySuite"`            // BMC安全套件
+	SystemDiskRaidController string `excel:"name:系统盘RAID控制器;index:33;" json:"systemDiskRaidController"` // 系统盘RAID控制器
+	SystemDiskRaidLevel      string `excel:"name:RAID等级;index:34;" json:"systemDiskRaidLevel"`          // 系统盘RAID等级
+	SystemDisk               string `excel:"name:系统盘;index:35;" json:"systemDisk"`                      // 系统盘
+	DataDiskRaidController   string `excel:"name:数据盘RAID控制器;index:36;" json:"dataDiskRaidController"`   // 数据盘RAID控制器
+	DataDiskRaidLevel        string `excel:"name:RAID等级;index:37;" json:"dataDiskRaidLevel"`            // 数据盘RAID等级
+	DataDisk                 string `excel:"name:数据盘;index:38;" json:"dataDisk"`                        // 数据盘
+}

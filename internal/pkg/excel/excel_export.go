@@ -44,7 +44,7 @@ func ExportExcel(sheet, title, fields string, isGhbj, isIgnore bool, list interf
 		return
 	}
 	// 构造数据行
-	err = normalBuildDataRow(e, sheet, endColName, fields, dataRow, isGhbj, isIgnore, dataValue)
+	err = NormalBuildDataRow(e, sheet, endColName, fields, dataRow, isGhbj, isIgnore, dataValue)
 	return
 }
 
@@ -153,7 +153,7 @@ func normalBuildTitle(e *Excel, sheet, title, fields string, isIgnore bool, chan
 }
 
 // 构造数据行
-func normalBuildDataRow(e *Excel, sheet, endColName, fields string, row int, isGhbj, isIgnore bool, dataValue reflect.Value) (err error) {
+func NormalBuildDataRow(e *Excel, sheet, endColName, fields string, row int, isGhbj, isIgnore bool, dataValue reflect.Value) (err error) {
 	// 实时写入数据
 	for i := 0; i < dataValue.Len(); i++ {
 		startCol := fmt.Sprintf("A%d", row)
