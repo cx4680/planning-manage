@@ -107,7 +107,8 @@ func uploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlann
 		if v.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
 			networkType = constant.IpDemandNetworkTypeIpv6
 		}
-		if err := data.DB.Model(&entity.IpDemandPlanning{}).Where("plan_id = ? AND logical_grouping = ? AND network_type = ?", planId, v.LogicalGrouping, networkType).Updates(map[string]interface{}{"address": v.Address, "update_time": time.Now()}).Error; err != nil {
+		if err := data.DB.Model(&entity.IpDemandPlanning{}).Where("plan_id = ? AND logical_grouping = ? AND network_type = ? AND vlan = ?", planId, v.LogicalGrouping, networkType, v.Vlan).
+			Updates(map[string]interface{}{"address": v.Address, "update_time": time.Now()}).Error; err != nil {
 			return err
 		}
 	}
