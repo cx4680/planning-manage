@@ -117,12 +117,12 @@ func UpdatePlan(request *Request) error {
 	if err := data.DB.Updates(&planManage).Error; err != nil {
 		return err
 	}
-	if request.Type == constant.PlanStageDelivering {
+	if request.Stage == constant.PlanStageDelivering {
 		if err := data.DB.Updates(&entity.ProjectManage{Id: planManage.ProjectId, Stage: constant.ProjectStageDelivery}).Error; err != nil {
 			return err
 		}
 	}
-	if request.Type == constant.PlanStageDelivered {
+	if request.Stage == constant.PlanStageDelivered {
 		if err := data.DB.Updates(&entity.ProjectManage{Id: planManage.ProjectId, Stage: constant.ProjectStageDelivered}).Error; err != nil {
 			return err
 		}
