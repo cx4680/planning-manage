@@ -11,11 +11,13 @@ import (
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/network_device"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
 )
 
 func GetVlanIdConfigByPlanId(context *gin.Context) {
@@ -336,9 +338,32 @@ func CompleteGlobalConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
+	userId := user.GetUserId(context)
+	err = data.DB.Transaction(func(tx *gorm.DB) error {
+		// 更新方案表的状态
+		if err = plan.UpdatePlanStage(tx, planId, constant.PlanStageDelivered, userId, constant.DeliverPlanningEnd); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Errorf("[CompleteGlobalConfig] complete global config error, %v", err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	result.Success(context, nil)
+	return
+}
+
+func DownloadPlanningFile(context *gin.Context) {
+	planId, err := strconv.ParseInt(context.Param("planId"), 10, 64)
+	if err != nil {
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
 	file, err := excelize.OpenFile("template/规划文件模版.xlsx")
 	if err != nil {
-		log.Errorf("open cabinet template error: %v", err)
+		log.Errorf("open planning file template error: %v", err)
 		if err = file.Close(); err != nil {
 			log.Errorf("excelize close error: %v", err)
 		}
@@ -353,18 +378,16 @@ func CompleteGlobalConfig(context *gin.Context) {
 	if err != nil {
 		return
 	}
-	excelFile := excel.Excel{
-		F: file,
-	}
+	excelFile := excel.Excel{F: file}
 	if err = excel.ExportExcelByAssignCell("Sheet3", "", false, *globalConfigExcel, &excelFile); err != nil {
 		log.Errorf("export excel error: %v", err)
 		return
 	}
-	if err = excelFile.F.SaveAs("/Users/blue/Desktop/规划文件模板.xlsx"); err != nil {
-		log.Errorf("excelize save error: %v", err)
-		return
-	}
-	result.Success(context, nil)
+	// if err = excelFile.F.SaveAs("/Users/blue/Desktop/规划文件模板.xlsx"); err != nil {
+	// 	log.Errorf("excelize save error: %v", err)
+	// 	return
+	// }
+	excel.DownLoadExcel("规划文件", context.Writer, file)
 	return
 }
 

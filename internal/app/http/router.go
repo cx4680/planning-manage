@@ -252,6 +252,7 @@ func Router(engine *gin.Engine) {
 			globalConfigGroup.POST("/largeNetwork", middleware.OperatorLog(DefaultEventOpInfo("新增大网网段配置信息", "createLargeNetworkPlanningConfig", middleware.CREATE, middleware.INFO)), global_config.CreateLargeNetworkConfig)
 			globalConfigGroup.PUT("/largeNetwork/:id", middleware.OperatorLog(DefaultEventOpInfo("修改大网网段配置信息", "updateLargeNetworkConfig", middleware.UPDATE, middleware.INFO)), global_config.UpdateLargeNetworkConfig)
 			globalConfigGroup.POST("/complete/:planId", middleware.OperatorLog(DefaultEventOpInfo("全局配置完成规划", "completeGlobalConfig", middleware.CREATE, middleware.INFO)), global_config.CompleteGlobalConfig)
+			globalConfigGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载规划文件", "downloadPlanningFile", middleware.EXPORT, middleware.INFO)), global_config.DownloadPlanningFile)
 		}
 	}
 
