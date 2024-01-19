@@ -426,6 +426,9 @@ func UpdateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines []entity.Network
 }
 
 func DeleteNetworkModelRoleRel(networkDeviceRoleIds []int64) error {
+	if len(networkDeviceRoleIds) == 0 {
+		return nil
+	}
 	if err := data.DB.Table(entity.NetworkModelRoleRelTable).Where("network_device_role_id in (?)", networkDeviceRoleIds).Delete(&entity.NetworkModelRoleRel{}).Error; err != nil {
 		log.Errorf("delete networkModelRoleRel error: %v", err)
 		return err
