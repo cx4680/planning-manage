@@ -128,12 +128,12 @@ func UploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlann
 				CreateUserId:    userId,
 				CreateTime:      time.Now(),
 			})
-			if err := tx.Delete(&entity.IpDemandShelve{}, "plan_id = ?", planId).Error; err != nil {
-				return err
-			}
-			if err := tx.CreateInBatches(&ipDemandShelveList, 10).Error; err != nil {
-				return err
-			}
+		}
+		if err := tx.Delete(&entity.IpDemandShelve{}, "plan_id = ?", planId).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&ipDemandShelveList).Error; err != nil {
+			return err
 		}
 		return nil
 	}); err != nil {
