@@ -98,3 +98,17 @@ func UploadIpDemand(c *gin.Context) {
 	result.Success(c, nil)
 	return
 }
+
+func SaveIpDemand(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.Error(err)
+	}
+	if err := saveIpDemand(request); err != nil {
+		log.Errorf("SaveNetworkShelve error, %v", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, nil)
+	return
+}

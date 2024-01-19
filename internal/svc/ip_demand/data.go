@@ -1,9 +1,9 @@
 package ip_demand
 
 import (
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
+	"time"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
@@ -91,28 +91,20 @@ func getIpDemandPlanningList(planId int64) ([]*entity.IpDemandPlanning, error) {
 }
 
 func uploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlanningExportResponse) error {
-	var ipDemandPlanningList []*entity.IpDemandPlanning
-	now := datetime.GetNow()
 	for _, v := range ipDemandPlanningExportResponse {
 		networkType := constant.IpDemandNetworkTypeIpv4
 		if v.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
 			networkType = constant.IpDemandNetworkTypeIpv6
 		}
-		ipDemandPlanningList = append(ipDemandPlanningList, &entity.IpDemandPlanning{
-			PlanId:          planId,
-			LogicalGrouping: v.LogicalGrouping,
-			SegmentType:     v.SegmentType,
-			NetworkType:     networkType,
-			Vlan:            v.Vlan,
-			CNum:            v.CNum,
-			Address:         v.Address,
-			Describe:        v.Describe,
-			AddressPlanning: v.AddressPlanning,
-			CreateTime:      now,
-			UpdateTime:      now,
-		})
+		if err := data.DB.Model(&entity.IpDemandPlanning{}).Where("plan_id = ? AND logical_grouping = ? AND network_type = ?", planId, v.LogicalGrouping, networkType).Updates(map[string]interface{}{"address": v.Address, "update_time": time.Now()}).Error; err != nil {
+			return err
+		}
 	}
-	if err := data.DB.Create(ipDemandPlanningList).Error; err != nil {
+	return nil
+}
+
+func saveIpDemand(request *Request) error {
+	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningGlobalConfiguration}).Error; err != nil {
 		return err
 	}
 	return nil

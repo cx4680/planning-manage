@@ -215,6 +215,8 @@ func Router(engine *gin.Engine) {
 			ipDemandGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询IP规划列表", "getIpDemandList", middleware.EXPORT, middleware.INFO)), ip_demand.List)
 			// 上传IP需求表
 			networkGroup.POST("/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传IP需求表", "uploadIpDemand", middleware.IMPORT, middleware.INFO)), ip_demand.UploadIpDemand)
+			// 保存IP需求表
+			networkGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("保存IP需求表", "saveIpDemand", middleware.IMPORT, middleware.INFO)), ip_demand.SaveIpDemand)
 		}
 
 		// 云产品
