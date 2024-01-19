@@ -338,6 +338,38 @@ func CompleteGlobalConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
+	vlanIdConfig, err := QueryVlanIdConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if vlanIdConfig.Id == 0 {
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.VlanIdConfigEmpty)
+	}
+	cellConfig, err := QueryCellConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if cellConfig.Id == 0 {
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.CellConfigEmpty)
+	}
+	routePlanningConfig, err := QueryRoutePlanningConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if routePlanningConfig.Id == 0 {
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.RoutePlanningConfigEmpty)
+	}
+	largeNetworkSegmentConfig, err := QueryLargeNetworkSegmentConfigByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	if largeNetworkSegmentConfig.Id == 0 {
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, errorcodes.LargeNetworkSegmentConfigEmpty)
+	}
 	userId := user.GetUserId(context)
 	err = data.DB.Transaction(func(tx *gorm.DB) error {
 		// 更新方案表的状态
