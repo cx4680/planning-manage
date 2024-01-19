@@ -24,26 +24,21 @@ func QueryMachineRoomByPlanId(planId int64) ([]entity.MachineRoom, error) {
 	return machineRooms, nil
 }
 
-func UpdateMachineRoomByPlanId(planId int64, machineRooms []entity.MachineRoom) error {
+func UpdateMachineRoomByPlanId(tx *gorm.DB, planId int64, machineRooms []entity.MachineRoom) error {
 	var azId int64
-	if err := data.DB.Table(entity.PlanManageTable+" plan").Select("project.az_id").
+	if err := tx.Table(entity.PlanManageTable+" plan").Select("project.az_id").
 		Joins("left join project_manage project on plan.project_id = project.id").
 		Where("plan.id = ? and plan.delete_state = 0", planId).Find(&azId).Error; err != nil {
 		log.Errorf("[queryAzIdByPlanId] query azId error, %v", err)
 	}
-	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Delete(&entity.MachineRoom{}, "az_id = ?", azId).Error; err != nil {
-			return err
-		}
-		for i := range machineRooms {
-			machineRooms[i].AzId = azId
-			machineRooms[i].Sort = i + 1
-		}
-		if err := tx.Create(&machineRooms).Error; err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+	if err := tx.Delete(&entity.MachineRoom{}, "az_id = ?", azId).Error; err != nil {
+		return err
+	}
+	for i := range machineRooms {
+		machineRooms[i].AzId = azId
+		machineRooms[i].Sort = i + 1
+	}
+	if err := tx.Create(&machineRooms).Error; err != nil {
 		return err
 	}
 	return nil

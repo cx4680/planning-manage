@@ -15,10 +15,13 @@ import (
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
 )
 
 func GetMachineRoomByPlanId(context *gin.Context) {
@@ -43,12 +46,24 @@ func UpdateMachineRoom(context *gin.Context) {
 		return
 	}
 	var request MachineRoomRequest
-	if err := context.ShouldBindJSON(&request); err != nil {
+	if err = context.ShouldBindJSON(&request); err != nil {
 		log.Errorf("update machine room bind param error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if err = UpdateMachineRoomByPlanId(planId, request.MachineRooms); err != nil {
+	userId := user.GetUserId(context)
+	err = data.DB.Transaction(func(tx *gorm.DB) error {
+		// 更新方案表的状态
+		if err = plan.UpdatePlanStage(tx, planId, constant.PlanStageDelivering, userId, constant.DeliverPlanningNetworkDevice); err != nil {
+			return err
+		}
+		if err = UpdateMachineRoomByPlanId(tx, planId, request.MachineRooms); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Errorf("[UpdateMachineRoom] update machine room error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
