@@ -12,6 +12,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
@@ -419,16 +420,52 @@ func DownloadPlanningFile(context *gin.Context) {
 		log.Errorf("export excel error: %v", err)
 		return
 	}
-	// networkDeviceIps, err := QueryNetworkDeviceIpByPlanId(planId)
-	// if err != nil {
-	// 	log.Errorf("query network device ip by plan id error: %v", err)
-	// 	result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-	// 	return
-	// }
-	// if err = excel.NormalBuildDataRow(&excelFile, "Sheet1", "", "", 0, false, false, reflect.ValueOf(&networkDeviceIps)); err != nil {
-	// 	log.Errorf("export excel error: %v", err)
-	// 	return
-	// }
+	networkDeviceIps, err := QueryNetworkDeviceIpByPlanId(planId)
+	if err != nil {
+		log.Errorf("query network device ip by plan id error: %v", err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	netWorkShelves, err := network_device.GetNetworkShelveList(planId)
+	if err != nil {
+		log.Errorf("query network device shelve list error: %v", err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	networkShelveMap := make(map[string]entity.NetworkDeviceShelve)
+	for _, netWorkShelf := range netWorkShelves {
+		_, ok := networkShelveMap[netWorkShelf.DeviceLogicalId]
+		if !ok {
+			networkShelveMap[netWorkShelf.DeviceLogicalId] = *netWorkShelf
+		}
+	}
+	var globalConfigNetworkDeviceExcels []GlobalConfigNetworkDeviceExcel
+	for _, networkDeviceIp := range networkDeviceIps {
+		logicalGrouping := networkDeviceIp.LogicalGrouping
+		networkDeviceShelve := networkShelveMap[logicalGrouping]
+		globalConfigNetworkDeviceExcels = append(globalConfigNetworkDeviceExcels, GlobalConfigNetworkDeviceExcel{
+			LogicalGrouping:            logicalGrouping,
+			MachineRoomAbbr:            networkDeviceShelve.MachineRoomAbbr,
+			CabinetNum:                 networkDeviceShelve.CabinetNumber,
+			SlotNum:                    networkDeviceShelve.SlotPosition,
+			CabinetAsw:                 "",
+			PxeSubnet:                  networkDeviceIp.PxeSubnet,
+			PxeSubnetRange:             networkDeviceIp.PxeSubnetRange,
+			PxeNetworkGateway:          networkDeviceIp.PxeNetworkGateway,
+			ManageSubnet:               networkDeviceIp.ManageSubnet,
+			ManageNetworkGateway:       networkDeviceIp.ManageNetworkGateway,
+			ManageIpv6Subnet:           networkDeviceIp.ManageIpv6Subnet,
+			ManageIpv6NetworkGateway:   networkDeviceIp.ManageIpv6NetworkGateway,
+			BizSubnet:                  networkDeviceIp.BizSubnet,
+			BizNetworkGateway:          networkDeviceIp.BizNetworkGateway,
+			StorageFrontNetwork:        networkDeviceIp.StorageFrontNetwork,
+			StorageFrontNetworkGateway: networkDeviceIp.StorageFrontNetworkGateway,
+		})
+	}
+	if err = excel.ExportExcelByExistHeader("Sheet1", "", 3, false, globalConfigNetworkDeviceExcels, &excelFile); err != nil {
+		log.Errorf("export excel error: %v", err)
+		return
+	}
 	// if err = excelFile.F.SaveAs("/Users/blue/Desktop/规划文件模板.xlsx"); err != nil {
 	// 	log.Errorf("excelize save error: %v", err)
 	// 	return
