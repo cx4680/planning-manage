@@ -200,3 +200,21 @@ CREATE TABLE `ip_demand_shelve`
     `create_time`      datetime NULL DEFAULT NULL COMMENT '创建时间',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='Ip需求规划表';
+
+CREATE TABLE `network_device_ip` (
+        `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+        `plan_id` bigint(20) DEFAULT NULL COMMENT '方案id',
+        `logical_grouping` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '网络设备逻辑分组',
+        `pxe_subnet` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'pxe子网',
+        `pxe_subnet_range` varchar(1000) COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'pxe子网范围',
+        `pxe_network_gateway` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'pxe网网关',
+        `manage_subnet` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网子网',
+        `manage_network_gateway` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网网关',
+        `manage_ipv6_subnet` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网IPV6子网',
+        `manage_ipv6_network_gateway` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网IPV6网关',
+        `biz_subnet` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '业务网子网',
+        `biz_network_gateway` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '业务网网关',
+        `storage_front_network` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '存储前端网',
+        `storage_front_network_gateway` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '存储前端网网关',
+        PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='网络设备ip分配表';
