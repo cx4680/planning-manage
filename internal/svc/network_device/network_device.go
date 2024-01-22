@@ -621,7 +621,7 @@ func UploadShelve(c *gin.Context) {
 		return
 	}
 	var networkDeviceShelveDownload []NetworkDeviceShelveDownload
-	if err = excel.ImportBySheet(f, &networkDeviceShelveDownload, "网络设备上架表", 0, 1); err != nil {
+	if err = excel.ImportBySheet(f, &networkDeviceShelveDownload, "网络设备上架模板", 0, 1); err != nil {
 		log.Errorf("excel import error: %v", err)
 		result.Failure(c, "解析文件错误", http.StatusInternalServerError)
 		return
