@@ -226,5 +226,6 @@ CREATE TABLE `server_ip` (
         `manage_network_ip` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网ip',
         `manage_network_ipv6` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网ipv6',
         `biz_intranet_ip` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '业务内网ip',
+        `storage_network_ip` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '存储网ip',
         PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='服务器ip分配表';
