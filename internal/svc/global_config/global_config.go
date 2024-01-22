@@ -18,6 +18,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/machine_room"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/network_device"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/plan"
 )
@@ -432,16 +433,28 @@ func DownloadPlanningFile(context *gin.Context) {
 			networkShelveMap[netWorkShelf.DeviceLogicalId] = *netWorkShelf
 		}
 	}
+	cabinets, err := machine_room.QueryCabinetsByPlanId(planId)
+	if err != nil {
+		log.Errorf("query cabinet by plan id error: %v", err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	cabinetMap := make(map[string][]string)
+	for _, cabinet := range cabinets {
+		cabinetNums := cabinetMap[cabinet.CabinetAsw]
+		cabinetMap[cabinet.CabinetAsw] = append(cabinetNums, cabinet.CabinetNum)
+	}
 	var globalConfigNetworkDeviceExcels []GlobalConfigNetworkDeviceExcel
 	for _, networkDeviceIp := range networkDeviceIps {
 		logicalGrouping := networkDeviceIp.LogicalGrouping
 		networkDeviceShelve := networkShelveMap[logicalGrouping]
+		cabinetNums := cabinetMap[logicalGrouping]
 		globalConfigNetworkDeviceExcels = append(globalConfigNetworkDeviceExcels, GlobalConfigNetworkDeviceExcel{
 			LogicalGrouping:            logicalGrouping,
 			MachineRoomAbbr:            networkDeviceShelve.MachineRoomAbbr,
 			CabinetNum:                 networkDeviceShelve.CabinetNumber,
 			SlotNum:                    networkDeviceShelve.SlotPosition,
-			CabinetAsw:                 "",
+			CabinetAsw:                 strings.Join(cabinetNums, constant.Comma),
 			PxeSubnet:                  networkDeviceIp.PxeSubnet,
 			PxeSubnetRange:             networkDeviceIp.PxeSubnetRange,
 			PxeNetworkGateway:          networkDeviceIp.PxeNetworkGateway,
