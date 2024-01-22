@@ -163,3 +163,11 @@ func CreateNetworkDeviceIp(tx *gorm.DB, networkDeviceIps []entity.NetworkDeviceI
 	}
 	return nil
 }
+
+func GetIpDemandShelve(planId int64) ([]*entity.IpDemandShelve, error) {
+	var ipDemandShelves []*entity.IpDemandShelve
+	if err := data.DB.Where("plan_id = ?", planId).Find(&ipDemandShelves).Error; err != nil {
+		return nil, err
+	}
+	return ipDemandShelves, nil
+}

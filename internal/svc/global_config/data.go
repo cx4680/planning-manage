@@ -308,3 +308,11 @@ func QueryNetworkDeviceIpByPlanId(planId int64) ([]entity.NetworkDeviceIp, error
 	}
 	return networkDeviceIps, nil
 }
+
+func QueryServerIpByPlanId(planId int64) ([]entity.ServerIp, error) {
+	var serverIps []entity.ServerIp
+	if err := data.DB.Table(entity.ServerIpTable).Where("plan_id = ?", planId).Find(&serverIps).Error; err != nil {
+		return serverIps, err
+	}
+	return serverIps, nil
+}

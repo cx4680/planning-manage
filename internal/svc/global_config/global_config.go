@@ -411,15 +411,7 @@ func DownloadPlanningFile(context *gin.Context) {
 			log.Errorf("excelize close error: %v", err)
 		}
 	}()
-	globalConfigExcel, err := ConvertGlobalConfigExcel(context, planId)
-	if err != nil {
-		return
-	}
 	excelFile := excel.Excel{F: file}
-	if err = excel.ExportExcelByAssignCell("Sheet3", "", false, *globalConfigExcel, &excelFile); err != nil {
-		log.Errorf("export excel error: %v", err)
-		return
-	}
 	networkDeviceIps, err := QueryNetworkDeviceIpByPlanId(planId)
 	if err != nil {
 		log.Errorf("query network device ip by plan id error: %v", err)
@@ -463,7 +455,42 @@ func DownloadPlanningFile(context *gin.Context) {
 		})
 	}
 	if err = excel.ExportExcelByExistHeader("Sheet1", "", 3, false, globalConfigNetworkDeviceExcels, &excelFile); err != nil {
-		log.Errorf("export excel error: %v", err)
+		log.Errorf("export planning file sheet1 error: %v", err)
+		return
+	}
+	serverIps, err := QueryServerIpByPlanId(planId)
+	if err != nil {
+		return
+	}
+	var globalConfigServerExcels []GlobalConfigServerExcel
+	for _, serverIp := range serverIps {
+		globalConfigServerExcels = append(globalConfigServerExcels, GlobalConfigServerExcel{
+			Sn:                  serverIp.Sn,
+			MachineRoomAbbr:     "",
+			CabinetNum:          "",
+			SlotNum:             "",
+			KernelArch:          "",
+			HostName:            "",
+			NetworkMode:         "",
+			Role:                "",
+			NodeTwoLayerNetwork: "",
+			HostGroup:           "",
+			OpenDpdk:            "",
+			ManegeNetworkIP:     serverIp.ManageNetworkIp,
+			ManageNetworkIpv6IP: serverIp.ManageNetworkIpv6,
+			BizIntranetIP:       serverIp.BizIntranetIp,
+		})
+	}
+	if err = excel.ExportExcelByExistHeader("Sheet2", "", 3, false, globalConfigServerExcels, &excelFile); err != nil {
+		log.Errorf("export planning file sheet2 error: %v", err)
+		return
+	}
+	globalConfigExcel, err := ConvertGlobalConfigExcel(context, planId)
+	if err != nil {
+		return
+	}
+	if err = excel.ExportExcelByAssignCell("Sheet3", "", false, *globalConfigExcel, &excelFile); err != nil {
+		log.Errorf("export planning file sheet3 error: %v", err)
 		return
 	}
 	// if err = excelFile.F.SaveAs("/Users/blue/Desktop/规划文件模板.xlsx"); err != nil {

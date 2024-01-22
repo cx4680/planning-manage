@@ -1,7 +1,6 @@
 package ip_demand
 
 import (
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -9,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
@@ -154,15 +155,15 @@ func Save(c *gin.Context) {
 				}
 			}
 		}
-		ipDemandPlannings, err := SearchIpDemandPlanningByPlanId(planId)
+		ipDemandShelves, err := GetIpDemandShelve(planId)
 		if err != nil {
 			return err
 		}
-		ipDemandPlanningMap := make(map[string]string)
-		for _, ipDemandPlanning := range ipDemandPlannings {
-			if ipDemandPlanning.Address != "" {
-				key := fmt.Sprintf("%s_%d_%s", ipDemandPlanning.LogicalGrouping, ipDemandPlanning.NetworkType, ipDemandPlanning.Vlan)
-				ipDemandPlanningMap[key] = ipDemandPlanning.Address
+		ipDemandShelveMap := make(map[string]string)
+		for _, ipDemandShelve := range ipDemandShelves {
+			if ipDemandShelve.Address != "" {
+				key := fmt.Sprintf("%s_%d_%s", ipDemandShelve.LogicalGrouping, ipDemandShelve.NetworkType, ipDemandShelve.Vlan)
+				ipDemandShelveMap[key] = ipDemandShelve.Address
 			}
 		}
 		var networkDeviceIps []entity.NetworkDeviceIp
@@ -171,7 +172,7 @@ func Save(c *gin.Context) {
 				PlanId:          planId,
 				LogicalGrouping: accessNetworkShelf.DeviceLogicalId,
 			}
-			err = ConvertNetworkDeviceIp(accessNetworkShelf, ipDemandPlanningMap, &networkDeviceIp)
+			err = ConvertNetworkDeviceIp(accessNetworkShelf, ipDemandShelveMap, &networkDeviceIp)
 			if err != nil {
 				return err
 			}
