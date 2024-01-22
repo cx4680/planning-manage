@@ -133,4 +133,10 @@ const (
 	ServerManageBizIntranetIpVlanId = "92"
 
 	NodeRoleDeployMethodInCluster = "inCluster"
+
+	KernelArchArm = "aarch64"
+	KernelArchX86 = "x86_64"
+
+	CpuTypeIntel = "intel"
+	CpuTypeHygon = "hygon"
 )

@@ -316,3 +316,19 @@ func QueryServerIpByPlanId(planId int64) ([]entity.ServerIp, error) {
 	}
 	return serverIps, nil
 }
+
+func QueryServerShelve(planId int64) ([]entity.ServerShelve, error) {
+	var serverShelves []entity.ServerShelve
+	if err := data.DB.Table(entity.ServerShelveTable).Where("plan_id = ?", planId).Find(&serverShelves).Error; err != nil {
+		return serverShelves, err
+	}
+	return serverShelves, nil
+}
+
+func QueryServerPlanning(planId int64) ([]entity.ServerPlanning, error) {
+	var serverPlannings []entity.ServerPlanning
+	if err := data.DB.Table(entity.ServerPlanningTable).Where("plan_id = ? and delete_state = 0", planId).Find(&serverPlannings).Error; err != nil {
+		return serverPlannings, err
+	}
+	return serverPlannings, nil
+}

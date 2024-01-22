@@ -3,6 +3,7 @@ package global_config
 import (
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
@@ -462,14 +463,32 @@ func DownloadPlanningFile(context *gin.Context) {
 	if err != nil {
 		return
 	}
+	serverShelves, err := QueryServerShelve(planId)
+	if err != nil {
+		return
+	}
+	serverShelveMap := make(map[string]entity.ServerShelve)
+	for _, serverShelve := range serverShelves {
+		serverShelveMap[serverShelve.Sn] = serverShelve
+	}
+	serverPlannings, err := QueryServerPlanning(planId)
+	if err != nil {
+		return
+	}
+	cpuType := strings.ToLower(serverPlannings[0].CpuType)
+	kernelArch := constant.KernelArchArm
+	if cpuType == constant.CpuTypeIntel || cpuType == constant.CpuTypeHygon {
+		kernelArch = constant.KernelArchX86
+	}
 	var globalConfigServerExcels []GlobalConfigServerExcel
 	for _, serverIp := range serverIps {
+		serverShelve := serverShelveMap[serverIp.Sn]
 		globalConfigServerExcels = append(globalConfigServerExcels, GlobalConfigServerExcel{
 			Sn:                  serverIp.Sn,
-			MachineRoomAbbr:     "",
-			CabinetNum:          "",
-			SlotNum:             "",
-			KernelArch:          "",
+			MachineRoomAbbr:     serverShelve.MachineRoomAbbr,
+			CabinetNum:          serverShelve.CabinetNumber,
+			SlotNum:             serverShelve.SlotPosition,
+			KernelArch:          kernelArch,
 			HostName:            "",
 			NetworkMode:         "",
 			Role:                "",

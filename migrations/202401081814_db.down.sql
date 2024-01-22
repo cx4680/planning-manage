@@ -8,3 +8,5 @@ DROP TABLE IF EXISTS `vlan_id_config`;
 DROP TABLE IF EXISTS `cell_config`;
 DROP TABLE IF EXISTS `route_planning_config`;
 DROP TABLE IF EXISTS `large_network_segment_config`;
+DROP TABLE IF EXISTS `network_device_ip`;
+DROP TABLE IF EXISTS `server_ip`;
