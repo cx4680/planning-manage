@@ -55,6 +55,7 @@ type ServerShelve struct {
 	NodeIp                string    `gorm:"column:node_ip" json:"nodeIp"`                                // 节点IP
 	Sn                    string    `gorm:"column:sn" json:"sn"`                                         // SN
 	Model                 string    `gorm:"column:model" json:"model"`                                   // 机型
+	CabinetId             int64     `gorm:"column:cabinet_id" json:"cabinetId"`                          // 机柜id
 	MachineRoomAbbr       string    `gorm:"column:machine_room_abbr" json:"machineRoomAbbr"`             // 机房缩写
 	MachineRoomNumber     string    `gorm:"column:machine_room_number" form:"machineRoomNumber"`         // 房间号
 	ColumnNumber          string    `gorm:"column:column_number" form:"columnNumber"`                    // 列号
