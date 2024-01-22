@@ -1,6 +1,7 @@
 package network_device
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
 	"strconv"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 )
 
 func SearchDevicePlanByPlanId(planId int64) (*entity.NetworkDevicePlanning, error) {
@@ -239,8 +239,9 @@ func UploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 	now := datetime.GetNow()
 	var networkDeviceShelveList []*entity.NetworkDeviceShelve
 	for _, v := range networkDeviceShelveDownload {
-		if err := checkNetworkShelve(&v); err != nil {
-			return err
+		if util.IsBlank(v.DeviceLogicalId) || util.IsBlank(v.DeviceId) || util.IsBlank(v.Sn) || util.IsBlank(v.MachineRoomAbbr) ||
+			util.IsBlank(v.MachineRoomNumber) || util.IsBlank(v.CabinetNumber) || util.IsBlank(v.SlotPosition) || v.UNumber == 0 {
+			return errors.New("表单所有参数不能为空")
 		}
 		networkDeviceShelveList = append(networkDeviceShelveList, &entity.NetworkDeviceShelve{
 			PlanId:            planId,
@@ -313,13 +314,4 @@ func GetDownloadNetworkShelve(planId int64) ([]NetworkDeviceShelveDownload, stri
 	}
 	fileName := projectManage.Name + "-" + planManage.Name + "-" + "网络设备上架表"
 	return response, fileName, nil
-}
-
-func checkNetworkShelve(networkDeviceShelve *NetworkDeviceShelveDownload) error {
-	if util.IsBlank(networkDeviceShelve.DeviceLogicalId) || util.IsBlank(networkDeviceShelve.DeviceId) || util.IsBlank(networkDeviceShelve.Sn) ||
-		util.IsBlank(networkDeviceShelve.MachineRoomAbbr) || util.IsBlank(networkDeviceShelve.MachineRoomNumber) || util.IsBlank(networkDeviceShelve.CabinetNumber) ||
-		util.IsBlank(networkDeviceShelve.SlotPosition) || networkDeviceShelve.UNumber == 0 {
-		return errors.New("表单所有参数不能为空")
-	}
-	return nil
 }

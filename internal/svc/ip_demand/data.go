@@ -108,8 +108,9 @@ func UploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlann
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
 		var ipDemandShelveList []*entity.IpDemandShelve
 		for _, v := range ipDemandPlanningExportResponse {
-			if util.IsBlank(v.Address) {
-				return errors.New("地址段不能为空")
+			if util.IsBlank(v.LogicalGrouping) || util.IsBlank(v.SegmentType) || util.IsBlank(v.NetworkType) || util.IsBlank(v.Vlan) ||
+				util.IsBlank(v.CNum) || util.IsBlank(v.Address) || util.IsBlank(v.Describe) || util.IsBlank(v.AddressPlanning) {
+				return errors.New("表单所有参数不能为空")
 			}
 			networkType := constant.IpDemandNetworkTypeIpv4
 			if v.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
