@@ -218,3 +218,13 @@ CREATE TABLE `network_device_ip` (
         `storage_front_network_gateway` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '存储前端网网关',
         PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='网络设备ip分配表';
+
+CREATE TABLE `server_ip` (
+        `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+        `plan_id` bigint(20) DEFAULT NULL COMMENT '方案id',
+        `sn` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'SN',
+        `manage_network_ip` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网ip',
+        `manage_network_ipv6` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网ipv6',
+        `biz_intranet_ip` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '业务内网ip',
+        PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='服务器ip分配表';

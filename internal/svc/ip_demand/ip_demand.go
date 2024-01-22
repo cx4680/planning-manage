@@ -166,19 +166,102 @@ func Save(c *gin.Context) {
 				ipDemandShelveMap[key] = ipDemandShelve.Address
 			}
 		}
-		var networkDeviceIps []entity.NetworkDeviceIp
-		for _, accessNetworkShelf := range accessNetworkShelves {
-			networkDeviceIp := entity.NetworkDeviceIp{
-				PlanId:          planId,
-				LogicalGrouping: accessNetworkShelf.DeviceLogicalId,
-			}
-			err = ConvertNetworkDeviceIp(accessNetworkShelf, ipDemandShelveMap, &networkDeviceIp)
-			if err != nil {
-				return err
-			}
-			networkDeviceIps = append(networkDeviceIps, networkDeviceIp)
+		var insertNetworkDeviceIps []entity.NetworkDeviceIp
+		var updateNetworkDeviceIps []entity.NetworkDeviceIp
+		var deleteNetworkDeviceIps []entity.NetworkDeviceIp
+		originNetworkDeviceIps, err := QueryNetworkDeviceIp(planId)
+		if err != nil {
+			return err
 		}
-		if err = CreateNetworkDeviceIp(tx, networkDeviceIps); err != nil {
+		originNetworkIpMap := make(map[string]entity.NetworkDeviceIp)
+		for _, originNetworkDeviceIp := range originNetworkDeviceIps {
+			key := fmt.Sprintf("%d_%s", originNetworkDeviceIp.PlanId, originNetworkDeviceIp.LogicalGrouping)
+			originNetworkIpMap[key] = originNetworkDeviceIp
+		}
+		for _, accessNetworkShelf := range accessNetworkShelves {
+			key := fmt.Sprintf("%d_%s", planId, accessNetworkShelf.DeviceLogicalId)
+			originNetworkIp, ok := originNetworkIpMap[key]
+			if ok {
+				if err = ConvertNetworkDeviceIp(accessNetworkShelf, ipDemandShelveMap, &originNetworkIp); err != nil {
+					return err
+				}
+				updateNetworkDeviceIps = append(updateNetworkDeviceIps, originNetworkIp)
+				delete(originNetworkIpMap, key)
+			} else {
+				networkDeviceIp := entity.NetworkDeviceIp{
+					PlanId:          planId,
+					LogicalGrouping: accessNetworkShelf.DeviceLogicalId,
+				}
+				if err = ConvertNetworkDeviceIp(accessNetworkShelf, ipDemandShelveMap, &networkDeviceIp); err != nil {
+					return err
+				}
+				insertNetworkDeviceIps = append(insertNetworkDeviceIps, networkDeviceIp)
+			}
+		}
+		if len(originNetworkIpMap) > 0 {
+			for _, originNetworkDeviceIp := range originNetworkIpMap {
+				deleteNetworkDeviceIps = append(deleteNetworkDeviceIps, originNetworkDeviceIp)
+			}
+		}
+		if err = CreateNetworkDeviceIp(tx, insertNetworkDeviceIps); err != nil {
+			return err
+		}
+		if err = UpdateNetworkDeviceIp(tx, updateNetworkDeviceIps); err != nil {
+			return err
+		}
+		if err = DeleteNetworkDeviceIp(tx, deleteNetworkDeviceIps); err != nil {
+			return err
+		}
+		nodeRoleBaselines, err := QueryInClusterNodeRoleBaselineByVersionId(versionId)
+		if err != nil {
+			return err
+		}
+		var inClusterNodeRoleIds []int64
+		for _, nodeRoleBaseline := range nodeRoleBaselines {
+			inClusterNodeRoleIds = append(inClusterNodeRoleIds, nodeRoleBaseline.Id)
+		}
+		serverShelves, err := QueryServerShelve(planId, inClusterNodeRoleIds)
+		if err != nil {
+			return err
+		}
+		var insertServerIps []entity.ServerIp
+		var updateServerIps []entity.ServerIp
+		var deleteServerIps []entity.ServerIp
+		originServerIps, err := QueryServerIp(planId)
+		if err != nil {
+			return err
+		}
+		originServerIpMap := make(map[string]entity.ServerIp)
+		for _, originServerIp := range originServerIps {
+			key := fmt.Sprintf("%d_%s", originServerIp.PlanId, originServerIp.Sn)
+			originServerIpMap[key] = originServerIp
+		}
+		for _, serverShelve := range serverShelves {
+			key := fmt.Sprintf("%d_%s", planId, serverShelve.Sn)
+			originServerIp, ok := originServerIpMap[key]
+			if ok {
+				updateServerIps = append(updateServerIps, originServerIp)
+				delete(originServerIpMap, key)
+			} else {
+				serverIp := entity.ServerIp{
+					PlanId: planId,
+					Sn:     serverShelve.Sn,
+				}
+				insertServerIps = append(insertServerIps, serverIp)
+			}
+		}
+		if len(originServerIpMap) > 0 {
+			for _, originServerIp := range originServerIps {
+				deleteServerIps = append(deleteServerIps, originServerIp)
+			}
+		}
+		if err = CreateServerIp(tx, insertServerIps); err != nil {
+			return err
+		}
+		if err = UpdateServerIp(tx, updateServerIps); err != nil {
+			return err
+		}
+		if err = DeleteServerIp(tx, deleteServerIps); err != nil {
 			return err
 		}
 		return nil
