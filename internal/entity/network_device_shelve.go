@@ -10,6 +10,7 @@ type NetworkDeviceShelve struct {
 	DeviceLogicalId   string    `gorm:"column:device_logical_id" json:"deviceLogicalId"`     //网络设备逻辑ID
 	DeviceId          string    `gorm:"column:device_id" json:"deviceId"`                    //网络设备ID
 	Sn                string    `gorm:"column:sn" json:"sn"`                                 //SN
+	CabinetId         int64     `gorm:"column:cabinet_id" json:"cabinetId"`                  //机柜id
 	MachineRoomAbbr   string    `gorm:"column:machine_room_abbr" json:"machineRoomAbbr"`     //机房缩写
 	MachineRoomNumber string    `gorm:"column:machine_room_number" json:"machineRoomNumber"` //机房编号
 	CabinetNumber     string    `gorm:"column:cabinet_number" json:"cabinetNumber"`          //机柜编号

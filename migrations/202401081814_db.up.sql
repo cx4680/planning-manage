@@ -17,12 +17,13 @@ CREATE TABLE `network_device_shelve`
     `device_logical_id`   varchar(255) DEFAULT NULL COMMENT '网络设备逻辑ID',
     `device_id`           varchar(255) DEFAULT NULL COMMENT '网络设备ID',
     `sn`                  bigint(20) DEFAULT NULL COMMENT 'SN',
+    `cabinet_id`          bigint(20) DEFAULT NULL COMMENT '机柜id',
     `machine_room_abbr`   varchar(255) DEFAULT NULL COMMENT '机房缩写',
     `machine_room_number` varchar(255) DEFAULT NULL COMMENT '机房编号',
     `cabinet_number`      varchar(255) DEFAULT NULL COMMENT '机柜编号',
     `slot_position`       varchar(255) DEFAULT NULL COMMENT '槽位',
     `u_number`            int          DEFAULT NULL COMMENT 'U数',
-    `create_user_id`      varchar(255) NULL DEFAULT NULL COMMENT '创建人id',
+    `create_user_id`      varchar(255) DEFAULT NULL COMMENT '创建人id',
     `create_time`         datetime NULL DEFAULT NULL COMMENT '创建时间',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品基线';
@@ -53,7 +54,7 @@ CREATE TABLE `server_shelve`
     `bmc_mac`                 varchar(255) DEFAULT NULL COMMENT 'bmc mac地址',
     `mask`                    varchar(255) DEFAULT NULL COMMENT '掩码',
     `gateway`                 varchar(255) DEFAULT NULL COMMENT '网关',
-    `create_user_id`          varchar(255) NULL DEFAULT NULL COMMENT '创建人id',
+    `create_user_id`          varchar(255) DEFAULT NULL COMMENT '创建人id',
     `create_time`             datetime NULL DEFAULT NULL COMMENT '创建时间',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='server_shelve';
@@ -197,7 +198,7 @@ CREATE TABLE `ip_demand_shelve`
     `address`          varchar(255) DEFAULT NULL COMMENT '地址段',
     `describe`         varchar(255) DEFAULT NULL COMMENT '描述',
     `address_planning` varchar(255) DEFAULT NULL COMMENT 'IP地址规划建议',
-    `create_user_id`   varchar(255) NULL DEFAULT NULL COMMENT '创建人id',
+    `create_user_id`   varchar(255) DEFAULT NULL COMMENT '创建人id',
     `create_time`      datetime NULL DEFAULT NULL COMMENT '创建时间',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='Ip需求规划表';

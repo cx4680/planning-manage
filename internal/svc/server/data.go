@@ -819,7 +819,7 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 	return cabinetIdleSlotList, nil
 }
 
-func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, userId string) error {
+func UploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, userId string) error {
 	if len(serverShelveDownload) == 0 {
 		return errors.New("数据为空")
 	}
@@ -856,6 +856,10 @@ func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 		if util.IsBlank(v.Sn) {
 			return errors.New("表单所有参数不能为空")
 		}
+		cabinetId := cabinetInfoMap[fmt.Sprintf("%v-%v-%v-%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNumber, v.ColumnNumber, v.CabinetAsw, v.CabinetNumber, v.CabinetOriginalNumber)]
+		if cabinetId == 0 {
+			return errors.New("机柜信息错误")
+		}
 		serverShelveList = append(serverShelveList, &entity.ServerShelve{
 			SortNumber:            v.SortNumber,
 			PlanId:                planId,
@@ -863,7 +867,7 @@ func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 			NodeIp:                v.NodeIp,
 			Sn:                    v.Sn,
 			Model:                 v.Model,
-			CabinetId:             cabinetInfoMap[fmt.Sprintf("%v-%v-%v-%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNumber, v.ColumnNumber, v.CabinetAsw, v.CabinetNumber, v.CabinetOriginalNumber)],
+			CabinetId:             cabinetId,
 			MachineRoomAbbr:       v.MachineRoomAbbr,
 			MachineRoomNumber:     v.MachineRoomNumber,
 			ColumnNumber:          v.ColumnNumber,
@@ -912,6 +916,7 @@ func saveServerPlanning(request *Request) error {
 }
 
 func saveServerShelve(request *Request) error {
+	//查询服务器上架表
 	var serverShelve []*entity.ServerShelve
 	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&serverShelve).Error; err != nil {
 		return err
@@ -919,6 +924,7 @@ func saveServerShelve(request *Request) error {
 	if len(serverShelve) == 0 {
 		return errors.New("服务器未上架")
 	}
+	//查询机柜信息
 	var cabinetIdList []int64
 	for _, v := range serverShelve {
 		cabinetIdList = append(cabinetIdList, v.CabinetId)
