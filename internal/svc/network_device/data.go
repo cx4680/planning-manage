@@ -237,36 +237,50 @@ func UploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 	if len(networkDeviceShelveDownload) == 0 {
 		return errors.New("数据为空")
 	}
+	//网络设备列表
+	var networkDeviceList []*entity.NetworkDeviceList
+	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceList).Error; err != nil {
+		return err
+	}
+	if len(networkDeviceList) == 0 {
+		return errors.New("网络设备未规划")
+	}
+	var networkDeviceMap = make(map[string]*entity.NetworkDeviceList)
+	for _, v := range networkDeviceList {
+		networkDeviceMap[fmt.Sprintf("%v-%v", v.LogicalGrouping, v.DeviceId)] = v
+	}
 	//查询机柜信息
 	var cabinetInfoList []*entity.CabinetInfo
 	if err := data.DB.Where("plan_id = ?", planId).Find(&cabinetInfoList).Error; err != nil {
 		return err
 	}
-	var cabinetInfoMap = make(map[string]int64)
+	var cabinetInfoMap = make(map[string]*entity.CabinetInfo)
 	for _, v := range cabinetInfoList {
-		cabinetInfoMap[fmt.Sprintf("%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNum, v.CabinetNum)] = v.Id
+		cabinetInfoMap[fmt.Sprintf("%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNum, v.CabinetNum)] = v
 	}
 	var networkDeviceShelveList []*entity.NetworkDeviceShelve
 	for _, v := range networkDeviceShelveDownload {
 		if util.IsBlank(v.DeviceLogicalId) || util.IsBlank(v.DeviceId) || util.IsBlank(v.Sn) || v.UNumber == 0 {
 			return errors.New("表单所有参数不能为空")
 		}
-		cabinetId := cabinetInfoMap[fmt.Sprintf("%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNumber, v.CabinetNumber)]
-		if cabinetId == 0 {
+		cabinetInfo := cabinetInfoMap[fmt.Sprintf("%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNumber, v.CabinetNumber)]
+		if cabinetInfo == nil {
 			return errors.New("机柜信息错误")
 		}
 		networkDeviceShelveList = append(networkDeviceShelveList, &entity.NetworkDeviceShelve{
-			PlanId:            planId,
-			DeviceLogicalId:   v.DeviceLogicalId,
-			DeviceId:          v.DeviceId,
-			Sn:                v.Sn,
-			MachineRoomAbbr:   v.MachineRoomAbbr,
-			MachineRoomNumber: v.MachineRoomNumber,
-			CabinetNumber:     v.CabinetNumber,
-			SlotPosition:      v.SlotPosition,
-			UNumber:           v.UNumber,
-			CreateUserId:      userId,
-			CreateTime:        datetime.GetNow(),
+			PlanId:              planId,
+			DeviceLogicalId:     v.DeviceLogicalId,
+			DeviceId:            v.DeviceId,
+			Sn:                  v.Sn,
+			NetworkDeviceRoleId: networkDeviceMap[fmt.Sprintf("%v-%v", v.DeviceLogicalId, v.DeviceId)].NetworkDeviceRoleId,
+			CabinetId:           cabinetInfo.Id,
+			MachineRoomAbbr:     v.MachineRoomAbbr,
+			MachineRoomNumber:   v.MachineRoomNumber,
+			CabinetNumber:       v.CabinetNumber,
+			SlotPosition:        v.SlotPosition,
+			UNumber:             v.UNumber,
+			CreateUserId:        userId,
+			CreateTime:          datetime.GetNow(),
 		})
 	}
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {

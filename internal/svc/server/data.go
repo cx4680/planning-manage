@@ -847,17 +847,17 @@ func UploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 	if err := data.DB.Where("plan_id = ?", planId).Find(&cabinetInfoList).Error; err != nil {
 		return err
 	}
-	var cabinetInfoMap = make(map[string]int64)
+	var cabinetInfoMap = make(map[string]*entity.CabinetInfo)
 	for _, v := range cabinetInfoList {
-		cabinetInfoMap[fmt.Sprintf("%v-%v-%v-%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNum, v.ColumnNum, v.CabinetAsw, v.CabinetNum, v.OriginalNum)] = v.Id
+		cabinetInfoMap[fmt.Sprintf("%v-%v-%v-%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNum, v.ColumnNum, v.CabinetAsw, v.CabinetNum, v.OriginalNum)] = v
 	}
 	var serverShelveList []*entity.ServerShelve
 	for _, v := range serverShelveDownload {
 		if util.IsBlank(v.Sn) {
 			return errors.New("表单所有参数不能为空")
 		}
-		cabinetId := cabinetInfoMap[fmt.Sprintf("%v-%v-%v-%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNumber, v.ColumnNumber, v.CabinetAsw, v.CabinetNumber, v.CabinetOriginalNumber)]
-		if cabinetId == 0 {
+		cabinetInfo := cabinetInfoMap[fmt.Sprintf("%v-%v-%v-%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNumber, v.ColumnNumber, v.CabinetAsw, v.CabinetNumber, v.CabinetOriginalNumber)]
+		if cabinetInfo == nil {
 			return errors.New("机柜信息错误")
 		}
 		serverShelveList = append(serverShelveList, &entity.ServerShelve{
@@ -867,7 +867,7 @@ func UploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 			NodeIp:                v.NodeIp,
 			Sn:                    v.Sn,
 			Model:                 v.Model,
-			CabinetId:             cabinetId,
+			CabinetId:             cabinetInfo.Id,
 			MachineRoomAbbr:       v.MachineRoomAbbr,
 			MachineRoomNumber:     v.MachineRoomNumber,
 			ColumnNumber:          v.ColumnNumber,
