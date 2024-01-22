@@ -755,7 +755,7 @@ func getServerShelvePlanningList(planId int64) ([]*Server, error) {
 
 func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 	var cabinetInfoList []*entity.CabinetInfo
-	if err := data.DB.Where("plan_id = ? AND cabinet_type = ?", planId, 2).Find(&cabinetInfoList).Error; err != nil {
+	if err := data.DB.Where("plan_id = ? AND cabinet_type = ?", planId, 2).Order("id ASC").Find(&cabinetInfoList).Error; err != nil {
 		return nil, err
 	}
 	var cabinetMap = make(map[int64]*entity.CabinetInfo)

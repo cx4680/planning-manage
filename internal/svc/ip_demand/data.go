@@ -2,6 +2,7 @@ package ip_demand
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
@@ -86,6 +87,14 @@ func ExportIpDemandPlanningByPlanId(planId int64) (string, []IpDemandPlanningExp
 }
 
 func GetIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
+	var ipDemandShelveList []*entity.IpDemandShelve
+	if err := data.DB.Where("plan_id = ?", planId).Find(&ipDemandShelveList).Error; err != nil {
+		return nil, err
+	}
+	var ipDemandShelveMap = make(map[string]*entity.IpDemandShelve)
+	for _, v := range ipDemandShelveList {
+		ipDemandShelveMap[fmt.Sprintf("%v-%v-%v-%v", v.PlanId, v.LogicalGrouping, v.NetworkType, v.Vlan)] = v
+	}
 	ipDemandPlanningList, err := SearchIpDemandPlanningByPlanId(planId)
 	if err != nil {
 		return nil, err
@@ -96,6 +105,7 @@ func GetIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
 		if v.NetworkType == constant.IpDemandNetworkTypeIpv6 {
 			networkType = constant.IpDemandNetworkTypeIpv6Cn
 		}
+		v.Address = ipDemandShelveMap[fmt.Sprintf("%v-%v-%v-%v", v.PlanId, v.LogicalGrouping, v.NetworkType, v.Vlan)].Address
 		list = append(list, &IpDemandPlanning{
 			IpDemandPlanning: v,
 			NetworkTypeCn:    networkType,
