@@ -819,7 +819,7 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 	return cabinetIdleSlotList, nil
 }
 
-func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, userId string) error {
+func UploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, userId string) error {
 	if len(serverShelveDownload) == 0 {
 		return errors.New("数据为空")
 	}
@@ -842,10 +842,23 @@ func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 	for _, v := range nodeRoleList {
 		nodeRoleNameMap[v.NodeRoleName] = v.Id
 	}
+	//查询机柜信息
+	var cabinetInfoList []*entity.CabinetInfo
+	if err := data.DB.Where("plan_id = ?", planId).Find(&cabinetInfoList).Error; err != nil {
+		return err
+	}
+	var cabinetInfoMap = make(map[string]int64)
+	for _, v := range cabinetInfoList {
+		cabinetInfoMap[fmt.Sprintf("%v-%v-%v-%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNum, v.ColumnNum, v.CabinetAsw, v.CabinetNum, v.OriginalNum)] = v.Id
+	}
 	var serverShelveList []*entity.ServerShelve
 	for _, v := range serverShelveDownload {
 		if util.IsBlank(v.Sn) {
 			return errors.New("表单所有参数不能为空")
+		}
+		cabinetId := cabinetInfoMap[fmt.Sprintf("%v-%v-%v-%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNumber, v.ColumnNumber, v.CabinetAsw, v.CabinetNumber, v.CabinetOriginalNumber)]
+		if cabinetId == 0 {
+			return errors.New("机柜信息错误")
 		}
 		serverShelveList = append(serverShelveList, &entity.ServerShelve{
 			SortNumber:            v.SortNumber,
@@ -854,6 +867,7 @@ func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 			NodeIp:                v.NodeIp,
 			Sn:                    v.Sn,
 			Model:                 v.Model,
+			CabinetId:             cabinetId,
 			MachineRoomAbbr:       v.MachineRoomAbbr,
 			MachineRoomNumber:     v.MachineRoomNumber,
 			ColumnNumber:          v.ColumnNumber,
@@ -902,19 +916,27 @@ func saveServerPlanning(request *Request) error {
 }
 
 func saveServerShelve(request *Request) error {
-	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		var serverShelveCount int64
-		if err := tx.Model(&entity.ServerShelve{}).Where("plan_id = ?", request.PlanId).Count(&serverShelveCount).Error; err != nil {
-			return err
-		}
-		if serverShelveCount == 0 {
-			return errors.New("服务器未上架")
-		}
-		if err := tx.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningIp}).Error; err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+	//查询服务器上架表
+	var serverShelve []*entity.ServerShelve
+	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&serverShelve).Error; err != nil {
+		return err
+	}
+	if len(serverShelve) == 0 {
+		return errors.New("服务器未上架")
+	}
+	//查询机柜信息
+	var cabinetIdList []int64
+	for _, v := range serverShelve {
+		cabinetIdList = append(cabinetIdList, v.CabinetId)
+	}
+	var cabinetCount int64
+	if err := data.DB.Model(&entity.CabinetInfo{}).Where("id IN (?)", cabinetIdList).Count(&cabinetCount).Error; err != nil {
+		return err
+	}
+	if int64(len(cabinetIdList)) != cabinetCount {
+		return errors.New("机房信息已修改，请重新下载服务器上架模板并上传")
+	}
+	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningIp}).Error; err != nil {
 		return err
 	}
 	return nil

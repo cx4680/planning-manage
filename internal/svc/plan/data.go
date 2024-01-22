@@ -109,23 +109,30 @@ func UpdatePlan(request *Request) error {
 	if planManage.Id == 0 {
 		return errors.New("方案不存在")
 	}
-	planManage.Name = request.Name
-	planManage.Type = request.Type
-	planManage.Stage = request.Stage
-	planManage.UpdateUserId = request.UserId
-	planManage.UpdateTime = now
-	if err := data.DB.Updates(&planManage).Error; err != nil {
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Updates(&entity.PlanManage{
+			Id:           request.Id,
+			Name:         request.Name,
+			Type:         request.Type,
+			Stage:        request.Stage,
+			UpdateUserId: request.UserId,
+			UpdateTime:   now,
+		}).Error; err != nil {
+			return err
+		}
+		if request.Stage == constant.PlanStageDelivering {
+			if err := tx.Updates(&entity.ProjectManage{Id: planManage.ProjectId, Stage: constant.ProjectStageDelivery, UpdateUserId: request.UserId, UpdateTime: now}).Error; err != nil {
+				return err
+			}
+		}
+		if request.Stage == constant.PlanStageDelivered {
+			if err := tx.Updates(&entity.ProjectManage{Id: planManage.ProjectId, Stage: constant.ProjectStageDelivered, UpdateUserId: request.UserId, UpdateTime: now}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
 		return err
-	}
-	if request.Stage == constant.PlanStageDelivering {
-		if err := data.DB.Updates(&entity.ProjectManage{Id: planManage.ProjectId, Stage: constant.ProjectStageDelivery}).Error; err != nil {
-			return err
-		}
-	}
-	if request.Stage == constant.PlanStageDelivered {
-		if err := data.DB.Updates(&entity.ProjectManage{Id: planManage.ProjectId, Stage: constant.ProjectStageDelivered}).Error; err != nil {
-			return err
-		}
 	}
 	return nil
 }

@@ -3,6 +3,7 @@ package network_device
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -236,12 +237,23 @@ func UploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 	if len(networkDeviceShelveDownload) == 0 {
 		return errors.New("数据为空")
 	}
-	now := datetime.GetNow()
+	//查询机柜信息
+	var cabinetInfoList []*entity.CabinetInfo
+	if err := data.DB.Where("plan_id = ?", planId).Find(&cabinetInfoList).Error; err != nil {
+		return err
+	}
+	var cabinetInfoMap = make(map[string]int64)
+	for _, v := range cabinetInfoList {
+		cabinetInfoMap[fmt.Sprintf("%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNum, v.CabinetNum)] = v.Id
+	}
 	var networkDeviceShelveList []*entity.NetworkDeviceShelve
 	for _, v := range networkDeviceShelveDownload {
-		if util.IsBlank(v.DeviceLogicalId) || util.IsBlank(v.DeviceId) || util.IsBlank(v.Sn) || util.IsBlank(v.MachineRoomAbbr) ||
-			util.IsBlank(v.MachineRoomNumber) || util.IsBlank(v.CabinetNumber) || util.IsBlank(v.SlotPosition) || v.UNumber == 0 {
+		if util.IsBlank(v.DeviceLogicalId) || util.IsBlank(v.DeviceId) || util.IsBlank(v.Sn) || v.UNumber == 0 {
 			return errors.New("表单所有参数不能为空")
+		}
+		cabinetId := cabinetInfoMap[fmt.Sprintf("%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNumber, v.CabinetNumber)]
+		if cabinetId == 0 {
+			return errors.New("机柜信息错误")
 		}
 		networkDeviceShelveList = append(networkDeviceShelveList, &entity.NetworkDeviceShelve{
 			PlanId:            planId,
@@ -254,7 +266,7 @@ func UploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 			SlotPosition:      v.SlotPosition,
 			UNumber:           v.UNumber,
 			CreateUserId:      userId,
-			CreateTime:        now,
+			CreateTime:        datetime.GetNow(),
 		})
 	}
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
@@ -272,6 +284,26 @@ func UploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 }
 
 func SaveNetworkShelve(request *Request) error {
+	//查询网络设备上架表
+	var networkDeviceShelveList []*entity.NetworkDeviceShelve
+	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&networkDeviceShelveList).Error; err != nil {
+		return err
+	}
+	if len(networkDeviceShelveList) == 0 {
+		return errors.New("网络设备未上架")
+	}
+	//查询机柜信息
+	var cabinetIdList []int64
+	for _, v := range networkDeviceShelveList {
+		cabinetIdList = append(cabinetIdList, v.CabinetId)
+	}
+	var cabinetCount int64
+	if err := data.DB.Model(&entity.CabinetInfo{}).Where("id IN (?)", cabinetIdList).Count(&cabinetCount).Error; err != nil {
+		return err
+	}
+	if int64(len(cabinetIdList)) != cabinetCount {
+		return errors.New("机房信息已修改，请重新下载网络设备上架模板并上传")
+	}
 	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningServer}).Error; err != nil {
 		return err
 	}

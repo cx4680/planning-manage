@@ -192,7 +192,7 @@ func DownloadServerShelveTemplate(c *gin.Context) {
 	return
 }
 
-func UploadServerShelve(c *gin.Context) {
+func UploadShelve(c *gin.Context) {
 	planId, _ := strconv.ParseInt(c.Param("planId"), 10, 64)
 	if planId == 0 {
 		result.Failure(c, "planId不能为空", http.StatusBadRequest)
@@ -232,7 +232,7 @@ func UploadServerShelve(c *gin.Context) {
 		return
 	}
 	userId := user.GetUserId(c)
-	if err = uploadServerShelve(planId, serverShelveDownload, userId); err != nil {
+	if err = UploadServerShelve(planId, serverShelveDownload, userId); err != nil {
 		log.Errorf("ListNetworkShelve error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
