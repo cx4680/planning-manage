@@ -844,8 +844,8 @@ func uploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 	}
 	var serverShelveList []*entity.ServerShelve
 	for _, v := range serverShelveDownload {
-		if err := checkNetworkShelve(&v); err != nil {
-			return err
+		if util.IsBlank(v.Sn) {
+			return errors.New("表单所有参数不能为空")
 		}
 		serverShelveList = append(serverShelveList, &entity.ServerShelve{
 			SortNumber:            v.SortNumber,
@@ -977,11 +977,4 @@ func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 	}
 	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器上架清单"
 	return response, fileName, nil
-}
-
-func checkNetworkShelve(shelveDownload *ShelveDownload) error {
-	if util.IsBlank(shelveDownload.Sn) {
-		return errors.New("SN不能为空")
-	}
-	return nil
 }
