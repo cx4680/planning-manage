@@ -52,7 +52,6 @@ type ServerShelve struct {
 	PlanId                int64     `gorm:"column:plan_id" json:"planId"`                                // 方案id
 	SortNumber            int       `gorm:"column:sort_number" json:"sortNumber"`                        // 序号
 	NodeRoleId            int64     `gorm:"column:node_role_id" json:"nodeRoleId"`                       // 节点角色id
-	NodeIp                string    `gorm:"column:node_ip" json:"nodeIp"`                                // 节点IP
 	Sn                    string    `gorm:"column:sn" json:"sn"`                                         // SN
 	Model                 string    `gorm:"column:model" json:"model"`                                   // 机型
 	CabinetId             int64     `gorm:"column:cabinet_id" json:"cabinetId"`                          // 机柜id

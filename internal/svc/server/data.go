@@ -870,7 +870,6 @@ func UploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 			SortNumber:            v.SortNumber,
 			PlanId:                planId,
 			NodeRoleId:            nodeRoleNameMap[v.NodeRoleName],
-			NodeIp:                v.NodeIp,
 			Sn:                    v.Sn,
 			Model:                 v.Model,
 			CabinetId:             cabinetInfo.Id,
@@ -967,7 +966,6 @@ func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 		response = append(response, ShelveDownload{
 			SortNumber:            v.SortNumber,
 			NodeRoleName:          nodeRoleNameMap[v.NodeRoleId],
-			NodeIp:                v.NodeIp,
 			Sn:                    v.Sn,
 			Model:                 v.Model,
 			MachineRoomAbbr:       v.MachineRoomAbbr,
