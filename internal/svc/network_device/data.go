@@ -300,18 +300,14 @@ func UploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 
 func SaveNetworkShelve(request *Request) error {
 	//查询网络设备上架表
-	var networkDeviceShelveList []*entity.NetworkDeviceShelve
-	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&networkDeviceShelveList).Error; err != nil {
+	var cabinetIdList []string
+	if err := data.DB.Model(&entity.NetworkDeviceShelve{}).Select("cabinet_id").Where("plan_id = ?", request.PlanId).Group("cabinet_id").Find(&cabinetIdList).Error; err != nil {
 		return err
 	}
-	if len(networkDeviceShelveList) == 0 {
+	if len(cabinetIdList) == 0 {
 		return errors.New("网络设备未上架")
 	}
 	//查询机柜信息
-	var cabinetIdList []int64
-	for _, v := range networkDeviceShelveList {
-		cabinetIdList = append(cabinetIdList, v.CabinetId)
-	}
 	var cabinetCount int64
 	if err := data.DB.Model(&entity.CabinetInfo{}).Where("id IN (?)", cabinetIdList).Count(&cabinetCount).Error; err != nil {
 		return err

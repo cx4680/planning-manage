@@ -919,19 +919,19 @@ func saveServerPlanning(request *Request) error {
 
 func saveServerShelve(request *Request) error {
 	//查询服务器上架表
-	var serverShelveIdList []int64
-	if err := data.DB.Model(&entity.ServerShelve{}).Select("cabinet_id").Where("plan_id = ?", request.PlanId).Group("cabinet_id").Find(&serverShelveIdList).Error; err != nil {
+	var cabinetIdList []int64
+	if err := data.DB.Model(&entity.ServerShelve{}).Select("cabinet_id").Where("plan_id = ?", request.PlanId).Group("cabinet_id").Find(&cabinetIdList).Error; err != nil {
 		return err
 	}
-	if len(serverShelveIdList) == 0 {
+	if len(cabinetIdList) == 0 {
 		return errors.New("服务器未上架")
 	}
 	//查询机柜信息
 	var cabinetCount int64
-	if err := data.DB.Model(&entity.CabinetInfo{}).Where("id IN (?)", serverShelveIdList).Count(&cabinetCount).Error; err != nil {
+	if err := data.DB.Model(&entity.CabinetInfo{}).Where("id IN (?)", cabinetIdList).Count(&cabinetCount).Error; err != nil {
 		return err
 	}
-	if int64(len(serverShelveIdList)) != cabinetCount {
+	if int64(len(cabinetIdList)) != cabinetCount {
 		return errors.New("机房信息已修改，请重新下载服务器上架模板并上传")
 	}
 	if err := data.DB.Updates(&entity.PlanManage{Id: request.PlanId, DeliverPlanStage: constant.DeliverPlanningIp}).Error; err != nil {
