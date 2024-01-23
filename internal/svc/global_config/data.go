@@ -39,6 +39,14 @@ func InsertVlanIdConfig(userId string, request VlanIdConfigRequest) error {
 	return nil
 }
 
+func DeleteVlanIdConfigByPlanId(planId int64) error {
+	if err := data.DB.Table(entity.VlanIdConfigTable).Where("plan_id = ?", planId).Delete(&entity.VlanIdConfig{}).Error; err != nil {
+		log.Errorf("[deleteVlanIdConfigByPlanId] delete vlan id config error, %v", err)
+		return err
+	}
+	return nil
+}
+
 func QueryVlanIdConfigById(id int64) (entity.VlanIdConfig, error) {
 	var vlanIdConfig entity.VlanIdConfig
 	if err := data.DB.Table(entity.VlanIdConfigTable).Where("id = ?", id).Find(&vlanIdConfig).Error; err != nil {
@@ -85,10 +93,18 @@ func QueryRegionAzCellByPlanId(planId int64) (RegionAzCell, error) {
 func QueryCellConfigByPlanId(planId int64) (entity.CellConfig, error) {
 	var cellConfig entity.CellConfig
 	if err := data.DB.Table(entity.CellConfigTable).Where("plan_id = ?", planId).Find(&cellConfig).Error; err != nil && err != gorm.ErrRecordNotFound {
-		log.Errorf("[queryCellConfigByPlanId] query vlan id config error, %v", err)
+		log.Errorf("[queryCellConfigByPlanId] query cell config config error, %v", err)
 		return cellConfig, err
 	}
 	return cellConfig, nil
+}
+
+func DeleteCellConfigByPlanId(planId int64) error {
+	if err := data.DB.Table(entity.CellConfigTable).Where("plan_id = ?", planId).Delete(&entity.CellConfig{}).Error; err != nil {
+		log.Errorf("[deleteCellConfigByPlanId] delete cell config config error, %v", err)
+		return err
+	}
+	return nil
 }
 
 func InsertCellConfig(userId string, request CellConfigReq) error {
@@ -222,6 +238,14 @@ func InsertRoutePlanningConfig(userId string, request RoutePlanningConfigReq) er
 	return nil
 }
 
+func DeleteRoutePlanningConfig(planId int64) error {
+	if err := data.DB.Table(entity.RoutePlanningConfigTable).Where("plan_id = ?", planId).Delete(&entity.RoutePlanningConfig{}).Error; err != nil {
+		log.Errorf("[deleteRoutePlanningConfigByPlanId] delete route planning config error, %v", err)
+		return err
+	}
+	return nil
+}
+
 func QueryRoutePlanningConfigById(id int64) (entity.RoutePlanningConfig, error) {
 	var routePlanningConfig entity.RoutePlanningConfig
 	if err := data.DB.Table(entity.RoutePlanningConfigTable).Where("id = ?", id).Find(&routePlanningConfig).Error; err != nil {
@@ -250,6 +274,14 @@ func QueryLargeNetworkSegmentConfigByPlanId(planId int64) (entity.LargeNetworkSe
 		return largeNetworkSegmentConfig, err
 	}
 	return largeNetworkSegmentConfig, nil
+}
+
+func DeleteLargeNetworkSegmentConfigByPlanId(planId int64) error {
+	if err := data.DB.Table(entity.LargeNetworkSegmentConfigTable).Where("plan_id = ?", planId).Delete(&entity.LargeNetworkSegmentConfig{}).Error; err != nil {
+		log.Errorf("[deleteLargeNetworkSegmentConfigByPlanId] delete large network segment config error, %v", err)
+		return err
+	}
+	return nil
 }
 
 func InsertLargeNetworkSegmentConfig(userId string, request LargeNetworkSegmentConfigReq) error {

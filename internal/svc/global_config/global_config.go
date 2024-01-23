@@ -48,17 +48,12 @@ func CreateVlanIdConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	originVlanIdConfig, err := QueryVlanIdConfigByPlanId(request.PlanId)
-	if err != nil {
+	if err := DeleteVlanIdConfigByPlanId(request.PlanId); err != nil {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	if originVlanIdConfig.Id != 0 {
-		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
-		return
-	}
 	userId := user.GetUserId(context)
-	if err = InsertVlanIdConfig(userId, request); err != nil {
+	if err := InsertVlanIdConfig(userId, request); err != nil {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -140,13 +135,8 @@ func CreateCellConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	originCellConfig, err := QueryCellConfigByPlanId(request.PlanId)
-	if err != nil {
+	if err := DeleteCellConfigByPlanId(request.PlanId); err != nil {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	if originCellConfig.Id != 0 {
-		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
 	userId := user.GetUserId(context)
@@ -157,11 +147,11 @@ func CreateCellConfig(context *gin.Context) {
 		CellType:   request.CellType,
 		CellName:   request.CellName,
 	}
-	if err = UpdateRegionAzCellByPlanId(request.PlanId, userId, regionAzCellReq); err != nil {
+	if err := UpdateRegionAzCellByPlanId(request.PlanId, userId, regionAzCellReq); err != nil {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	if err = InsertCellConfig(userId, request); err != nil {
+	if err := InsertCellConfig(userId, request); err != nil {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -228,17 +218,12 @@ func CreateRoutePlanningConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	originRoutePlanningConfig, err := QueryRoutePlanningConfigByPlanId(request.PlanId)
-	if err != nil {
+	if err := DeleteRoutePlanningConfig(request.PlanId); err != nil {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	if originRoutePlanningConfig.Id != 0 {
-		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
-		return
-	}
 	userId := user.GetUserId(context)
-	if err = InsertRoutePlanningConfig(userId, request); err != nil {
+	if err := InsertRoutePlanningConfig(userId, request); err != nil {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -294,17 +279,12 @@ func CreateLargeNetworkConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	originLargeNetworkSegmentConfig, err := QueryLargeNetworkSegmentConfigByPlanId(request.PlanId)
-	if err != nil {
+	if err := DeleteLargeNetworkSegmentConfigByPlanId(request.PlanId); err != nil {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	if originLargeNetworkSegmentConfig.Id != 0 {
-		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
-		return
-	}
 	userId := user.GetUserId(context)
-	if err = InsertLargeNetworkSegmentConfig(userId, request); err != nil {
+	if err := InsertLargeNetworkSegmentConfig(userId, request); err != nil {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
