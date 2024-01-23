@@ -5,13 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gorm.io/gorm/logger"
 	"os"
 	"strings"
 	"time"
 
-	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
-	"code.cestc.cn/ccos/common/planning-manage/internal/app/settings"
+	"gorm.io/gorm/logger"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"
@@ -20,6 +19,9 @@ import (
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
+	"code.cestc.cn/ccos/common/planning-manage/internal/app/settings"
 )
 
 const (
@@ -70,7 +72,7 @@ func InitDatabase(setting *settings.Setting) {
 	DB = db
 
 	// 数据库迁移
-	//migrateTable()
+	// migrateTable()
 	// 数据初始化
 	migrateData(connString)
 }
@@ -104,7 +106,7 @@ func migrateData(dsn string) error {
 		}
 	}(instance)
 	m, err := migrate.NewWithDatabaseInstance("file://./migrations",
-		"mysql", instance)
+		"planning_manage", instance)
 	if err != nil {
 		log.Errorf("NewWithDatabaseInstance message: %s", err.Error())
 		return err
