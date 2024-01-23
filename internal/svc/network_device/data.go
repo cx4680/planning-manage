@@ -256,16 +256,17 @@ func UploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 	}
 	var cabinetInfoMap = make(map[string]*entity.CabinetInfo)
 	for _, v := range cabinetInfoList {
-		cabinetInfoMap[fmt.Sprintf("%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNum, v.CabinetNum)] = v
+		cabinetInfoMap[fmt.Sprintf("%v-%v-%v-%v", v.CabinetAsw, v.MachineRoomAbbr, v.MachineRoomNum, v.CabinetNum)] = v
 	}
 	var networkDeviceShelveList []*entity.NetworkDeviceShelve
 	for _, v := range networkDeviceShelveDownload {
 		if util.IsBlank(v.DeviceLogicalId) || util.IsBlank(v.DeviceId) || util.IsBlank(v.Sn) || v.UNumber == 0 {
 			return errors.New("表单所有参数不能为空")
 		}
-		cabinetInfo := cabinetInfoMap[fmt.Sprintf("%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNumber, v.CabinetNumber)]
+		key := fmt.Sprintf("%v-%v-%v-%v", v.DeviceLogicalId, v.MachineRoomAbbr, v.MachineRoomNumber, v.CabinetNumber)
+		cabinetInfo := cabinetInfoMap[key]
 		if cabinetInfo == nil {
-			return errors.New("机柜信息错误")
+			return errors.New("机柜信息错误：" + key)
 		}
 		networkDeviceShelveList = append(networkDeviceShelveList, &entity.NetworkDeviceShelve{
 			PlanId:              planId,

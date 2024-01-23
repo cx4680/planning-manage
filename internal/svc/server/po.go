@@ -103,7 +103,6 @@ type ResponseServerShelve struct {
 type ShelveDownload struct {
 	SortNumber            int    `excel:"name:序号;" json:"sortNumber"`
 	NodeRoleName          string `excel:"name:节点角色;" json:"nodeRoleName"`
-	NodeIp                string `excel:"name:节点IP;" json:"nodeIp"`
 	Sn                    string `excel:"name:SN;" json:"sn"`
 	Model                 string `excel:"name:机型;" json:"model"`
 	MachineRoomAbbr       string `excel:"name:机房缩写;" json:"machineRoomAbbr"`

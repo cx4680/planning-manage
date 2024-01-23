@@ -36,7 +36,6 @@ CREATE TABLE `server_shelve`
     `plan_id`                 bigint(20) DEFAULT NULL COMMENT '方案id',
     `sort_number`             int          DEFAULT NULL COMMENT '序号',
     `node_role_id`            bigint(20) DEFAULT NULL COMMENT '节点角色id',
-    `node_ip`                 varchar(255) DEFAULT NULL COMMENT '节点IP',
     `sn`                      varchar(255) DEFAULT NULL COMMENT 'SN',
     `model`                   varchar(255) DEFAULT NULL COMMENT '机型',
     `cabinet_id`              bigint(20) DEFAULT NULL COMMENT '机柜id',
@@ -223,13 +222,14 @@ CREATE TABLE `network_device_ip`
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='网络设备ip分配表';
 
-CREATE TABLE `server_ip` (
-        `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
-        `plan_id` bigint(20) DEFAULT NULL COMMENT '方案id',
-        `sn` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'SN',
-        `manage_network_ip` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网ip',
-        `manage_network_ipv6` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网ipv6',
-        `biz_intranet_ip` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '业务内网ip',
-        `storage_network_ip` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '存储网ip',
-        PRIMARY KEY (`id`)
+CREATE TABLE `server_ip`
+(
+    `id`                  bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `plan_id`             bigint(20) DEFAULT NULL COMMENT '方案id',
+    `sn`                  varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'SN',
+    `manage_network_ip`   varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网ip',
+    `manage_network_ipv6` varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '管理网ipv6',
+    `biz_intranet_ip`     varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '业务内网ip',
+    `storage_network_ip`  varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '存储网ip',
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='服务器ip分配表';

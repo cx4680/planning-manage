@@ -183,7 +183,7 @@ func DownloadServerShelveTemplate(c *gin.Context) {
 	response, fileName, err := getServerShelveDownloadTemplate(planId)
 	if err != nil {
 		log.Errorf("ListNetworkShelve error, %v", err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err = excel.NormalDownLoad(fileName, "服务器上架表", "", false, response, c.Writer); err != nil {
@@ -280,7 +280,7 @@ func DownloadServerShelve(c *gin.Context) {
 	response, fileName, err := getServerShelveDownload(planId)
 	if err != nil {
 		log.Errorf("ListNetworkShelve error, %v", err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if err = excel.NormalDownLoad(fileName, "服务器上架表", "", false, response, c.Writer); err != nil {

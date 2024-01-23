@@ -91,9 +91,9 @@ func GetIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
 	if err := data.DB.Where("plan_id = ?", planId).Find(&ipDemandShelveList).Error; err != nil {
 		return nil, err
 	}
-	var ipDemandShelveMap = make(map[string]*entity.IpDemandShelve)
+	var ipDemandShelveMap = make(map[string]string)
 	for _, v := range ipDemandShelveList {
-		ipDemandShelveMap[fmt.Sprintf("%v-%v-%v-%v", v.PlanId, v.LogicalGrouping, v.NetworkType, v.Vlan)] = v
+		ipDemandShelveMap[fmt.Sprintf("%v-%v-%v-%v", v.PlanId, v.LogicalGrouping, v.NetworkType, v.Vlan)] = v.Address
 	}
 	ipDemandPlanningList, err := SearchIpDemandPlanningByPlanId(planId)
 	if err != nil {
@@ -105,7 +105,7 @@ func GetIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
 		if v.NetworkType == constant.IpDemandNetworkTypeIpv6 {
 			networkType = constant.IpDemandNetworkTypeIpv6Cn
 		}
-		v.Address = ipDemandShelveMap[fmt.Sprintf("%v-%v-%v-%v", v.PlanId, v.LogicalGrouping, v.NetworkType, v.Vlan)].Address
+		v.Address = ipDemandShelveMap[fmt.Sprintf("%v-%v-%v-%v", v.PlanId, v.LogicalGrouping, v.NetworkType, v.Vlan)]
 		list = append(list, &IpDemandPlanning{
 			IpDemandPlanning: v,
 			NetworkTypeCn:    networkType,

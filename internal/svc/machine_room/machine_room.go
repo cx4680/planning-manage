@@ -54,7 +54,7 @@ func UpdateMachineRoom(context *gin.Context) {
 	userId := user.GetUserId(context)
 	err = data.DB.Transaction(func(tx *gorm.DB) error {
 		// 更新方案表的状态
-		if err = plan.UpdatePlanStage(tx, planId, constant.PlanStageDelivering, userId, constant.DeliverPlanningNetworkDevice, 0); err != nil {
+		if err = plan.UpdatePlanStage(tx, planId, constant.PlanStageDelivering, userId, 0, constant.DeliverPlanningNetworkDevice); err != nil {
 			return err
 		}
 		if err = UpdateMachineRoomByPlanId(tx, planId, request.MachineRooms); err != nil {
