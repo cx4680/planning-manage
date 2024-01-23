@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
 
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
@@ -23,8 +25,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
 )
 
 func IpDemandListDownload(context *gin.Context) {
@@ -107,27 +107,6 @@ func Upload(c *gin.Context) {
 		if err = UploadIpDemand(tx, planId, ipDemandPlanningExportResponse, userId); err != nil {
 			return err
 		}
-		return nil
-	}); err != nil {
-		log.Errorf("UploadNetworkShelve error, %v", err)
-		result.Failure(c, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	result.Success(c, nil)
-	return
-}
-
-func Save(c *gin.Context) {
-	request := &Request{}
-	if err := c.ShouldBindJSON(&request); err != nil {
-		log.Error(err)
-	}
-	planId := request.PlanId
-	err := data.DB.Transaction(func(tx *gorm.DB) error {
-		// 更新方案表的状态
-		if err := SaveIpDemand(tx, planId); err != nil {
-			return err
-		}
 		cloudProductPlannings, err := cloud_product.ListCloudProductPlanningByPlanId(planId)
 		if err != nil {
 			return err
@@ -152,7 +131,7 @@ func Save(c *gin.Context) {
 		accessNetworkDeviceLoginGroupMap := make(map[string]int64)
 		for _, networkShelf := range networkShelves {
 			for _, networkDeviceRoleBaseline := range accessNetworkDeviceRoleBaselines {
-				if strings.Contains(networkShelf.DeviceLogicalId, networkDeviceRoleBaseline.FuncType) {
+				if strings.Contains(networkShelf.DeviceLogicalId, networkDeviceRoleBaseline.FuncCompoCode) {
 					if _, ok := accessNetworkDeviceLoginGroupMap[networkShelf.DeviceLogicalId]; !ok {
 						accessNetworkDeviceLoginGroupMap[networkShelf.DeviceLogicalId] = networkShelf.Id
 						accessNetworkShelves = append(accessNetworkShelves, *networkShelf)
@@ -222,6 +201,27 @@ func Save(c *gin.Context) {
 			return err
 		}
 		return nil
+	}); err != nil {
+		log.Errorf("UploadNetworkShelve error, %v", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, nil)
+	return
+}
+
+func Save(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.Error(err)
+	}
+	planId := request.PlanId
+	err := data.DB.Transaction(func(tx *gorm.DB) error {
+		// 更新方案表的状态
+		if err := SaveIpDemand(tx, planId); err != nil {
+			return err
+		}
+		return nil
 	})
 	if err != nil {
 		log.Errorf("[SaveNetworkShelve] save network shelve error, %v", err)
@@ -241,10 +241,10 @@ func ConvertNetworkDeviceIp(accessNetworkShelf entity.NetworkDeviceShelve, ipDem
 		if err != nil {
 			return err
 		}
-		if len(ips) < 59 {
+		if len(ips) < 60 {
 			return fmt.Errorf("pxe ip数量小于59")
 		}
-		networkDeviceIp.PxeSubnetRange = strings.Join(ips[:59], constant.Comma)
+		networkDeviceIp.PxeSubnetRange = strings.Join(ips[1:60], constant.Comma)
 		networkDeviceIp.PxeNetworkGateway = ips[len(ips)-2]
 	}
 	manageIpv4Key := fmt.Sprintf("%s_%d_%s", accessNetworkShelf.DeviceLogicalId, constant.IpDemandNetworkTypeIpv4, constant.NetworkDeviceManageVlanId)
@@ -307,7 +307,7 @@ func CalcLogicGroupIps(serverShelves []entity.ServerShelve, ipDemandShelveMap ma
 				if err != nil {
 					return nil, err
 				}
-				serverIpRange.ServerManageNetworkIpv4s = append(serverIpRange.ServerManageNetworkIpv4s, cidr...)
+				serverIpRange.ServerManageNetworkIpv4s = append(serverIpRange.ServerManageNetworkIpv4s, cidr[1:len(cidr)-1]...)
 			}
 		}
 		if len(serverIpRange.ServerManageNetworkIpv6s) == 0 {
@@ -317,17 +317,17 @@ func CalcLogicGroupIps(serverShelves []entity.ServerShelve, ipDemandShelveMap ma
 				if err != nil {
 					return nil, err
 				}
-				serverIpRange.ServerManageNetworkIpv6s = append(serverIpRange.ServerManageNetworkIpv6s, cidr...)
+				serverIpRange.ServerManageNetworkIpv6s = append(serverIpRange.ServerManageNetworkIpv6s, cidr[5:]...)
 			}
 		}
 		if len(serverIpRange.ServerBizIntranetIpv4s) == 0 {
-			serverBizIntranetIpv4Key := fmt.Sprintf("%s_%d_%s", serverShelve.CabinetAsw, constant.IpDemandNetworkTypeIpv4, constant.ServerManageBizIntranetIpVlanId)
+			serverBizIntranetIpv4Key := fmt.Sprintf("%s_%d_%s", serverShelve.CabinetAsw, constant.IpDemandNetworkTypeIpv4, constant.ServerBizIntranetIpVlanId)
 			if _, ok := ipDemandShelveMap[serverBizIntranetIpv4Key]; ok {
 				cidr, err := util.ParseCIDR(ipDemandShelveMap[serverBizIntranetIpv4Key])
 				if err != nil {
 					return nil, err
 				}
-				serverIpRange.ServerBizIntranetIpv4s = append(serverIpRange.ServerBizIntranetIpv4s, cidr...)
+				serverIpRange.ServerBizIntranetIpv4s = append(serverIpRange.ServerBizIntranetIpv4s, cidr[1:len(cidr)-1]...)
 			}
 		}
 		if len(serverIpRange.ServerStorageNetworkIpv4s) == 0 {
@@ -337,7 +337,7 @@ func CalcLogicGroupIps(serverShelves []entity.ServerShelve, ipDemandShelveMap ma
 				if err != nil {
 					return nil, err
 				}
-				serverIpRange.ServerStorageNetworkIpv4s = append(serverIpRange.ServerStorageNetworkIpv4s, cidr...)
+				serverIpRange.ServerStorageNetworkIpv4s = append(serverIpRange.ServerStorageNetworkIpv4s, cidr[1:len(cidr)-1]...)
 			}
 		}
 		logicGroupIpRange[serverShelve.CabinetAsw] = serverIpRange

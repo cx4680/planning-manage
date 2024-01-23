@@ -128,13 +128,13 @@ const (
 
 	AccessNetworkDeviceRoleKeyword = "接入"
 
-	NetworkDevicePxeVlanId          = "89"
-	NetworkDeviceManageVlanId       = "91"
-	NetworkDeviceBizVlanId          = "92"
-	NetworkDeviceStorageVlanId      = "909"
-	ServerManageNetworkIpVlanId     = "91"
-	ServerManageBizIntranetIpVlanId = "92"
-	ServerStorageIpVlanId           = "909"
+	NetworkDevicePxeVlanId      = "89"
+	NetworkDeviceManageVlanId   = "91"
+	NetworkDeviceBizVlanId      = "92"
+	NetworkDeviceStorageVlanId  = "909"
+	ServerManageNetworkIpVlanId = "91"
+	ServerBizIntranetIpVlanId   = "92"
+	ServerStorageIpVlanId       = "909"
 
 	NodeRoleDeployMethodInCluster = "inCluster"
 
