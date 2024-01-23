@@ -923,7 +923,7 @@ func saveServerPlanning(request *Request) error {
 func saveServerShelve(request *Request) error {
 	//查询服务器上架表
 	var serverShelveIdList []int64
-	if err := data.DB.Model(&entity.ServerShelve{}).Select("id").Where("plan_id = ?", request.PlanId).Group("id").Find(&serverShelveIdList).Error; err != nil {
+	if err := data.DB.Model(&entity.ServerShelve{}).Select("cabinet_id").Where("plan_id = ?", request.PlanId).Group("cabinet_id").Find(&serverShelveIdList).Error; err != nil {
 		return err
 	}
 	if len(serverShelveIdList) == 0 {
