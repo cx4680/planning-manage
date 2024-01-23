@@ -103,7 +103,12 @@ func Upload(c *gin.Context) {
 		return
 	}
 	userId := user.GetUserId(c)
-	if err = UploadIpDemand(planId, ipDemandPlanningExportResponse, userId); err != nil {
+	if err = data.DB.Transaction(func(tx *gorm.DB) error {
+		if err = UploadIpDemand(tx, planId, ipDemandPlanningExportResponse, userId); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		log.Errorf("UploadNetworkShelve error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return

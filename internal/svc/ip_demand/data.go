@@ -114,40 +114,35 @@ func GetIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
 	return list, nil
 }
 
-func UploadIpDemand(planId int64, ipDemandPlanningExportResponse []IpDemandPlanningExportResponse, userId string) error {
-	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		var ipDemandShelveList []*entity.IpDemandShelve
-		for _, v := range ipDemandPlanningExportResponse {
-			if util.IsBlank(v.LogicalGrouping) || util.IsBlank(v.SegmentType) || util.IsBlank(v.NetworkType) || util.IsBlank(v.Vlan) ||
-				util.IsBlank(v.CNum) || util.IsBlank(v.Address) || util.IsBlank(v.Describe) || util.IsBlank(v.AddressPlanning) {
-				return errors.New("表单所有参数不能为空")
-			}
-			networkType := constant.IpDemandNetworkTypeIpv4
-			if v.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
-				networkType = constant.IpDemandNetworkTypeIpv6
-			}
-			ipDemandShelveList = append(ipDemandShelveList, &entity.IpDemandShelve{
-				PlanId:          planId,
-				LogicalGrouping: v.LogicalGrouping,
-				SegmentType:     v.SegmentType,
-				NetworkType:     networkType,
-				Vlan:            v.Vlan,
-				CNum:            v.CNum,
-				Address:         v.Address,
-				Describe:        v.Describe,
-				AddressPlanning: v.AddressPlanning,
-				CreateUserId:    userId,
-				CreateTime:      time.Now(),
-			})
+func UploadIpDemand(db *gorm.DB, planId int64, ipDemandPlanningExportResponse []IpDemandPlanningExportResponse, userId string) error {
+	var ipDemandShelveList []*entity.IpDemandShelve
+	for _, v := range ipDemandPlanningExportResponse {
+		if util.IsBlank(v.LogicalGrouping) || util.IsBlank(v.SegmentType) || util.IsBlank(v.NetworkType) || util.IsBlank(v.Vlan) ||
+			util.IsBlank(v.CNum) || util.IsBlank(v.Address) || util.IsBlank(v.Describe) || util.IsBlank(v.AddressPlanning) {
+			return errors.New("表单所有参数不能为空")
 		}
-		if err := tx.Delete(&entity.IpDemandShelve{}, "plan_id = ?", planId).Error; err != nil {
-			return err
+		networkType := constant.IpDemandNetworkTypeIpv4
+		if v.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
+			networkType = constant.IpDemandNetworkTypeIpv6
 		}
-		if err := tx.Create(&ipDemandShelveList).Error; err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+		ipDemandShelveList = append(ipDemandShelveList, &entity.IpDemandShelve{
+			PlanId:          planId,
+			LogicalGrouping: v.LogicalGrouping,
+			SegmentType:     v.SegmentType,
+			NetworkType:     networkType,
+			Vlan:            v.Vlan,
+			CNum:            v.CNum,
+			Address:         v.Address,
+			Describe:        v.Describe,
+			AddressPlanning: v.AddressPlanning,
+			CreateUserId:    userId,
+			CreateTime:      time.Now(),
+		})
+	}
+	if err := db.Delete(&entity.IpDemandShelve{}, "plan_id = ?", planId).Error; err != nil {
+		return err
+	}
+	if err := db.Create(&ipDemandShelveList).Error; err != nil {
 		return err
 	}
 	return nil
