@@ -345,7 +345,7 @@ func CompleteGlobalConfig(context *gin.Context) {
 		return
 	}
 	userId := user.GetUserId(context)
-	if err = plan.UpdatePlanStage(data.DB, planId, constant.PlanStageDelivering, userId, 0, constant.DeliverPlanningGlobalConfiguration); err != nil {
+	if err = plan.UpdatePlanStage(data.DB, planId, constant.PlanStageDelivering, userId, 0, constant.DeliverPlanningEnd); err != nil {
 		log.Errorf("[CompleteGlobalConfig] complete global config error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
