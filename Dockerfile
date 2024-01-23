@@ -9,5 +9,6 @@ FROM image.cestc.cn/baseos/base/cclinux2209:22.09.2-3
 WORKDIR /app
 
 COPY --from=builder /build/planning-manage ./planning-manage
+COPY --from=builder /build/migrations/*.sql ./migrations/
 
 ENTRYPOINT ["./planning-manage"]
