@@ -862,9 +862,10 @@ func UploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 		if util.IsBlank(v.Sn) {
 			return errors.New("表单所有参数不能为空")
 		}
-		cabinetInfo := cabinetInfoMap[fmt.Sprintf("%v-%v-%v-%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNumber, v.ColumnNumber, v.CabinetAsw, v.CabinetNumber, v.CabinetOriginalNumber)]
+		key := fmt.Sprintf("%v-%v-%v-%v-%v-%v", v.MachineRoomAbbr, v.MachineRoomNumber, v.ColumnNumber, v.CabinetAsw, v.CabinetNumber, v.CabinetOriginalNumber)
+		cabinetInfo := cabinetInfoMap[key]
 		if cabinetInfo == nil {
-			return errors.New("机柜信息错误")
+			return errors.New("机柜信息错误：" + key)
 		}
 		serverShelveList = append(serverShelveList, &entity.ServerShelve{
 			SortNumber:            v.SortNumber,
