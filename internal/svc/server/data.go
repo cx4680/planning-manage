@@ -673,6 +673,9 @@ func getServerShelveDownloadTemplate(planId int64) ([]ShelveDownload, string, er
 	var sortNumber = 0
 	for _, v := range serverPlanningList {
 		for i := 1; i <= v.Number; i++ {
+			if sortNumber >= len(cabinetIdleSlotList) {
+				return nil, "", errors.New("槽位数量不足，请修改机房勘察表")
+			}
 			response = append(response, ShelveDownload{
 				SortNumber:            sortNumber + 1,
 				NodeRoleName:          v.NodeRoleName,
@@ -769,8 +772,11 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 	}
 	//查询机柜槽位
 	var cabinetIdleSlotRelList []*entity.CabinetIdleSlotRel
-	if err := data.DB.Where("cabinet_id IN (?)", cabinetIdList).Order("idle_slot_number ASC").Find(&cabinetIdleSlotRelList).Error; err != nil {
+	if err := data.DB.Where("cabinet_id IN (?)", cabinetIdList).Order("cabinet_id ASC, idle_slot_number ASC").Find(&cabinetIdleSlotRelList).Error; err != nil {
 		return nil, err
+	}
+	if len(cabinetIdleSlotRelList) == 0 {
+		return nil, errors.New("机柜槽位为空，请检查机房勘察表是否填写错误")
 	}
 	var cabinetIdleSlotNumberMap = make(map[int64]int)
 	var cabinetIdleSlotListMap = make(map[int64][]*Cabinet)
