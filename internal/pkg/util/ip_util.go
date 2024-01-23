@@ -17,6 +17,23 @@ func ParseCIDR(cidr string) ([]string, error) {
 	return ipStrings, nil
 }
 
+func ParseIpv6CIDR(cidr string, count int64) ([]string, error) {
+	var ipStrings []string
+	// 解析CIDR地址
+	ip, ipNet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return nil, err
+	}
+	for ip = ip.Mask(ipNet.Mask); ipNet.Contains(ip); incIP(ip) {
+		if count <= 0 {
+			break
+		}
+		ipStrings = append(ipStrings, ip.To16().String())
+		count--
+	}
+	return ipStrings, nil
+}
+
 // 增加IP地址函数
 func incIP(ip net.IP) {
 	for i := len(ip) - 1; i >= 0; i-- {

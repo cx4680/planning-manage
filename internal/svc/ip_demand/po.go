@@ -34,3 +34,10 @@ type IpDemandPlanning struct {
 	*entity.IpDemandPlanning
 	NetworkTypeCn string `json:"networkTypeCn"`
 }
+
+type ServerIpRange struct {
+	ServerManageNetworkIpv4s  []string
+	ServerManageNetworkIpv6s  []string
+	ServerBizIntranetIpv4s    []string
+	ServerStorageNetworkIpv4s []string
+}

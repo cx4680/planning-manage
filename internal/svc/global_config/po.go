@@ -173,6 +173,9 @@ type GlobalConfigExcel struct {
 	BizIntranetNetworkSegmentRoute string `excel:"cellPosition:H3;" json:"bizIntranetNetworkSegmentRoute"` // 业务内网规划网段明细路由
 	BizExternalLargeNetworkSegment string `excel:"cellPosition:H4;" json:"bizExternalLargeNetworkSegment"` // 业务外网大网网段
 	BmcNetworkSegmentRoute         string `excel:"cellPosition:H5;" json:"bmcNetworkSegmentRoute"`         // bmc规划网段明细路由
+	BizRegionAbbr                  string `json:"bizRegionAbbr"`                                           // 业务区域缩写
+	NodeNetworkMode                string `json:"nodeNetworkMode"`                                         // 组网模型: 1-三网合一  2-两网分离  3-三网分离
+
 }
 
 type GlobalConfigNetworkDeviceExcel struct {

@@ -332,3 +332,13 @@ func QueryServerPlanning(planId int64) ([]entity.ServerPlanning, error) {
 	}
 	return serverPlannings, nil
 }
+
+func GetNetworkShelveList(planId int64) ([]*entity.NetworkDeviceShelve, error) {
+	var networkDeviceShelve []*entity.NetworkDeviceShelve
+	if err := data.DB.Table(entity.NetworkDeviceShelveTable+" shelve").Select("shelve.id, shelve.plan_id, shelve.device_logical_id, shelve.device_id, shelve.sn, shelve.network_device_role_id, shelve.cabinet_id, cabinet.machine_room_abbr, cabinet.machine_room_num as machine_room_number, cabinet.cabinet_num as cabinet_number, shelve.slot_position, shelve.u_number, shelve.create_user_id, shelve.create_time").
+		Joins("left join cabinet_info cabinet on shelve.cabinet_id = cabinet.id").
+		Where("shelve.plan_id = ?", planId).Find(&networkDeviceShelve).Error; err != nil {
+		return nil, err
+	}
+	return networkDeviceShelve, nil
+}

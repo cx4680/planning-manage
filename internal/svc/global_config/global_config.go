@@ -1,6 +1,7 @@
 package global_config
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -17,6 +18,8 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/baseline"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/machine_room"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/network_device"
@@ -420,7 +423,7 @@ func DownloadPlanningFile(context *gin.Context) {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	netWorkShelves, err := network_device.GetNetworkShelveList(planId)
+	netWorkShelves, err := GetNetworkShelveList(planId)
 	if err != nil {
 		log.Errorf("query network device shelve list error: %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
@@ -470,14 +473,22 @@ func DownloadPlanningFile(context *gin.Context) {
 	}
 	if err = excel.ExportExcelByExistHeader("Sheet1", "", 3, false, globalConfigNetworkDeviceExcels, &excelFile); err != nil {
 		log.Errorf("export planning file sheet1 error: %v", err)
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	globalConfigExcel, err := ConvertGlobalConfigExcel(context, planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
 	serverIps, err := QueryServerIpByPlanId(planId)
 	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
 	serverShelves, err := QueryServerShelve(planId)
 	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
 	serverShelveMap := make(map[string]entity.ServerShelve)
@@ -486,6 +497,7 @@ func DownloadPlanningFile(context *gin.Context) {
 	}
 	serverPlannings, err := QueryServerPlanning(planId)
 	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
 	cpuType := strings.ToLower(serverPlannings[0].CpuType)
@@ -493,32 +505,54 @@ func DownloadPlanningFile(context *gin.Context) {
 	if cpuType == constant.CpuTypeIntel || cpuType == constant.CpuTypeHygon {
 		kernelArch = constant.KernelArchX86
 	}
+	cloudProductPlannings, err := cloud_product.ListCloudProductPlanningByPlanId(planId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	versionId := cloudProductPlannings[0].VersionId
+	nodeRoleBaselines, err := baseline.QueryNodeRoleBaselineByVersionId(versionId)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	nodeRoleMap := make(map[int64]string)
+	for _, nodeRoleBaseline := range nodeRoleBaselines {
+		nodeRoleMap[nodeRoleBaseline.Id] = nodeRoleBaseline.NodeRoleCode
+	}
+	nodeRoleOpenDpdkMap := make(map[int64]string)
+	for _, serverPlanning := range serverPlannings {
+		if serverPlanning.OpenDpdk == constant.Yes {
+			nodeRoleOpenDpdkMap[serverPlanning.NodeRoleId] = constant.YesCn
+		} else {
+			nodeRoleOpenDpdkMap[serverPlanning.NodeRoleId] = constant.NoCn
+		}
+	}
 	var globalConfigServerExcels []GlobalConfigServerExcel
 	for _, serverIp := range serverIps {
 		serverShelve := serverShelveMap[serverIp.Sn]
+		nodeRoleCode := nodeRoleMap[serverShelve.NodeRoleId]
+		slotPosition := ""
+		if serverShelve.SlotPosition != "" {
+			slotPosition = strings.Split(serverShelve.SlotPosition, constant.Hyphen)[0] + "u"
+		}
 		globalConfigServerExcels = append(globalConfigServerExcels, GlobalConfigServerExcel{
 			Sn:                  serverIp.Sn,
 			MachineRoomAbbr:     serverShelve.MachineRoomAbbr,
 			CabinetNum:          serverShelve.CabinetNumber,
 			SlotNum:             serverShelve.SlotPosition,
 			KernelArch:          kernelArch,
-			HostName:            "",
-			NetworkMode:         "",
-			Role:                "",
-			NodeTwoLayerNetwork: "",
-			HostGroup:           "",
-			OpenDpdk:            "",
+			HostName:            fmt.Sprintf("%s%d-%s%s-%s-%s", strings.ToLower(nodeRoleCode), serverShelve.SortNumber, serverShelve.CabinetNumber, slotPosition, globalConfigExcel.BizRegionAbbr, globalConfigExcel.RegionCode),
+			NetworkMode:         globalConfigExcel.NodeNetworkMode,
+			OpenDpdk:            nodeRoleOpenDpdkMap[serverShelve.NodeRoleId],
 			ManegeNetworkIP:     serverIp.ManageNetworkIp,
 			ManageNetworkIpv6IP: serverIp.ManageNetworkIpv6,
 			BizIntranetIP:       serverIp.BizIntranetIp,
+			StorageNetworkIP:    serverIp.StorageNetworkIp,
 		})
 	}
 	if err = excel.ExportExcelByExistHeader("Sheet2", "", 3, false, globalConfigServerExcels, &excelFile); err != nil {
 		log.Errorf("export planning file sheet2 error: %v", err)
-		return
-	}
-	globalConfigExcel, err := ConvertGlobalConfigExcel(context, planId)
-	if err != nil {
 		return
 	}
 	if err = excel.ExportExcelByAssignCell("Sheet3", "", false, *globalConfigExcel, &excelFile); err != nil {
@@ -594,6 +628,20 @@ func ConvertGlobalConfigExcel(context *gin.Context, planId int64) (*GlobalConfig
 	if networkDevicePlanning.Ipv6 == constant.Ipv6Yes {
 		dualStackDeploy = constant.Ipv6YesCn
 	}
+	nodeNetworkMode := ""
+	switch networkDevicePlanning.NetworkModel {
+	case constant.TriplePlay:
+		nodeNetworkMode = constant.TriplePlayCn
+		break
+	case constant.SeparationOfTwoNetworks:
+		nodeNetworkMode = constant.SeparationOfTwoNetworksCn
+		break
+	case constant.TripleNetworkSeparation:
+		nodeNetworkMode = constant.TripleNetworkSeparationCn
+		break
+	default:
+		break
+	}
 	networkMode := constant.NetworkModeStandardCn
 	if cellConfig.NetworkMode == constant.NetworkMode2Network {
 		networkMode = constant.NetworkMode2NetworkCn
@@ -665,6 +713,8 @@ func ConvertGlobalConfigExcel(context *gin.Context, planId int64) (*GlobalConfig
 		BizIntranetNetworkSegmentRoute: largeNetworkSegmentConfig.BizIntranetNetworkSegmentRoute,
 		BizExternalLargeNetworkSegment: largeNetworkSegmentConfig.BizExternalLargeNetworkSegment,
 		BmcNetworkSegmentRoute:         largeNetworkSegmentConfig.BmcNetworkSegmentRoute,
+		BizRegionAbbr:                  cellConfig.BizRegionAbbr,
+		NodeNetworkMode:                nodeNetworkMode,
 	}
 	return &globalConfigExcel, nil
 }

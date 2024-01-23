@@ -162,9 +162,7 @@ func SaveIpDemand(tx *gorm.DB, planId int64) error {
 
 func GetNetworkShelveList(planId int64) ([]*entity.NetworkDeviceShelve, error) {
 	var networkDeviceShelve []*entity.NetworkDeviceShelve
-	if err := data.DB.Table(entity.NetworkDeviceShelveTable+" shelve").Select("shelve.id, shelve.plan_id, shelve.device_logical_id, shelve.device_id, shelve.sn, shelve.network_device_role_id, shelve.cabinet_id, cabinet.machine_room_abbr, cabinet.machine_room_num as machine_room_number, cabinet.cabinet_num as cabinet_number, shelve.slot_position, shelve.u_number, shelve.create_user_id, shelve.create_time").
-		Joins("left join cabinet_info cabinet on shelve.cabinet_id = cabinet.id").
-		Where("shelve.plan_id = ?", planId).Find(&networkDeviceShelve).Error; err != nil {
+	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceShelve).Error; err != nil {
 		return nil, err
 	}
 	return networkDeviceShelve, nil
@@ -188,20 +186,8 @@ func CreateNetworkDeviceIp(tx *gorm.DB, networkDeviceIps []entity.NetworkDeviceI
 	return nil
 }
 
-func UpdateNetworkDeviceIp(tx *gorm.DB, networkDeviceIps []entity.NetworkDeviceIp) error {
-	for _, networkDeviceIp := range networkDeviceIps {
-		if err := tx.Table(entity.NetworkDeviceIpTable).Save(&networkDeviceIp).Error; err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func DeleteNetworkDeviceIp(tx *gorm.DB, networkDeviceIps []entity.NetworkDeviceIp) error {
-	if len(networkDeviceIps) == 0 {
-		return nil
-	}
-	if err := tx.Table(entity.NetworkDeviceIpTable).Delete(&networkDeviceIps).Error; err != nil {
+func DeleteNetworkDeviceIpByPlanId(tx *gorm.DB, planId int64) error {
+	if err := tx.Table(entity.NetworkDeviceIpTable).Where("plan_id = ?", planId).Delete(&entity.NetworkDeviceIp{}).Error; err != nil {
 		return err
 	}
 	return nil
@@ -225,7 +211,7 @@ func QueryInClusterNodeRoleBaselineByVersionId(versionId int64) ([]entity.NodeRo
 
 func QueryServerShelve(planId int64, nodeRoleIds []int64) ([]entity.ServerShelve, error) {
 	var serverShelves []entity.ServerShelve
-	if err := data.DB.Table(entity.ServerShelveTable).Where("plan_id = ? and node_role_id in (?)", planId, nodeRoleIds).Find(&serverShelves).Error; err != nil {
+	if err := data.DB.Table(entity.ServerShelveTable).Where("plan_id = ? and node_role_id in (?)", planId, nodeRoleIds).Order("cabinet_id asc, sort_number asc").Find(&serverShelves).Error; err != nil {
 		return serverShelves, err
 	}
 	return serverShelves, nil
@@ -246,20 +232,8 @@ func CreateServerIp(tx *gorm.DB, serverIps []entity.ServerIp) error {
 	return nil
 }
 
-func UpdateServerIp(tx *gorm.DB, serverIps []entity.ServerIp) error {
-	for _, serverIp := range serverIps {
-		if err := tx.Table(entity.ServerIpTable).Save(&serverIp).Error; err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func DeleteServerIp(tx *gorm.DB, serverIps []entity.ServerIp) error {
-	if len(serverIps) == 0 {
-		return nil
-	}
-	if err := tx.Table(entity.ServerIpTable).Delete(&serverIps).Error; err != nil {
+func DeleteServerIpByPlanId(tx *gorm.DB, planId int64) error {
+	if err := tx.Table(entity.ServerIpTable).Where("plan_id = ?", planId).Delete(&entity.ServerIp{}).Error; err != nil {
 		return err
 	}
 	return nil

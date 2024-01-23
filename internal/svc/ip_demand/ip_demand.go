@@ -166,50 +166,21 @@ func Save(c *gin.Context) {
 				ipDemandShelveMap[key] = ipDemandShelve.Address
 			}
 		}
-		var insertNetworkDeviceIps []entity.NetworkDeviceIp
-		var updateNetworkDeviceIps []entity.NetworkDeviceIp
-		var deleteNetworkDeviceIps []entity.NetworkDeviceIp
-		originNetworkDeviceIps, err := QueryNetworkDeviceIp(planId)
-		if err != nil {
-			return err
-		}
-		originNetworkIpMap := make(map[string]entity.NetworkDeviceIp)
-		for _, originNetworkDeviceIp := range originNetworkDeviceIps {
-			key := fmt.Sprintf("%d_%s", originNetworkDeviceIp.PlanId, originNetworkDeviceIp.LogicalGrouping)
-			originNetworkIpMap[key] = originNetworkDeviceIp
-		}
+		var networkDeviceIps []entity.NetworkDeviceIp
 		for _, accessNetworkShelf := range accessNetworkShelves {
-			key := fmt.Sprintf("%d_%s", planId, accessNetworkShelf.DeviceLogicalId)
-			originNetworkIp, ok := originNetworkIpMap[key]
-			if ok {
-				if err = ConvertNetworkDeviceIp(accessNetworkShelf, ipDemandShelveMap, &originNetworkIp); err != nil {
-					return err
-				}
-				updateNetworkDeviceIps = append(updateNetworkDeviceIps, originNetworkIp)
-				delete(originNetworkIpMap, key)
-			} else {
-				networkDeviceIp := entity.NetworkDeviceIp{
-					PlanId:          planId,
-					LogicalGrouping: accessNetworkShelf.DeviceLogicalId,
-				}
-				if err = ConvertNetworkDeviceIp(accessNetworkShelf, ipDemandShelveMap, &networkDeviceIp); err != nil {
-					return err
-				}
-				insertNetworkDeviceIps = append(insertNetworkDeviceIps, networkDeviceIp)
+			networkDeviceIp := entity.NetworkDeviceIp{
+				PlanId:          planId,
+				LogicalGrouping: accessNetworkShelf.DeviceLogicalId,
 			}
-		}
-		if len(originNetworkIpMap) > 0 {
-			for _, originNetworkDeviceIp := range originNetworkIpMap {
-				deleteNetworkDeviceIps = append(deleteNetworkDeviceIps, originNetworkDeviceIp)
+			if err = ConvertNetworkDeviceIp(accessNetworkShelf, ipDemandShelveMap, &networkDeviceIp); err != nil {
+				return err
 			}
+			networkDeviceIps = append(networkDeviceIps, networkDeviceIp)
 		}
-		if err = CreateNetworkDeviceIp(tx, insertNetworkDeviceIps); err != nil {
+		if err = DeleteNetworkDeviceIpByPlanId(tx, planId); err != nil {
 			return err
 		}
-		if err = UpdateNetworkDeviceIp(tx, updateNetworkDeviceIps); err != nil {
-			return err
-		}
-		if err = DeleteNetworkDeviceIp(tx, deleteNetworkDeviceIps); err != nil {
+		if err = CreateNetworkDeviceIp(tx, networkDeviceIps); err != nil {
 			return err
 		}
 		nodeRoleBaselines, err := QueryInClusterNodeRoleBaselineByVersionId(versionId)
@@ -224,44 +195,25 @@ func Save(c *gin.Context) {
 		if err != nil {
 			return err
 		}
-		var insertServerIps []entity.ServerIp
-		var updateServerIps []entity.ServerIp
-		var deleteServerIps []entity.ServerIp
-		originServerIps, err := QueryServerIp(planId)
+		var serverIps []entity.ServerIp
+		serverIpRangeMap, err := CalcLogicGroupIps(serverShelves, ipDemandShelveMap)
 		if err != nil {
 			return err
 		}
-		originServerIpMap := make(map[string]entity.ServerIp)
-		for _, originServerIp := range originServerIps {
-			key := fmt.Sprintf("%d_%s", originServerIp.PlanId, originServerIp.Sn)
-			originServerIpMap[key] = originServerIp
-		}
 		for _, serverShelve := range serverShelves {
-			key := fmt.Sprintf("%d_%s", planId, serverShelve.Sn)
-			originServerIp, ok := originServerIpMap[key]
-			if ok {
-				updateServerIps = append(updateServerIps, originServerIp)
-				delete(originServerIpMap, key)
-			} else {
-				serverIp := entity.ServerIp{
-					PlanId: planId,
-					Sn:     serverShelve.Sn,
-				}
-				insertServerIps = append(insertServerIps, serverIp)
+			serverIp := entity.ServerIp{
+				PlanId: planId,
+				Sn:     serverShelve.Sn,
 			}
-		}
-		if len(originServerIpMap) > 0 {
-			for _, originServerIp := range originServerIps {
-				deleteServerIps = append(deleteServerIps, originServerIp)
+			if err = ConvertServerIp(serverShelve, serverIpRangeMap, &serverIp); err != nil {
+				return err
 			}
+			serverIps = append(serverIps, serverIp)
 		}
-		if err = CreateServerIp(tx, insertServerIps); err != nil {
+		if err = DeleteServerIpByPlanId(tx, planId); err != nil {
 			return err
 		}
-		if err = UpdateServerIp(tx, updateServerIps); err != nil {
-			return err
-		}
-		if err = DeleteServerIp(tx, deleteServerIps); err != nil {
+		if err = CreateServerIp(tx, serverIps); err != nil {
 			return err
 		}
 		return nil
@@ -275,9 +227,9 @@ func Save(c *gin.Context) {
 	return
 }
 
-func ConvertNetworkDeviceIp(accessNetworkShelf entity.NetworkDeviceShelve, ipDemandPlanningMap map[string]string, networkDeviceIp *entity.NetworkDeviceIp) error {
+func ConvertNetworkDeviceIp(accessNetworkShelf entity.NetworkDeviceShelve, ipDemandShelveMap map[string]string, networkDeviceIp *entity.NetworkDeviceIp) error {
 	pxeIpv4Key := fmt.Sprintf("%s_%d_%s", accessNetworkShelf.DeviceLogicalId, constant.IpDemandNetworkTypeIpv4, constant.NetworkDevicePxeVlanId)
-	address, ok := ipDemandPlanningMap[pxeIpv4Key]
+	address, ok := ipDemandShelveMap[pxeIpv4Key]
 	if ok {
 		networkDeviceIp.PxeSubnet = address
 		ips, err := util.ParseCIDR(address)
@@ -291,7 +243,7 @@ func ConvertNetworkDeviceIp(accessNetworkShelf entity.NetworkDeviceShelve, ipDem
 		networkDeviceIp.PxeNetworkGateway = ips[len(ips)-2]
 	}
 	manageIpv4Key := fmt.Sprintf("%s_%d_%s", accessNetworkShelf.DeviceLogicalId, constant.IpDemandNetworkTypeIpv4, constant.NetworkDeviceManageVlanId)
-	address, ok = ipDemandPlanningMap[manageIpv4Key]
+	address, ok = ipDemandShelveMap[manageIpv4Key]
 	if ok {
 		networkDeviceIp.ManageSubnet = address
 		ips, err := util.ParseCIDR(address)
@@ -304,14 +256,14 @@ func ConvertNetworkDeviceIp(accessNetworkShelf entity.NetworkDeviceShelve, ipDem
 		networkDeviceIp.ManageNetworkGateway = ips[len(ips)-2]
 	}
 	manageIpv6Key := fmt.Sprintf("%s_%d_%s", accessNetworkShelf.DeviceLogicalId, constant.IpDemandNetworkTypeIpv6, constant.NetworkDeviceManageVlanId)
-	address, ok = ipDemandPlanningMap[manageIpv6Key]
+	address, ok = ipDemandShelveMap[manageIpv6Key]
 	if ok {
 		networkDeviceIp.ManageIpv6Subnet = address
 		addressSplits := strings.Split(address, constant.ForwardSlash)
 		networkDeviceIp.ManageIpv6NetworkGateway = addressSplits[0] + "1"
 	}
 	bizIpv4Key := fmt.Sprintf("%s_%d_%s", accessNetworkShelf.DeviceLogicalId, constant.IpDemandNetworkTypeIpv4, constant.NetworkDeviceBizVlanId)
-	address, ok = ipDemandPlanningMap[bizIpv4Key]
+	address, ok = ipDemandShelveMap[bizIpv4Key]
 	if ok {
 		networkDeviceIp.BizSubnet = address
 		ips, err := util.ParseCIDR(address)
@@ -324,7 +276,7 @@ func ConvertNetworkDeviceIp(accessNetworkShelf entity.NetworkDeviceShelve, ipDem
 		networkDeviceIp.BizNetworkGateway = ips[len(ips)-2]
 	}
 	storageIpv4Key := fmt.Sprintf("%s_%d_%s", accessNetworkShelf.DeviceLogicalId, constant.IpDemandNetworkTypeIpv4, constant.NetworkDeviceStorageVlanId)
-	address, ok = ipDemandPlanningMap[storageIpv4Key]
+	address, ok = ipDemandShelveMap[storageIpv4Key]
 	if ok {
 		networkDeviceIp.StorageFrontNetwork = address
 		ips, err := util.ParseCIDR(address)
@@ -335,6 +287,79 @@ func ConvertNetworkDeviceIp(accessNetworkShelf entity.NetworkDeviceShelve, ipDem
 			return fmt.Errorf("存储前端网ip数量小于3")
 		}
 		networkDeviceIp.StorageFrontNetworkGateway = ips[len(ips)-2]
+	}
+	return nil
+}
+
+func CalcLogicGroupIps(serverShelves []entity.ServerShelve, ipDemandShelveMap map[string]string) (map[string]ServerIpRange, error) {
+	logicGroupIpRange := make(map[string]ServerIpRange)
+	for _, serverShelve := range serverShelves {
+		serverIpRange := logicGroupIpRange[serverShelve.CabinetAsw]
+		if len(serverIpRange.ServerManageNetworkIpv4s) == 0 {
+			serverManageNetworkIpv4Key := fmt.Sprintf("%s_%d_%s", serverShelve.CabinetAsw, constant.IpDemandNetworkTypeIpv4, constant.ServerManageNetworkIpVlanId)
+			if _, ok := ipDemandShelveMap[serverManageNetworkIpv4Key]; ok {
+				cidr, err := util.ParseCIDR(ipDemandShelveMap[serverManageNetworkIpv4Key])
+				if err != nil {
+					return nil, err
+				}
+				serverIpRange.ServerManageNetworkIpv4s = append(serverIpRange.ServerManageNetworkIpv4s, cidr...)
+			}
+		}
+		if len(serverIpRange.ServerManageNetworkIpv6s) == 0 {
+			serverManageNetworkIpv6Key := fmt.Sprintf("%s_%d_%s", serverShelve.CabinetAsw, constant.IpDemandNetworkTypeIpv6, constant.ServerManageNetworkIpVlanId)
+			if _, ok := ipDemandShelveMap[serverManageNetworkIpv6Key]; ok {
+				cidr, err := util.ParseIpv6CIDR(ipDemandShelveMap[serverManageNetworkIpv6Key], 10000)
+				if err != nil {
+					return nil, err
+				}
+				serverIpRange.ServerManageNetworkIpv6s = append(serverIpRange.ServerManageNetworkIpv6s, cidr...)
+			}
+		}
+		if len(serverIpRange.ServerBizIntranetIpv4s) == 0 {
+			serverBizIntranetIpv4Key := fmt.Sprintf("%s_%d_%s", serverShelve.CabinetAsw, constant.IpDemandNetworkTypeIpv4, constant.ServerManageBizIntranetIpVlanId)
+			if _, ok := ipDemandShelveMap[serverBizIntranetIpv4Key]; ok {
+				cidr, err := util.ParseCIDR(ipDemandShelveMap[serverBizIntranetIpv4Key])
+				if err != nil {
+					return nil, err
+				}
+				serverIpRange.ServerBizIntranetIpv4s = append(serverIpRange.ServerBizIntranetIpv4s, cidr...)
+			}
+		}
+		if len(serverIpRange.ServerStorageNetworkIpv4s) == 0 {
+			serverStorageNetworkIpv4Key := fmt.Sprintf("%s_%d_%s", serverShelve.CabinetAsw, constant.IpDemandNetworkTypeIpv4, constant.ServerStorageIpVlanId)
+			if _, ok := ipDemandShelveMap[serverStorageNetworkIpv4Key]; ok {
+				cidr, err := util.ParseCIDR(ipDemandShelveMap[serverStorageNetworkIpv4Key])
+				if err != nil {
+					return nil, err
+				}
+				serverIpRange.ServerStorageNetworkIpv4s = append(serverIpRange.ServerStorageNetworkIpv4s, cidr...)
+			}
+		}
+		logicGroupIpRange[serverShelve.CabinetAsw] = serverIpRange
+	}
+	return logicGroupIpRange, nil
+}
+
+func ConvertServerIp(serverShelve entity.ServerShelve, serverIpRangeMap map[string]ServerIpRange, serverIp *entity.ServerIp) error {
+	serverIpRange, ok := serverIpRangeMap[serverShelve.CabinetAsw]
+	if ok {
+		if len(serverIpRange.ServerManageNetworkIpv4s) > 0 {
+			serverIp.ManageNetworkIp = serverIpRange.ServerManageNetworkIpv4s[0]
+			serverIpRange.ServerManageNetworkIpv4s = serverIpRange.ServerManageNetworkIpv4s[1:]
+		}
+		if len(serverIpRange.ServerManageNetworkIpv6s) > 0 {
+			serverIp.ManageNetworkIpv6 = serverIpRange.ServerManageNetworkIpv6s[0]
+			serverIpRange.ServerManageNetworkIpv6s = serverIpRange.ServerManageNetworkIpv6s[1:]
+		}
+		if len(serverIpRange.ServerBizIntranetIpv4s) > 0 {
+			serverIp.BizIntranetIp = serverIpRange.ServerBizIntranetIpv4s[0]
+			serverIpRange.ServerBizIntranetIpv4s = serverIpRange.ServerBizIntranetIpv4s[1:]
+		}
+		if len(serverIpRange.ServerStorageNetworkIpv4s) > 0 {
+			serverIp.StorageNetworkIp = serverIpRange.ServerStorageNetworkIpv4s[0]
+			serverIpRange.ServerStorageNetworkIpv4s = serverIpRange.ServerStorageNetworkIpv4s[1:]
+		}
+		serverIpRangeMap[serverShelve.CabinetAsw] = serverIpRange
 	}
 	return nil
 }
