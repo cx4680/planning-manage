@@ -804,20 +804,16 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 	}
 	//跨机柜上架，将所有机柜槽位列表纵向排布，然后从低到高横向上架
 	var cabinetIdleSlotList []*Cabinet
-	var maxLength int
-	for _, v := range cabinetIdleSlotListMap {
-		if len(v) > maxLength {
-			maxLength = len(v)
-		}
-	}
-	var index int
+	var maxLength = 1 //槽位最多的机柜的槽位数量
+	var index = 0     //下标
 	for index < maxLength {
-		for _, v := range cabinetIdleSlotListMap {
-			if len(v) > maxLength {
-				maxLength = len(v)
+		for _, v := range cabinetInfoList {
+			idleSlotList := cabinetIdleSlotListMap[v.Id]
+			if maxLength < len(idleSlotList) {
+				maxLength = len(idleSlotList)
 			}
-			if len(v) > index {
-				cabinetIdleSlotList = append(cabinetIdleSlotList, v[index])
+			if index < len(idleSlotList) {
+				cabinetIdleSlotList = append(cabinetIdleSlotList, idleSlotList[index])
 			}
 		}
 		index++
