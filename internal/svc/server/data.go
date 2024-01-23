@@ -11,6 +11,7 @@ import (
 	"gorm.io/gorm"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -763,12 +764,13 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 	}
 	var cabinetMap = make(map[int64]*entity.CabinetInfo)
 	var cabinetIdList []int64
-	//剩余上架服务器数
-	var cabinetResidualRackServerNumMap = make(map[int64]int)
+	var cabinetResidualRackServerNumMap = make(map[int64]int)    //剩余上架服务器数
+	var networkDeviceShelveCabinetIdMap = make(map[string]int64) //网络设备与机柜的关联信息
 	for _, v := range cabinetInfoList {
 		cabinetMap[v.Id] = v
 		cabinetIdList = append(cabinetIdList, v.Id)
 		cabinetResidualRackServerNumMap[v.Id] = v.ResidualRackServerNum
+		networkDeviceShelveCabinetIdMap[fmt.Sprintf("%v-%v-%v-%v", v.CabinetAsw, v.MachineRoomAbbr, v.MachineRoomNum, v.CabinetNum)] = v.Id
 	}
 	//查询机柜槽位
 	var cabinetIdleSlotRelList []*entity.CabinetIdleSlotRel
@@ -778,11 +780,30 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 	if len(cabinetIdleSlotRelList) == 0 {
 		return nil, errors.New("机柜槽位为空，请检查机房勘察表是否填写错误")
 	}
+	//查询网络设备占用槽位
+	var networkDeviceShelveList []*entity.NetworkDeviceShelve
+	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceShelveList).Error; err != nil {
+		return nil, err
+	}
+	var networkDeviceShelveSlotPositionMap = make(map[int64]map[int]interface{})
+	for _, v := range networkDeviceShelveList {
+		slotPositionSplit := strings.Split(v.SlotPosition, "-")
+		for _, lotPosition := range slotPositionSplit {
+			lotPositionInt, _ := strconv.Atoi(lotPosition)
+			cabinetId := networkDeviceShelveCabinetIdMap[fmt.Sprintf("%v-%v-%v-%v", v.DeviceLogicalId, v.MachineRoomAbbr, v.MachineRoomNumber, v.CabinetNumber)]
+			networkDeviceShelveSlotPositionMap[cabinetId][lotPositionInt] = struct{}{}
+		}
+	}
+
 	var cabinetIdleSlotNumberMap = make(map[int64]int)
 	var cabinetIdleSlotListMap = make(map[int64][]*Cabinet)
 	for _, v := range cabinetIdleSlotRelList {
 		//1号槽位不上架
 		if v.IdleSlotNumber == 1 {
+			continue
+		}
+		//过滤网络设备占用的槽位
+		if _, ok := networkDeviceShelveSlotPositionMap[v.CabinetId][v.IdleSlotNumber]; !ok {
 			continue
 		}
 		if cabinetIdleSlotNumberMap[v.CabinetId] == 0 {
