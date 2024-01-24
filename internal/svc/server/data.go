@@ -8,6 +8,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
 	"fmt"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
 	"math"
 	"strconv"
@@ -788,14 +789,16 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 	var networkDeviceShelveSlotPositionMap = make(map[int64]map[int]interface{})
 	for _, v := range networkDeviceShelveList {
 		slotPositionSplit := strings.Split(v.SlotPosition, "-")
-		for _, lotPosition := range slotPositionSplit {
-			lotPositionInt, _ := strconv.Atoi(lotPosition)
+		for _, lotPositionString := range slotPositionSplit {
+			lotPosition, _ := strconv.Atoi(lotPositionString)
 			cabinetId := networkDeviceShelveCabinetIdMap[fmt.Sprintf("%v-%v-%v-%v", v.DeviceLogicalId, v.MachineRoomAbbr, v.MachineRoomNumber, v.CabinetNumber)]
-			networkDeviceShelveSlotPositionMap[cabinetId] = make(map[int]interface{})
-			networkDeviceShelveSlotPositionMap[cabinetId][lotPositionInt] = struct{}{}
+			if networkDeviceShelveSlotPositionMap[cabinetId] == nil {
+				networkDeviceShelveSlotPositionMap[cabinetId] = make(map[int]interface{})
+			}
+			networkDeviceShelveSlotPositionMap[cabinetId][lotPosition] = struct{}{}
 		}
 	}
-
+	log.Infof("网络设备占用槽位: %+v", networkDeviceShelveSlotPositionMap)
 	var cabinetIdleSlotNumberMap = make(map[int64]int)
 	var cabinetIdleSlotListMap = make(map[int64][]*Cabinet)
 	for _, v := range cabinetIdleSlotRelList {
