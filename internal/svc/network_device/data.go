@@ -229,7 +229,7 @@ func GetDownloadNetworkShelveTemplate(planId int64) ([]NetworkDeviceShelveDownlo
 	if err := data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
 		return nil, "", err
 	}
-	fileName := projectManage.Name + "-" + planManage.Name + "-" + "网络设备上架表"
+	fileName := projectManage.Name + "-" + planManage.Name + "-" + "网络设备上架模板"
 	return response, fileName, nil
 }
 
@@ -355,6 +355,6 @@ func GetDownloadNetworkShelve(planId int64) ([]NetworkDeviceShelveDownload, stri
 	if err := data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
 		return nil, "", err
 	}
-	fileName := projectManage.Name + "-" + planManage.Name + "-" + "网络设备上架表"
+	fileName := projectManage.Name + "-" + planManage.Name + "-" + "网络设备上架清单"
 	return response, fileName, nil
 }

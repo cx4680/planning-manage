@@ -186,7 +186,7 @@ func DownloadServerShelveTemplate(c *gin.Context) {
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = excel.NormalDownLoad(fileName, "服务器上架表", "", false, response, c.Writer); err != nil {
+	if err = excel.NormalDownLoad(fileName, "服务器上架模板", "", false, response, c.Writer); err != nil {
 		log.Errorf("下载错误：", err)
 	}
 	return
@@ -226,7 +226,7 @@ func UploadShelve(c *gin.Context) {
 		return
 	}
 	var serverShelveDownload []ShelveDownload
-	if err = excel.ImportBySheet(f, &serverShelveDownload, "服务器上架表", 0, 1); err != nil {
+	if err = excel.ImportBySheet(f, &serverShelveDownload, "服务器上架模板", 0, 1); err != nil {
 		log.Errorf("excel import error: %v", err)
 		result.Failure(c, "解析文件错误", http.StatusInternalServerError)
 		return
@@ -283,7 +283,7 @@ func DownloadServerShelve(c *gin.Context) {
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if err = excel.NormalDownLoad(fileName, "服务器上架表", "", false, response, c.Writer); err != nil {
+	if err = excel.NormalDownLoad(fileName, "服务器上架清单", "", false, response, c.Writer); err != nil {
 		log.Errorf("下载错误：", err)
 	}
 	return

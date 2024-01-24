@@ -707,7 +707,7 @@ func getServerShelveDownloadTemplate(planId int64) ([]ShelveDownload, string, er
 	if err = data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
 		return nil, "", err
 	}
-	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器上架表"
+	fileName := projectManage.Name + "-" + planManage.Name + "-" + "服务器上架模板"
 	return response, fileName, nil
 }
 
