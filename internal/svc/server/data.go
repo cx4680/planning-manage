@@ -791,6 +791,7 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 		for _, lotPosition := range slotPositionSplit {
 			lotPositionInt, _ := strconv.Atoi(lotPosition)
 			cabinetId := networkDeviceShelveCabinetIdMap[fmt.Sprintf("%v-%v-%v-%v", v.DeviceLogicalId, v.MachineRoomAbbr, v.MachineRoomNumber, v.CabinetNumber)]
+			networkDeviceShelveSlotPositionMap[cabinetId] = make(map[int]interface{})
 			networkDeviceShelveSlotPositionMap[cabinetId][lotPositionInt] = struct{}{}
 		}
 	}
@@ -803,8 +804,10 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 			continue
 		}
 		//过滤网络设备占用的槽位
-		if _, ok := networkDeviceShelveSlotPositionMap[v.CabinetId][v.IdleSlotNumber]; !ok {
-			continue
+		if networkDeviceShelveSlotPositionMap[v.CabinetId] != nil {
+			if _, ok := networkDeviceShelveSlotPositionMap[v.CabinetId][v.IdleSlotNumber]; !ok {
+				continue
+			}
 		}
 		if cabinetIdleSlotNumberMap[v.CabinetId] == 0 {
 			cabinetIdleSlotNumberMap[v.CabinetId] = v.IdleSlotNumber
