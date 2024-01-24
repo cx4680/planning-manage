@@ -48,12 +48,18 @@ func CreateVlanIdConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if err := DeleteVlanIdConfigByPlanId(request.PlanId); err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
 	userId := user.GetUserId(context)
-	if err := InsertVlanIdConfig(userId, request); err != nil {
+	err := data.DB.Transaction(func(tx *gorm.DB) error {
+		if err := DeleteVlanIdConfigByPlanId(tx, request.PlanId); err != nil {
+			return err
+		}
+		if err := InsertVlanIdConfig(tx, userId, request); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Errorf("[CreateVlanIdConfig] create vlan id config error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -135,10 +141,6 @@ func CreateCellConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if err := DeleteCellConfigByPlanId(request.PlanId); err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
 	userId := user.GetUserId(context)
 	regionAzCellReq := RegionAzCell{
 		RegionCode: request.RegionCode,
@@ -147,11 +149,20 @@ func CreateCellConfig(context *gin.Context) {
 		CellType:   request.CellType,
 		CellName:   request.CellName,
 	}
-	if err := UpdateRegionAzCellByPlanId(request.PlanId, userId, regionAzCellReq); err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	if err := InsertCellConfig(userId, request); err != nil {
+	err := data.DB.Transaction(func(tx *gorm.DB) error {
+		if err := DeleteCellConfigByPlanId(tx, request.PlanId); err != nil {
+			return err
+		}
+		if err := UpdateRegionAzCellByPlanId(tx, request.PlanId, userId, regionAzCellReq); err != nil {
+			return err
+		}
+		if err := InsertCellConfig(tx, userId, request); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Errorf("[CreateCellConfig] create cell config error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -184,11 +195,17 @@ func UpdateCellConfig(context *gin.Context) {
 		CellType:   request.CellType,
 		CellName:   request.CellName,
 	}
-	if err = UpdateRegionAzCellByPlanId(request.PlanId, userId, regionAzCellReq); err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
-	if err = UpdateCellConfigById(userId, id, request, originCellConfig); err != nil {
+	err = data.DB.Transaction(func(tx *gorm.DB) error {
+		if err = UpdateRegionAzCellByPlanId(tx, request.PlanId, userId, regionAzCellReq); err != nil {
+			return err
+		}
+		if err = UpdateCellConfigById(tx, userId, id, request, originCellConfig); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Errorf("[UpdateCellConfig] update cell config error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -218,12 +235,18 @@ func CreateRoutePlanningConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if err := DeleteRoutePlanningConfig(request.PlanId); err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
 	userId := user.GetUserId(context)
-	if err := InsertRoutePlanningConfig(userId, request); err != nil {
+	err := data.DB.Transaction(func(tx *gorm.DB) error {
+		if err := DeleteRoutePlanningConfig(tx, request.PlanId); err != nil {
+			return err
+		}
+		if err := InsertRoutePlanningConfig(tx, userId, request); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Errorf("[CreateRoutePlanningConfig] create route planning config error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
@@ -279,12 +302,18 @@ func CreateLargeNetworkConfig(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if err := DeleteLargeNetworkSegmentConfigByPlanId(request.PlanId); err != nil {
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
 	userId := user.GetUserId(context)
-	if err := InsertLargeNetworkSegmentConfig(userId, request); err != nil {
+	err := data.DB.Transaction(func(tx *gorm.DB) error {
+		if err := DeleteLargeNetworkSegmentConfigByPlanId(tx, request.PlanId); err != nil {
+			return err
+		}
+		if err := InsertLargeNetworkSegmentConfig(tx, userId, request); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		log.Errorf("[CreateLargeNetworkConfig] create large network config error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}

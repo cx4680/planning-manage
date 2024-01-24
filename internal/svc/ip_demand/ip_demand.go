@@ -242,7 +242,7 @@ func ConvertNetworkDeviceIp(accessNetworkShelf entity.NetworkDeviceShelve, ipDem
 			return err
 		}
 		if len(ips) < 60 {
-			return fmt.Errorf("pxe ip数量小于59")
+			return fmt.Errorf("pxe ip数量小于60")
 		}
 		networkDeviceIp.PxeSubnetRange = strings.Join(ips[1:60], constant.Comma)
 		networkDeviceIp.PxeNetworkGateway = ips[len(ips)-2]

@@ -20,7 +20,7 @@ func QueryVlanIdConfigByPlanId(planId int64) (entity.VlanIdConfig, error) {
 	return vlanIdConfig, nil
 }
 
-func InsertVlanIdConfig(userId string, request VlanIdConfigRequest) error {
+func InsertVlanIdConfig(tx *gorm.DB, userId string, request VlanIdConfigRequest) error {
 	now := time.Now()
 	vlanIdConfig := entity.VlanIdConfig{
 		PlanId:             request.PlanId,
@@ -32,15 +32,15 @@ func InsertVlanIdConfig(userId string, request VlanIdConfigRequest) error {
 		UpdateUserId:       userId,
 		UpdateTime:         now,
 	}
-	if err := data.DB.Table(entity.VlanIdConfigTable).Create(&vlanIdConfig).Error; err != nil {
+	if err := tx.Table(entity.VlanIdConfigTable).Create(&vlanIdConfig).Error; err != nil {
 		log.Errorf("[insertVlanIdConfigByPlanId] insert vlan id config error, %v", err)
 		return err
 	}
 	return nil
 }
 
-func DeleteVlanIdConfigByPlanId(planId int64) error {
-	if err := data.DB.Table(entity.VlanIdConfigTable).Where("plan_id = ?", planId).Delete(&entity.VlanIdConfig{}).Error; err != nil {
+func DeleteVlanIdConfigByPlanId(tx *gorm.DB, planId int64) error {
+	if err := tx.Table(entity.VlanIdConfigTable).Where("plan_id = ?", planId).Delete(&entity.VlanIdConfig{}).Error; err != nil {
 		log.Errorf("[deleteVlanIdConfigByPlanId] delete vlan id config error, %v", err)
 		return err
 	}
@@ -99,15 +99,15 @@ func QueryCellConfigByPlanId(planId int64) (entity.CellConfig, error) {
 	return cellConfig, nil
 }
 
-func DeleteCellConfigByPlanId(planId int64) error {
-	if err := data.DB.Table(entity.CellConfigTable).Where("plan_id = ?", planId).Delete(&entity.CellConfig{}).Error; err != nil {
+func DeleteCellConfigByPlanId(tx *gorm.DB, planId int64) error {
+	if err := tx.Table(entity.CellConfigTable).Where("plan_id = ?", planId).Delete(&entity.CellConfig{}).Error; err != nil {
 		log.Errorf("[deleteCellConfigByPlanId] delete cell config config error, %v", err)
 		return err
 	}
 	return nil
 }
 
-func InsertCellConfig(userId string, request CellConfigReq) error {
+func InsertCellConfig(tx *gorm.DB, userId string, request CellConfigReq) error {
 	now := time.Now()
 	cellConfig := entity.CellConfig{
 		PlanId:                   request.PlanId,
@@ -129,7 +129,7 @@ func InsertCellConfig(userId string, request CellConfigReq) error {
 		UpdateUserId:             userId,
 		UpdateTime:               now,
 	}
-	if err := data.DB.Table(entity.CellConfigTable).Create(&cellConfig).Error; err != nil {
+	if err := tx.Table(entity.CellConfigTable).Create(&cellConfig).Error; err != nil {
 		log.Errorf("[insertCellConfigByPlanId] insert cell config error, %v", err)
 		return err
 	}
@@ -145,7 +145,7 @@ func QueryCellConfigById(id int64) (entity.CellConfig, error) {
 	return cellConfig, nil
 }
 
-func UpdateCellConfigById(userId string, id int64, request CellConfigReq, originCellConfig entity.CellConfig) error {
+func UpdateCellConfigById(tx *gorm.DB, userId string, id int64, request CellConfigReq, originCellConfig entity.CellConfig) error {
 	cellConfig := entity.CellConfig{
 		Id:                       id,
 		PlanId:                   request.PlanId,
@@ -167,14 +167,14 @@ func UpdateCellConfigById(userId string, id int64, request CellConfigReq, origin
 		UpdateUserId:             userId,
 		UpdateTime:               time.Now(),
 	}
-	if err := data.DB.Table(entity.CellConfigTable).Save(&cellConfig).Error; err != nil {
+	if err := tx.Table(entity.CellConfigTable).Save(&cellConfig).Error; err != nil {
 		log.Errorf("[updateCellConfigByPlanId] update cell config error, %v", err)
 		return err
 	}
 	return nil
 }
 
-func UpdateRegionAzCellByPlanId(planId int64, userId string, regionAzCell RegionAzCell) error {
+func UpdateRegionAzCellByPlanId(tx *gorm.DB, planId int64, userId string, regionAzCell RegionAzCell) error {
 	originRegionAzCell, err := QueryRegionAzCellByPlanId(planId)
 	if err != nil {
 		return err
@@ -200,18 +200,13 @@ func UpdateRegionAzCellByPlanId(planId int64, userId string, regionAzCell Region
 		UpdateTime:   now,
 		UpdateUserId: userId,
 	}
-	if err = data.DB.Transaction(func(tx *gorm.DB) error {
-		if err = tx.Updates(&regionManage).Error; err != nil {
-			return err
-		}
-		if err = tx.Updates(&azManage).Error; err != nil {
-			return err
-		}
-		if err = tx.Updates(&cellManage).Error; err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
+	if err = tx.Updates(&regionManage).Error; err != nil {
+		return err
+	}
+	if err = tx.Updates(&azManage).Error; err != nil {
+		return err
+	}
+	if err = tx.Updates(&cellManage).Error; err != nil {
 		return err
 	}
 	return nil
@@ -226,20 +221,20 @@ func QueryRoutePlanningConfigByPlanId(planId int64) (entity.RoutePlanningConfig,
 	return routePlanningConfig, nil
 }
 
-func InsertRoutePlanningConfig(userId string, request RoutePlanningConfigReq) error {
+func InsertRoutePlanningConfig(tx *gorm.DB, userId string, request RoutePlanningConfigReq) error {
 	now := time.Now()
 	routePlanningConfig := ConvertRoutePlanningReq2Entity(userId, now, request)
 	routePlanningConfig.CreateUserId = userId
 	routePlanningConfig.CreateTime = now
-	if err := data.DB.Table(entity.RoutePlanningConfigTable).Create(&routePlanningConfig).Error; err != nil {
+	if err := tx.Table(entity.RoutePlanningConfigTable).Create(&routePlanningConfig).Error; err != nil {
 		log.Errorf("[insertRoutePlanningConfigByPlanId] insert route planning config error, %v", err)
 		return err
 	}
 	return nil
 }
 
-func DeleteRoutePlanningConfig(planId int64) error {
-	if err := data.DB.Table(entity.RoutePlanningConfigTable).Where("plan_id = ?", planId).Delete(&entity.RoutePlanningConfig{}).Error; err != nil {
+func DeleteRoutePlanningConfig(tx *gorm.DB, planId int64) error {
+	if err := tx.Table(entity.RoutePlanningConfigTable).Where("plan_id = ?", planId).Delete(&entity.RoutePlanningConfig{}).Error; err != nil {
 		log.Errorf("[deleteRoutePlanningConfigByPlanId] delete route planning config error, %v", err)
 		return err
 	}
@@ -276,15 +271,15 @@ func QueryLargeNetworkSegmentConfigByPlanId(planId int64) (entity.LargeNetworkSe
 	return largeNetworkSegmentConfig, nil
 }
 
-func DeleteLargeNetworkSegmentConfigByPlanId(planId int64) error {
-	if err := data.DB.Table(entity.LargeNetworkSegmentConfigTable).Where("plan_id = ?", planId).Delete(&entity.LargeNetworkSegmentConfig{}).Error; err != nil {
+func DeleteLargeNetworkSegmentConfigByPlanId(tx *gorm.DB, planId int64) error {
+	if err := tx.Table(entity.LargeNetworkSegmentConfigTable).Where("plan_id = ?", planId).Delete(&entity.LargeNetworkSegmentConfig{}).Error; err != nil {
 		log.Errorf("[deleteLargeNetworkSegmentConfigByPlanId] delete large network segment config error, %v", err)
 		return err
 	}
 	return nil
 }
 
-func InsertLargeNetworkSegmentConfig(userId string, request LargeNetworkSegmentConfigReq) error {
+func InsertLargeNetworkSegmentConfig(tx *gorm.DB, userId string, request LargeNetworkSegmentConfigReq) error {
 	now := time.Now()
 	largeNetworkSegmentConfig := entity.LargeNetworkSegmentConfig{
 		PlanId:                         request.PlanId,
@@ -297,7 +292,7 @@ func InsertLargeNetworkSegmentConfig(userId string, request LargeNetworkSegmentC
 		UpdateUserId:                   userId,
 		UpdateTime:                     now,
 	}
-	if err := data.DB.Table(entity.LargeNetworkSegmentConfigTable).Create(&largeNetworkSegmentConfig).Error; err != nil {
+	if err := tx.Table(entity.LargeNetworkSegmentConfigTable).Create(&largeNetworkSegmentConfig).Error; err != nil {
 		log.Errorf("[insertLargeNetworkSegmentConfig] insert large network segment config error, %v", err)
 		return err
 	}
