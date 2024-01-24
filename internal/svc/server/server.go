@@ -182,7 +182,7 @@ func DownloadServerShelveTemplate(c *gin.Context) {
 	}
 	response, fileName, err := getServerShelveDownloadTemplate(planId)
 	if err != nil {
-		log.Errorf("ListNetworkShelve error, %v", err)
+		log.Errorf("DownloadServerShelveTemplate error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}

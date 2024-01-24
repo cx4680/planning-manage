@@ -805,7 +805,7 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 		}
 		//过滤网络设备占用的槽位
 		if networkDeviceShelveSlotPositionMap[v.CabinetId] != nil {
-			if _, ok := networkDeviceShelveSlotPositionMap[v.CabinetId][v.IdleSlotNumber]; !ok {
+			if _, ok := networkDeviceShelveSlotPositionMap[v.CabinetId][v.IdleSlotNumber]; ok {
 				continue
 			}
 		}
