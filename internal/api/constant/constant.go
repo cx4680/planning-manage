@@ -126,7 +126,7 @@ const (
 	IpDemandNetworkTypeIpv6Cn = "ipv6"
 	IpDemandNetworkTypeIpv6   = 1
 
-	AccessNetworkDeviceRoleKeyword = "接入"
+	AccessNetworkDeviceRoleKeyword = "接入交换机"
 
 	NetworkDevicePxeVlanId      = "89"
 	NetworkDeviceManageVlanId   = "91"
