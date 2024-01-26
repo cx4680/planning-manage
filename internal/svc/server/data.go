@@ -332,6 +332,9 @@ func CountCapacity(request *RequestServerCapacityCount) (*ResponseCapCount, erro
 	if err = db.Where("id = ?", request.ServerBaselineId).Find(&serverBaseline).Error; err != nil {
 		return nil, err
 	}
+	if serverBaseline.Id == 0 {
+		return nil, errors.New("服务器基线不存在")
+	}
 	//计算服务器数量
 	var serverNumber int
 	for _, v := range serverCapPlanningList {
@@ -542,7 +545,6 @@ func CountServerNumber(number, featureNumber int, capActualResBaseline *entity.C
 	} else {
 		consumeNumber = (float64(singleCapacity) * (1 - nodeWastage)) * waterLevel
 	}
-	log.Infof("capacityNumber:%v, consumeNumber:%v", capacityNumber, consumeNumber)
 	serverNumber := math.Ceil(capacityNumber / consumeNumber)
 	return int(serverNumber)
 }
