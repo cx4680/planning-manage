@@ -48,6 +48,10 @@ func Save(c *gin.Context) {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)
 		return
 	}
+	if len(request.ServerList) == 0 {
+		result.Failure(c, "服务器规划为空", http.StatusBadRequest)
+		return
+	}
 	request.UserId = user.GetUserId(c)
 	if err := SaveServer(request); err != nil {
 		log.Errorf("save server error: ", err)
