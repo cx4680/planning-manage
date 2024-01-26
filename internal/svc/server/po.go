@@ -1,5 +1,9 @@
 package server
 
+import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+)
+
 type Request struct {
 	Id                 int64
 	UserId             string
@@ -24,6 +28,44 @@ type RequestServerCapacity struct {
 	FeatureNumber int   `form:"featureNumber"`
 }
 
+type RequestServerCapacityCount struct {
+	PlanId           int64 `form:"planId"`
+	NodeRoleId       int64 `form:"nodeRoleId"`
+	ServerBaselineId int64 `form:"serverBaselineId"`
+}
+
+type Server struct {
+	entity.ServerPlanning
+	NodeRoleName       string           `gorm:"-" json:"nodeRoleName"`       // 节点角色名称
+	NodeRoleClassify   string           `gorm:"-" json:"nodeRoleClassify"`   // 节点角色分类
+	NodeRoleAnnotation string           `gorm:"-" json:"nodeRoleAnnotation"` // 节点说明
+	SupportDpdk        int              `gorm:"-" json:"supportDpdk"`        // 是否支持DPDK, 0:否，1：是
+	ServerBomCode      string           `gorm:"-" json:"serverBomCode"`      // BOM编码
+	ServerArch         string           `gorm:"-" json:"serverArch"`         // 架构
+	ServerBaselineList []*Baseline      `gorm:"-" json:"serverBaselineList"` // 可选择机型列表
+	MixedNodeRoleList  []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`  // 可混合部署角色列表
+	Upload             int              `gorm:"-" json:"upload"`             // 是否已上传
+}
+
+type MixedNodeRole struct {
+	Id   int64  `gorm:"-" json:"id"`   // 混合节点角色id
+	Name string `gorm:"-" json:"name"` // 混合节点角色名称
+
+}
+
+type Baseline struct {
+	Id                  int64  `gorm:"-" json:"id"`                  // 服务器id
+	BomCode             string `gorm:"-" json:"bomCode"`             // BOM编码
+	NetworkInterface    string `gorm:"-" json:"networkInterface"`    // 网络类型
+	CpuType             string `gorm:"-" json:"cpuType"`             // cpu类型
+	Cpu                 int    `gorm:"-" json:"cpu"`                 // cpu损耗
+	Memory              int    `gorm:"-" json:"memory"`              // 内存损耗
+	StorageDiskNum      int    `gorm:"-" json:"storageDiskNum"`      // 存储盘数量
+	StorageDiskCapacity int    `gorm:"-" json:"storageDiskCapacity"` // 存储盘单盘容量（G）
+	Arch                string `gorm:"-" json:"arch"`                // 硬件架构
+	ConfigurationInfo   string `gorm:"-" json:"configurationInfo"`   // 配置概要
+}
+
 type ResponseDownloadServer struct {
 	NodeRole   string `json:"nodeRole" excel:"name:角色;"`
 	ServerType string `json:"serverType" excel:"name:设备类型;"`
@@ -35,6 +77,10 @@ type ResponseDownloadServer struct {
 type ResponseCapClassification struct {
 	Classification string                `json:"classification"` // 分类
 	CapConvert     []*ResponseCapConvert `json:"capConvert"`
+}
+
+type ResponseCapCount struct {
+	Number int `form:"number"`
 }
 
 type ResponseCapConvert struct {

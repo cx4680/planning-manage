@@ -231,7 +231,6 @@ CREATE TABLE `server_cap_planning`
     `capacity_baseline_id` bigint(20) NULL DEFAULT NULL COMMENT '容量指标id',
     `number`               int          DEFAULT NULL COMMENT '数量',
     `feature_number`       int NULL DEFAULT NULL COMMENT '特性数量',
-    `capacity_number`      varchar(255) DEFAULT NULL COMMENT '容量总消耗',
     `expend_res_code`      varchar(255) DEFAULT NULL COMMENT '消耗资源编码',
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COMMENT = '服务器容量规划表';
