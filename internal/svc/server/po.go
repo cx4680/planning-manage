@@ -31,6 +31,12 @@ type RequestServerCapacity struct {
 	FeatureNumber int   `form:"featureNumber"`
 }
 
+type RequestServerCapacityCount struct {
+	PlanId           int64 `form:"planId"`
+	NodeRoleId       int64 `form:"nodeRoleId"`
+	ServerBaselineId int64 `form:"serverBaselineId"`
+}
+
 type Server struct {
 	entity.ServerPlanning
 	NodeRoleName       string           `gorm:"-" json:"nodeRoleName"`       // 节点角色名称
@@ -51,13 +57,16 @@ type MixedNodeRole struct {
 }
 
 type Baseline struct {
-	Id                int64  `gorm:"-" json:"id"`                // 服务器id
-	BomCode           string `gorm:"-" json:"bomCode"`           // BOM编码
-	NetworkInterface  string `gorm:"-" json:"networkInterface"`  // 网络类型
-	Cpu               int    `gorm:"-" json:"cpu"`               // cpu损耗
-	CpuType           string `gorm:"-" json:"cpuType"`           // cpu类型
-	Arch              string `gorm:"-" json:"arch"`              // 硬件架构
-	ConfigurationInfo string `gorm:"-" json:"configurationInfo"` // 配置概要
+	Id                  int64  `gorm:"-" json:"id"`                  // 服务器id
+	BomCode             string `gorm:"-" json:"bomCode"`             // BOM编码
+	NetworkInterface    string `gorm:"-" json:"networkInterface"`    // 网络类型
+	CpuType             string `gorm:"-" json:"cpuType"`             // cpu类型
+	Cpu                 int    `gorm:"-" json:"cpu"`                 // cpu损耗
+	Memory              int    `gorm:"-" json:"memory"`              // 内存损耗
+	StorageDiskNum      int    `gorm:"-" json:"storageDiskNum"`      // 存储盘数量
+	StorageDiskCapacity int    `gorm:"-" json:"storageDiskCapacity"` // 存储盘单盘容量（G）
+	Arch                string `gorm:"-" json:"arch"`                // 硬件架构
+	ConfigurationInfo   string `gorm:"-" json:"configurationInfo"`   // 配置概要
 }
 
 type ResponseDownloadServer struct {
@@ -71,6 +80,10 @@ type ResponseDownloadServer struct {
 type ResponseCapClassification struct {
 	Classification string                `json:"classification"` // 分类
 	CapConvert     []*ResponseCapConvert `json:"capConvert"`
+}
+
+type ResponseCapCount struct {
+	Number int `form:"number"`
 }
 
 type ResponseCapConvert struct {
