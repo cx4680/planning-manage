@@ -104,7 +104,8 @@ func Upload(c *gin.Context) {
 	}
 	userId := user.GetUserId(c)
 	if err = data.DB.Transaction(func(tx *gorm.DB) error {
-		if err = UploadIpDemand(tx, planId, ipDemandPlanningExportResponse, userId); err != nil {
+		ipDemandShelves, err := UploadIpDemand(tx, planId, ipDemandPlanningExportResponse, userId)
+		if err != nil {
 			return err
 		}
 		cloudProductPlannings, err := cloud_product.ListCloudProductPlanningByPlanId(planId)
@@ -138,10 +139,6 @@ func Upload(c *gin.Context) {
 					}
 				}
 			}
-		}
-		ipDemandShelves, err := GetIpDemandShelve(planId)
-		if err != nil {
-			return err
 		}
 		ipDemandShelveMap := make(map[string]string)
 		for _, ipDemandShelve := range ipDemandShelves {

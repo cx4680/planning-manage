@@ -114,12 +114,12 @@ func GetIpDemandPlanningList(planId int64) ([]*IpDemandPlanning, error) {
 	return list, nil
 }
 
-func UploadIpDemand(db *gorm.DB, planId int64, ipDemandPlanningExportResponse []IpDemandPlanningExportResponse, userId string) error {
+func UploadIpDemand(db *gorm.DB, planId int64, ipDemandPlanningExportResponse []IpDemandPlanningExportResponse, userId string) ([]*entity.IpDemandShelve, error) {
 	var ipDemandShelveList []*entity.IpDemandShelve
 	for _, v := range ipDemandPlanningExportResponse {
 		if util.IsBlank(v.LogicalGrouping) || util.IsBlank(v.SegmentType) || util.IsBlank(v.NetworkType) || util.IsBlank(v.Vlan) ||
 			util.IsBlank(v.CNum) || util.IsBlank(v.Address) || util.IsBlank(v.Describe) || util.IsBlank(v.AddressPlanning) {
-			return errors.New("表单所有参数不能为空")
+			return ipDemandShelveList, errors.New("表单所有参数不能为空")
 		}
 		networkType := constant.IpDemandNetworkTypeIpv4
 		if v.NetworkType == constant.IpDemandNetworkTypeIpv6Cn {
@@ -140,12 +140,12 @@ func UploadIpDemand(db *gorm.DB, planId int64, ipDemandPlanningExportResponse []
 		})
 	}
 	if err := db.Delete(&entity.IpDemandShelve{}, "plan_id = ?", planId).Error; err != nil {
-		return err
+		return ipDemandShelveList, err
 	}
 	if err := db.Create(&ipDemandShelveList).Error; err != nil {
-		return err
+		return ipDemandShelveList, err
 	}
-	return nil
+	return ipDemandShelveList, nil
 }
 
 func SaveIpDemand(tx *gorm.DB, planId int64) error {
