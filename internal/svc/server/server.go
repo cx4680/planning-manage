@@ -5,6 +5,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
@@ -44,12 +45,8 @@ func Save(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if request.PlanId == 0 {
-		result.Failure(c, "planId参数为空", http.StatusBadRequest)
-		return
-	}
-	if len(request.ServerList) == 0 {
-		result.Failure(c, "服务器规划为空", http.StatusBadRequest)
+	if err := checkRequest(request); err != nil {
+		result.Failure(c, err.Error(), http.StatusBadRequest)
 		return
 	}
 	request.UserId = user.GetUserId(c)
@@ -127,10 +124,6 @@ func CapacityCount(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if request.PlanId == 0 {
-		result.Failure(c, "planId参数为空", http.StatusBadRequest)
-		return
-	}
 	data, err := CountCapacity(request)
 	if err != nil {
 		log.Errorf("list server capacity error: ", err)
@@ -147,8 +140,8 @@ func SaveCapacity(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if request.PlanId == 0 {
-		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+	if err := checkRequest(request); err != nil {
+		result.Failure(c, err.Error(), http.StatusBadRequest)
 		return
 	}
 	request.UserId = user.GetUserId(c)
@@ -311,4 +304,14 @@ func DownloadServerShelve(c *gin.Context) {
 		log.Errorf("下载错误：", err)
 	}
 	return
+}
+
+func checkRequest(request *Request) error {
+	if request.PlanId == 0 {
+		return errors.New("planId参数为空")
+	}
+	if len(request.ServerList) == 0 {
+		return errors.New("服务器规划为空")
+	}
+	return nil
 }

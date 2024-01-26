@@ -220,3 +220,20 @@ func searchCustomerByName(customerName string) ([]entity.CustomerManage, error) 
 	}
 	return customerList, nil
 }
+
+func InnerCreateCustomer(customerParam CreateCustomerRequest, leaderId string, ldapUser *ldap.Entry, currentUserId string) (*entity.CustomerManage, error) {
+	customer, err := createCustomer(customerParam, leaderId, ldapUser, currentUserId)
+	if err != nil {
+		return nil, err
+	}
+	//默认创建项目
+
+	return customer, nil
+}
+
+func InnerUpdateCustomer(customerParam UpdateCustomerRequest) error {
+	if err := updateCustomer(customerParam, ""); err != nil {
+		return err
+	}
+	return nil
+}
