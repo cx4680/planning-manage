@@ -1,14 +1,16 @@
 package http
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
-	"strconv"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/httpcall"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
@@ -54,6 +56,9 @@ func Router(engine *gin.Engine) {
 			userGroup.GET("/logout", middleware.OperatorLog(DefaultEventOpInfo("登出", "logout", middleware.OPERATE, middleware.INFO)), user.Logout)
 			// 根据名称查询ldap用户
 			userGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("根据关键字查询用户", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByName)
+			userGroup.GET("/listByUid", middleware.OperatorLog(DefaultEventOpInfo("根据关键字查询用户", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByUid)
+			userGroup.GET("/listByEmployeeNumber", middleware.OperatorLog(DefaultEventOpInfo("根据关键字查询用户", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByEmployeeNumber)
+
 		}
 
 		customerGroup := api.Group("/customer")
@@ -292,17 +297,57 @@ func DefaultEventOpInfo(actionDisplayName string, actionCode string, actionType 
 
 func Auth() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		session := sessions.Default(context)
-		currentUserIdInterface := session.Get("userId")
-		if currentUserIdInterface == nil {
-			log.Errorf("[Auth] invalid authorized")
-			result.Failure(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized)
+		cookie, err := context.Request.Cookie("cestcToken")
+		if err != nil {
 			return
 		}
-		sessionAgeStr := os.Getenv("SESSION_AGE")
-		sessionAge, _ := strconv.Atoi(sessionAgeStr)
-		session.Options(sessions.Options{MaxAge: sessionAge, Path: "/"})
-		session.Save()
-		context.Set(constant.CurrentUserId, currentUserIdInterface.(string))
+		token := cookie.Value
+		userCenterUrl := os.Getenv(constant.UserCenterUrl)
+		productCode := os.Getenv(constant.ProductCode)
+		redirectUrlMap := make(map[string]string)
+		redirectUrlMap["redirectUrl"] = fmt.Sprintf("%s/auth/sso/ssoLogin?productCode=%s&redirect=", userCenterUrl, productCode)
+		if token == "" {
+			log.Errorf("[Auth] invalid authorized")
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
+		}
+		url := fmt.Sprintf("%s/auth/sso/tokenCheck", userCenterUrl)
+		body := user.TokenCheckRequest{
+			ProductCode: productCode,
+			CestcToken:  token,
+		}
+		reqJson, err := json.Marshal(body)
+		if err != nil {
+			log.Errorf("Body json marshal error: %v", err)
+		}
+		response, err := httpcall.POSTResponse(httpcall.HttpRequest{
+			Context: context,
+			URI:     url,
+			Headers: map[string]string{
+				"Content-Type": "application/json",
+			},
+			Body: bytes.NewBuffer(reqJson),
+		})
+		if err != nil {
+			log.Errorf("call sso tokenCheck error: %v", err)
+		}
+		log.Infof("call sso tokenCheck: %v", response)
+		resByte, err := json.Marshal(response)
+		if err != nil {
+			log.Errorf("Marshal json error: %v", err)
+		}
+		var responseData user.TokenCheckResponse
+		if err = json.Unmarshal(resByte, &responseData); err != nil {
+			log.Errorf("Unmarshal json error: %v", err)
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
+		}
+		if responseData.Code != user.RequestSuccessCode {
+			responseJson, _ := json.Marshal(response)
+			log.Error("call sso tokenCheck failure: %s", string(responseJson))
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
+		}
+		context.Set(constant.CurrentUserId, responseData.Data.UserName)
 	}
 }

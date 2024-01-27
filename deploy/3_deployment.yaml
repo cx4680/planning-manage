@@ -61,6 +61,12 @@ spec:
               value: cn=admin,dc=mylitboy,dc=com
             - name: SESSION_AGE
               value: 1800
+            - name: PRODUCT_CODE
+              value: "planning-manage"
+            - name: USER_CENTER_URL
+              value: "http://uc.cestcdev.cn"
+            - name: USER_CENTER_SECRET_KEY
+              value: "LZ8PYb1ZSb88WqSG0bTiRN2txf9Mwy3l"
           livenessProbe:	#健康检查
             httpGet:   # tcpSocket,exec
               path: /health

@@ -19,6 +19,10 @@ const (
 	EnvRegion           = "REGION"
 	EnvCellID           = "CELLID"
 
+	UserCenterUrl       = "USER_CENTER_URL"
+	ProductCode         = "PRODUCT_CODE"
+	UserCenterSecretKey = "USER_CENTER_SECRET_KEY"
+
 	NameSpace = "planning-manage"
 
 	UserSecretPrivateKeyPath = "/app/secret/userSecretPrivateKey"

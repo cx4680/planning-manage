@@ -113,3 +113,14 @@ func FailureWithMsg(context *gin.Context, errorCode string, httpStatusCode int, 
 		msg:       errorMsg,
 	})
 }
+
+func FailureWithData(context *gin.Context, errorCode string, httpStatusCode int, data interface{}) {
+	output := map[string]interface{}{
+		requestId: context.GetString(constant.XRequestID),
+		codeKey:   errorCode,
+	}
+	if !IsNil(data) {
+		output[dataKey] = data
+	}
+	context.JSON(httpStatusCode, output)
+}
