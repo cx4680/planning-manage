@@ -5,6 +5,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
+	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
@@ -44,8 +45,8 @@ func Save(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if request.PlanId == 0 {
-		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+	if err := checkRequest(request); err != nil {
+		result.Failure(c, err.Error(), http.StatusBadRequest)
 		return
 	}
 	request.UserId = user.GetUserId(c)
@@ -116,6 +117,22 @@ func CapacityList(c *gin.Context) {
 	result.Success(c, list)
 }
 
+func CapacityCount(c *gin.Context) {
+	request := &RequestServerCapacityCount{}
+	if err := c.ShouldBindQuery(&request); err != nil {
+		log.Errorf("CapacityCount bind param error: ", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	data, err := CountCapacity(request)
+	if err != nil {
+		log.Errorf("list server capacity error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, data)
+}
+
 func SaveCapacity(c *gin.Context) {
 	request := &Request{}
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -123,8 +140,8 @@ func SaveCapacity(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if request.PlanId == 0 {
-		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+	if err := checkRequest(request); err != nil {
+		result.Failure(c, err.Error(), http.StatusBadRequest)
 		return
 	}
 	request.UserId = user.GetUserId(c)
@@ -287,4 +304,14 @@ func DownloadServerShelve(c *gin.Context) {
 		log.Errorf("下载错误：", err)
 	}
 	return
+}
+
+func checkRequest(request *Request) error {
+	if request.PlanId == 0 {
+		return errors.New("planId参数为空")
+	}
+	if len(request.ServerList) == 0 {
+		return errors.New("服务器规划为空")
+	}
+	return nil
 }

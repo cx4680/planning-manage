@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
 	"net/http"
 	"os"
 
@@ -13,7 +14,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/httpcall"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/global_config"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/machine_room"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
@@ -168,6 +168,8 @@ func Router(engine *gin.Engine) {
 			serverGroup.GET("/cpu/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.CpuTypeList)
 			// 查询容量规划列表
 			serverGroup.GET("/capacity/list", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "queryServerCapacityList", middleware.LIST, middleware.INFO)), server.CapacityList)
+			// 容量计算
+			serverGroup.GET("/capacity/count", middleware.OperatorLog(DefaultEventOpInfo("容量计算", "countServerCapacityList", middleware.LIST, middleware.INFO)), server.CapacityCount)
 			// 保存容量规划
 			serverGroup.POST("/capacity/save", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "saveServerCapacityList", middleware.LIST, middleware.INFO)), server.SaveCapacity)
 			// 下载服务器规划清单
@@ -262,6 +264,13 @@ func Router(engine *gin.Engine) {
 			globalConfigGroup.POST("/complete/:planId", middleware.OperatorLog(DefaultEventOpInfo("全局配置完成规划", "completeGlobalConfig", middleware.CREATE, middleware.INFO)), global_config.CompleteGlobalConfig)
 			globalConfigGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载规划文件", "downloadPlanningFile", middleware.EXPORT, middleware.INFO)), global_config.DownloadPlanningFile)
 		}
+
+		// 枚举配置表
+		configGroup := api.Group("/config")
+		{
+			configGroup.GET("/:code", middleware.OperatorLog(DefaultEventOpInfo("查询枚举配置表", "queryConfig", middleware.LIST, middleware.INFO)), config_item.List)
+		}
+
 	}
 
 	innerApi := engine.Group(innerPrefix)
@@ -272,11 +281,12 @@ func Router(engine *gin.Engine) {
 			// 导入版本基线
 			baselineGroup.POST("/import", middleware.OperatorLog(DefaultEventOpInfo("导入版本基线", "importBaseline", middleware.IMPORT, middleware.INFO)), baseline.Import)
 		}
-	}
-	// 枚举配置表
-	configGroup := api.Group("/config")
-	{
-		configGroup.GET("/:code", middleware.OperatorLog(DefaultEventOpInfo("查询枚举配置表", "queryConfig", middleware.LIST, middleware.INFO)), config_item.List)
+		// 客户管理
+		customerGroup := innerApi.Group("/customer")
+		{
+			customerGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建客户", "createCustomer", middleware.CREATE, middleware.INFO)), customer.InnerCreate)
+			customerGroup.POST("/update", middleware.OperatorLog(DefaultEventOpInfo("根据id修改客户", "editCustomer", middleware.UPDATE, middleware.INFO)), customer.InnerUpdate)
+		}
 	}
 }
 

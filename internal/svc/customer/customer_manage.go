@@ -6,6 +6,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/user"
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"net/http"
@@ -158,4 +159,82 @@ func Update(context *gin.Context) {
 
 	result.Success(context, nil)
 	return
+}
+
+func InnerCreate(c *gin.Context) {
+	var request CreateCustomerRequest
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.Errorf("[Create] customer bind param error", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	if err := checkRequest(&request, nil, true); err != nil {
+		result.Failure(c, err.Error(), http.StatusBadRequest)
+	}
+	ldapUser, err := user.SearchUserById(request.LeaderId)
+	if err != nil {
+		log.Errorf("[Create] customer search ldap user error, %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	customer, err := InnerCreateCustomer(request, request.LeaderId, ldapUser, "")
+	if err != nil {
+		log.Errorf("[Create] customer %v", err)
+		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+
+	result.Success(c, customer)
+	return
+}
+
+func InnerUpdate(c *gin.Context) {
+	var request = &UpdateCustomerRequest{}
+	if err := c.BindJSON(&request); err != nil {
+		log.Errorf("[Update] customer bind param error", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	if err := checkRequest(nil, request, false); err != nil {
+		result.Failure(c, err.Error(), http.StatusBadRequest)
+	}
+	if err := InnerUpdateCustomer(*request); err != nil {
+		log.Errorf("[Update] customer updateCustomer: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, nil)
+	return
+}
+
+func checkRequest(createRequest *CreateCustomerRequest, updateRequest *UpdateCustomerRequest, isCreate bool) error {
+	if isCreate {
+		if createRequest.CustomerName == "" {
+			log.Error("[Create] customer customerName can not be nil")
+			return errors.New("customerName不能为空")
+		}
+		if len(createRequest.CustomerName) > 30 {
+			log.Error("[Create] customer customerName is limited 30 character")
+			return errors.New("客户名称不可超过30个字符")
+		}
+		if len(createRequest.LeaderId) < 1 || len(createRequest.LeaderName) < 1 || len(createRequest.MembersId) < 1 || len(createRequest.MembersName) < 1 {
+			log.Error("[Create] customer membersId or membersName can not be nil")
+			return errors.New("客户接口人及项目成员必选")
+		}
+		customerExist, err := searchCustomerByName(createRequest.CustomerName)
+		if err != nil {
+			log.Errorf("[Create] customer search customer by name error", err)
+			return err
+		}
+		if len(customerExist) > 0 {
+			log.Errorf("[Create] customer customerName has exists")
+			return errors.New("客户名称重复")
+		}
+	} else {
+		if updateRequest.ID == 0 {
+			log.Error("[Update] customer customerId can not be nil")
+			return errors.New("id不能为空")
+		}
+	}
+	return nil
 }
