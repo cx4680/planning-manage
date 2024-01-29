@@ -285,8 +285,8 @@ func Router(engine *gin.Engine) {
 		// 客户管理
 		customerGroup := innerApi.Group("/customer")
 		{
-			customerGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建客户", "createCustomer", middleware.CREATE, middleware.INFO)), customer.InnerCreate)
-			customerGroup.POST("/update", middleware.OperatorLog(DefaultEventOpInfo("根据id修改客户", "editCustomer", middleware.UPDATE, middleware.INFO)), customer.InnerUpdate)
+			customerGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建客户", "innerCreateCustomer", middleware.CREATE, middleware.INFO)), customer.InnerCreate)
+			customerGroup.POST("/update", middleware.OperatorLog(DefaultEventOpInfo("根据id修改客户", "innerEditCustomer", middleware.UPDATE, middleware.INFO)), customer.InnerUpdate)
 		}
 	}
 }
