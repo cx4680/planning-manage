@@ -308,16 +308,20 @@ func DefaultEventOpInfo(actionDisplayName string, actionCode string, actionType 
 
 func Auth() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		cookie, err := context.Request.Cookie("cestcToken")
-		if err != nil {
-			return
-		}
-		token := cookie.Value
 		userCenterUrl := os.Getenv(constant.UserCenterUrl)
 		productCode := os.Getenv(constant.ProductCode)
 		redirectUrlMap := make(map[string]string)
 		redirectUrlMap["redirectUrl"] = fmt.Sprintf("%s/auth/sso/ssoLogin?productCode=%s&redirect=", userCenterUrl, productCode)
+		cookie, err := context.Request.Cookie("cestcToken")
+		if err != nil {
+			context.Abort()
+			log.Errorf("[Auth] invalid authorized")
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
+		}
+		token := cookie.Value
 		if token == "" {
+			context.Abort()
 			log.Errorf("[Auth] invalid authorized")
 			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
 			return
@@ -329,7 +333,10 @@ func Auth() gin.HandlerFunc {
 		}
 		reqJson, err := json.Marshal(body)
 		if err != nil {
+			context.Abort()
 			log.Errorf("Body json marshal error: %v", err)
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
 		}
 		response, err := httpcall.POSTResponse(httpcall.HttpRequest{
 			Context: context,
@@ -340,20 +347,28 @@ func Auth() gin.HandlerFunc {
 			Body: bytes.NewBuffer(reqJson),
 		})
 		if err != nil {
+			context.Abort()
 			log.Errorf("call sso tokenCheck error: %v", err)
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
 		}
 		log.Infof("call sso tokenCheck: %v", response)
 		resByte, err := json.Marshal(response)
 		if err != nil {
+			context.Abort()
 			log.Errorf("Marshal json error: %v", err)
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
 		}
 		var responseData user.TokenCheckResponse
 		if err = json.Unmarshal(resByte, &responseData); err != nil {
+			context.Abort()
 			log.Errorf("Unmarshal json error: %v", err)
 			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
 			return
 		}
 		if responseData.Code != user.RequestSuccessCode {
+			context.Abort()
 			responseJson, _ := json.Marshal(response)
 			log.Error("call sso tokenCheck failure: %s", string(responseJson))
 			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
