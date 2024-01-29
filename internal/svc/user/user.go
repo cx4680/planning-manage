@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -242,8 +243,11 @@ func ListByUid(context *gin.Context) {
 }
 
 func ListByEmployeeNumber(context *gin.Context) {
-	// queryName := context.Query("employeeNumber")
-
+	var empNumList []string
+	queryEmpNumList := context.Query("empNumList")
+	if queryEmpNumList != "" {
+		empNumList = strings.Split(queryEmpNumList, constant.Comma)
+	}
 	timestamp := datetime.CurrentUnixMilli()
 	productCode := os.Getenv(constant.ProductCode)
 	userCenterSecretKey := os.Getenv(constant.UserCenterSecretKey)
@@ -254,8 +258,7 @@ func ListByEmployeeNumber(context *gin.Context) {
 		Sign:        sign,
 		Timestamp:   strconv.FormatInt(timestamp, 10),
 	}
-	body.Data.PageSize = 10
-	body.Data.PageNum = 1
+	body.Data.EmpNumList = empNumList
 	reqJson, err := json.Marshal(body)
 	if err != nil {
 		log.Errorf("Body json marshal error: %v", err)
@@ -269,9 +272,9 @@ func ListByEmployeeNumber(context *gin.Context) {
 		Body: bytes.NewBuffer(reqJson),
 	})
 	if err != nil {
-		log.Errorf("call sso getUsersByUids error: %v", err)
+		log.Errorf("call sso getUsersByEmployeeNumber error: %v", err)
 	}
-	log.Infof("call sso getUsersByUids: %v", response)
+	log.Infof("call sso getUsersByEmployeeNumber: %v", response)
 	resByte, err := json.Marshal(response)
 	if err != nil {
 		log.Errorf("Marshal json error: %v", err)

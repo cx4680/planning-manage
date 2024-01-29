@@ -74,7 +74,6 @@ type QueryUserByEmployeeNumRequest struct {
 	Sign        string `json:"sign"`
 	Timestamp   string `json:"timestamp"`
 	Data        struct {
-		PageNum  int `json:"pageNum"`
-		PageSize int `json:"pageSize"`
+		EmpNumList []string `json:"empNumList"`
 	} `json:"data"`
 }
