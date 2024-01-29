@@ -224,7 +224,8 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 			var updateCloudProductBaselines []entity.CloudProductBaseline
 			var originCloudProductIds []int64
 			for _, originCloudProductBaseline := range originCloudProductBaselines {
-				originCloudProductMap[originCloudProductBaseline.ProductCode] = originCloudProductBaseline
+				key := fmt.Sprintf("%s%s%s", originCloudProductBaseline.ProductCode, originCloudProductBaseline.SellSpecs, originCloudProductBaseline.AuthorizedUnit)
+				originCloudProductMap[key] = originCloudProductBaseline
 				originCloudProductIds = append(originCloudProductIds, originCloudProductBaseline.Id)
 			}
 			if err = DeleteCloudProductDependRel(originCloudProductIds); err != nil {
@@ -236,7 +237,8 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 				return true
 			}
 			for _, cloudProductBaseline := range cloudProductBaselines {
-				originCloudProductBaseline, ok := originCloudProductMap[cloudProductBaseline.ProductCode]
+				key := fmt.Sprintf("%s%s%s", cloudProductBaseline.ProductCode, cloudProductBaseline.SellSpecs, cloudProductBaseline.AuthorizedUnit)
+				originCloudProductBaseline, ok := originCloudProductMap[key]
 				if ok {
 					cloudProductBaseline.Id = originCloudProductBaseline.Id
 					updateCloudProductBaselines = append(updateCloudProductBaselines, cloudProductBaseline)
