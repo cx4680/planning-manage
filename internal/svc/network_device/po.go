@@ -60,11 +60,13 @@ type NetworkDevices struct {
 	DeviceModel           string               `json:"deviceModel" form:"deviceModel"`
 	ConfOverview          string               `json:"confOverview" form:"confOverview"`
 	DeviceModels          []NetworkDeviceModel `json:"deviceModels" form:"deviceModels"`
+	BomId                 string               `json:"bomId" form:"bomId"`
 }
 
 type NetworkDeviceModel struct {
 	ConfOverview string `json:"confOverview" form:"confOverview"`
 	DeviceModel  string `json:"deviceModel" form:"deviceModel"`
+	BomId        string `json:"bomId" form:"bomId"`
 }
 
 type NetworkDeviceShelveDownload struct {

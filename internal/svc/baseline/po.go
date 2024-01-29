@@ -1,27 +1,29 @@
 package baseline
 
 const (
-	CloudProductBaselineSheetName      = "云产品售卖清单"
-	ServerBaselineSheetName            = "服务器基线"
-	NetworkDeviceBaselineSheetName     = "网络设备基线"
-	NetworkDeviceRoleBaselineSheetName = "网络设备角色基线"
-	NodeRoleBaselineSheetName          = "节点角色基线"
-	IPDemandBaselineSheetName          = "IP需求规划"
-	CapConvertBaselineSheetName        = "云服务容量换算"
-	CapActualResBaselineSheetName      = "云服务容量实际资源消耗"
-	CapServerCalcBaselineSheetName     = "服务器数量计算"
+	CloudProductBaselineSheetName       = "云产品售卖清单"
+	ServerBaselineSheetName             = "服务器基线"
+	NetworkDeviceBaselineSheetName      = "网络设备基线"
+	NetworkDeviceRoleBaselineSheetName  = "网络设备角色基线"
+	NodeRoleBaselineSheetName           = "节点角色基线"
+	IPDemandBaselineSheetName           = "IP需求规划"
+	CapConvertBaselineSheetName         = "云服务容量换算"
+	CapActualResBaselineSheetName       = "云服务容量实际资源消耗"
+	CapServerCalcBaselineSheetName      = "服务器数量计算"
+	SoftwareBomLicenseBaselineSheetName = "软件BOM与license基线"
 )
 
 const (
-	CloudProductBaselineType      = "cloudProductListBaseline"
-	ServerBaselineType            = "serverBaseline"
-	NetworkDeviceBaselineType     = "networkDeviceBaseline"
-	NetworkDeviceRoleBaselineType = "networkDeviceRoleBaseline"
-	NodeRoleBaselineType          = "nodeRoleBaseline"
-	IPDemandBaselineType          = "ipDemandBaseline"
-	CapConvertBaselineType        = "capConvertBaseline"
-	CapActualResBaselineType      = "capActualResBaseline"
-	CapServerCalcBaselineType     = "capServerCalcBaseline"
+	CloudProductBaselineType       = "cloudProductListBaseline"
+	ServerBaselineType             = "serverBaseline"
+	NetworkDeviceBaselineType      = "networkDeviceBaseline"
+	NetworkDeviceRoleBaselineType  = "networkDeviceRoleBaseline"
+	NodeRoleBaselineType           = "nodeRoleBaseline"
+	IPDemandBaselineType           = "ipDemandBaseline"
+	CapConvertBaselineType         = "capConvertBaseline"
+	CapActualResBaselineType       = "capActualResBaseline"
+	CapServerCalcBaselineType      = "capServerCalcBaseline"
+	SoftwareBomLicenseBaselineType = "softwareBomLicenseBaseline"
 )
 
 type CloudProductBaselineExcel struct {
@@ -64,7 +66,9 @@ type ServerBaselineExcel struct {
 	ConfigurationInfo   string   `excel:"name:配置概要;" json:"configurationInfo"`         // 配置概要
 	Spec                string   `excel:"name:规格;" json:"spec"`                        // 规格
 	CpuType             string   `excel:"name:CPU类型;" json:"cpuType"`                  // CPU类型
-	Cpu                 int      `excel:"name:vCPU;" json:"cpu"`                       // CPU核数
+	CpuNum              int      `excel:"name:CPU数;" json:"cpuNum"`                    // CPU数
+	CpuCoreNum          int      `excel:"name:Core数;" json:"cpuCoreNum"`               // CPU核数
+	Cpu                 int      `excel:"name:vCPU;" json:"cpu"`                       // vCPU数
 	Gpu                 string   `excel:"name:GPU;" json:"gpu"`                        // GPU
 	Memory              int      `excel:"name:内存;" json:"memory"`                      // 内存
 	SystemDiskType      string   `excel:"name:系统盘类型;" json:"systemDiskType"`           // 系统盘类型
@@ -103,6 +107,7 @@ type NetworkDeviceBaselineExcel struct {
 	ConfOverview           string   `excel:"name:配置概述;" json:"confOverview"`            // 配置概述
 	NetworkDeviceRoleCode  string   `excel:"name:功能组件命名;" json:"networkDeviceRoleCode"` // 功能组件命名
 	Purpose                string   `excel:"name:网络设备角色（备注）;" json:"purpose"`           // 用途
+	BomId                  string   `excel:"name:BOM ID;" json:"bomId"`                 // bom id
 	NetworkDeviceRoleCodes []string `json:"networkDeviceRoleCodes"`                     // 网络设备角色编码数组
 }
 
@@ -148,4 +153,15 @@ type CapServerCalcBaselineExcel struct {
 	NodeWastage         string `excel:"name:节点损耗;" json:"nodeWastage"`             // 节点损耗
 	NodeWastageCalcType string `excel:"name:节点损耗计算类型;" json:"nodeWastageCalcType"` // 节点损耗计算类型，1：数量，2：百分比
 	WaterLevel          string `excel:"name:水位;" json:"waterLevel"`                // 水位
+}
+
+type SoftwareBomLicenseBaselineExcel struct {
+	CloudService   string `excel:"name:云服务;" json:"cloudService"`    // 云服务
+	ServiceCode    string `excel:"name:服务编码;" json:"serviceCode"`    // 服务编码
+	SellSpecs      string `excel:"name:售卖规格;" json:"sellSpecs"`      // 售卖规格
+	AuthorizedUnit string `excel:"name:授权单元;" json:"authorizedUnit"` // 授权单元
+	SellType       string `excel:"name:类型;" json:"sellType"`         // 售卖类型
+	HardwareArch   string `excel:"name:硬件架构;" json:"hardwareArch"`   // 硬件架构
+	BomId          string `excel:"name:BOM ID;" json:"bomId"`        // bom id
+	CalcMethod     string `excel:"name:计算方式;"  json:"calcMethod"`    // 计算方式
 }

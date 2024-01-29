@@ -153,6 +153,11 @@ func Import(context *gin.Context) {
 			return
 		}
 		break
+	case SoftwareBomLicenseBaselineType:
+		if ImportSoftwareBomLicenseBaseline(context, softwareVersion.Id, f) {
+			return
+		}
+		break
 	default:
 		break
 	}
@@ -501,6 +506,8 @@ func ImportServerBaseline(context *gin.Context, versionId int64, f *excelize.Fil
 				ConfigurationInfo:   serverBaselineExcelList[i].ConfigurationInfo,
 				Spec:                serverBaselineExcelList[i].Spec,
 				CpuType:             serverBaselineExcelList[i].CpuType,
+				CpuNum:              serverBaselineExcelList[i].CpuNum,
+				CpuCoreNum:          serverBaselineExcelList[i].CpuCoreNum,
 				Cpu:                 serverBaselineExcelList[i].Cpu,
 				Gpu:                 serverBaselineExcelList[i].Gpu,
 				Memory:              serverBaselineExcelList[i].Memory,
@@ -858,6 +865,7 @@ func ImportNetworkDeviceBaseline(context *gin.Context, versionId int64, f *excel
 				NetworkModel: networkDeviceBaselineExcelList[i].NetworkModel,
 				ConfOverview: networkDeviceBaselineExcelList[i].ConfOverview,
 				Purpose:      networkDeviceBaselineExcelList[i].Purpose,
+				BomId:        networkDeviceBaselineExcelList[i].BomId,
 			})
 		}
 		originNetworkDeviceBaselines, err := QueryNetworkDeviceBaselineByVersionId(versionId)
@@ -1330,6 +1338,81 @@ func ImportCapServerCalcBaseline(context *gin.Context, versionId int64, f *excel
 			}
 		} else {
 			if err := BatchCreateCapServerCalcBaseline(capServerCalcBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func ImportSoftwareBomLicenseBaseline(context *gin.Context, versionId int64, f *excelize.File) bool {
+	var softwareBomLicenseBaselineExcelList []SoftwareBomLicenseBaselineExcel
+	if err := excel.ImportBySheet(f, &softwareBomLicenseBaselineExcelList, SoftwareBomLicenseBaselineSheetName, 0, 1); err != nil {
+		log.Errorf("excel import error: %v", err)
+		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
+		return true
+	}
+	if len(softwareBomLicenseBaselineExcelList) > 0 {
+		var softwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline
+		for _, softwareBomLicenseBaselineExcel := range softwareBomLicenseBaselineExcelList {
+			softwareBomLicenseBaselines = append(softwareBomLicenseBaselines, entity.SoftwareBomLicenseBaseline{
+				VersionId:      versionId,
+				CloudService:   softwareBomLicenseBaselineExcel.CloudService,
+				ServiceCode:    softwareBomLicenseBaselineExcel.ServiceCode,
+				SellSpecs:      softwareBomLicenseBaselineExcel.SellSpecs,
+				AuthorizedUnit: softwareBomLicenseBaselineExcel.AuthorizedUnit,
+				SellType:       softwareBomLicenseBaselineExcel.SellType,
+				HardwareArch:   softwareBomLicenseBaselineExcel.HardwareArch,
+				BomId:          softwareBomLicenseBaselineExcel.BomId,
+				CalcMethod:     softwareBomLicenseBaselineExcel.CalcMethod,
+			})
+		}
+		originSoftwareBomLicenseBaselines, err := QuerySoftwareBomLicenseBaselineByVersionId(versionId)
+		if err != nil && err != gorm.ErrRecordNotFound {
+			log.Error(err)
+			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+			return true
+		}
+		if len(originSoftwareBomLicenseBaselines) > 0 {
+			originSoftwareBomLicenseMap := make(map[string]entity.SoftwareBomLicenseBaseline)
+			var insertSoftwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline
+			var updateSoftwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline
+			for _, originSoftwareBomLicenseBaseline := range originSoftwareBomLicenseBaselines {
+				key := fmt.Sprintf("%s%s%s%s%s", originSoftwareBomLicenseBaseline.ServiceCode, originSoftwareBomLicenseBaseline.SellSpecs, originSoftwareBomLicenseBaseline.AuthorizedUnit, originSoftwareBomLicenseBaseline.SellType, originSoftwareBomLicenseBaseline.HardwareArch)
+				originSoftwareBomLicenseMap[key] = originSoftwareBomLicenseBaseline
+			}
+			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselines {
+				key := fmt.Sprintf("%s%s%s%s%s", softwareBomLicenseBaseline.ServiceCode, softwareBomLicenseBaseline.SellSpecs, softwareBomLicenseBaseline.AuthorizedUnit, softwareBomLicenseBaseline.SellType, softwareBomLicenseBaseline.HardwareArch)
+				originSoftwareBomLicenseBaseline, ok := originSoftwareBomLicenseMap[key]
+				if ok {
+					softwareBomLicenseBaseline.Id = originSoftwareBomLicenseBaseline.Id
+					updateSoftwareBomLicenseBaselines = append(updateSoftwareBomLicenseBaselines, softwareBomLicenseBaseline)
+					delete(originSoftwareBomLicenseMap, key)
+				} else {
+					insertSoftwareBomLicenseBaselines = append(insertSoftwareBomLicenseBaselines, softwareBomLicenseBaseline)
+				}
+			}
+			if err := BatchCreateSoftwareBomLicenseBaseline(insertSoftwareBomLicenseBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if err := UpdateSoftwareBomLicenseBaseline(updateSoftwareBomLicenseBaselines); err != nil {
+				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+				return true
+			}
+			if len(originSoftwareBomLicenseMap) > 0 {
+				var deleteSoftwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline
+				for _, originSoftwareBomLicenseBaseline := range originSoftwareBomLicenseMap {
+					deleteSoftwareBomLicenseBaselines = append(deleteSoftwareBomLicenseBaselines, originSoftwareBomLicenseBaseline)
+				}
+				if err := DeleteSoftwareBomLicenseBaseline(deleteSoftwareBomLicenseBaselines); err != nil {
+					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+					return true
+				}
+			}
+		} else {
+			if err := BatchCreateSoftwareBomLicenseBaseline(softwareBomLicenseBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}

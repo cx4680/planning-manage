@@ -134,6 +134,7 @@ func ListNetworkDevices(c *gin.Context) {
 				Brand:                 device.Brand,
 				DeviceModel:           device.DeviceModel,
 				ConfOverview:          device.ConfOverview,
+				BomId:                 device.BomId,
 			}
 			// 单独处理下型号列表
 			deviceModels, _ := GetModelsByVersionIdAndRoleAndBrand(versionId, device.NetworkDeviceRoleId, request.Brand, request.DeviceType)
@@ -220,6 +221,7 @@ func SaveDeviceList(c *gin.Context) {
 		device.DeviceId = networkDevice.DeviceId
 		device.Brand = networkDevice.Brand
 		device.DeviceModel = networkDevice.DeviceModel
+		device.BomId = networkDevice.BomId
 		device.CreateTime = now
 		device.UpdateTime = now
 		device.DeleteState = 0
@@ -458,11 +460,13 @@ func dealNetworkModel(versionId int64, request *Request, networkModel int, roleB
 	deviceModels, _ := GetModelsByVersionIdAndRoleAndBrand(versionId, id, brand, deviceType)
 	var deviceModel string
 	var confOverview string
+	var bomId string
 	if len(deviceModels) == 0 {
 		log.Errorf("[getModelsByVersionIdAndRoleAndBrandAndNetworkConfig] 获取网络设备型号为空")
 	} else {
 		deviceModel = deviceModels[0].DeviceModel
 		confOverview = deviceModels[0].ConfOverview
+		bomId = deviceModels[0].BomId
 	}
 	if constant.NeedQueryOtherTable == networkModel {
 		var serverNum = 0
@@ -511,16 +515,16 @@ func dealNetworkModel(versionId int64, request *Request, networkModel int, roleB
 				minimumNumUnit += discuss
 			}
 		}
-		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id, confOverview)
+		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id, confOverview, bomId)
 	} else if constant.NetworkModelYes == networkModel {
 		// 固定数量计算
-		response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id, confOverview)
+		response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id, confOverview, bomId)
 	}
 	return response, nil
 }
 
 // 组装设备清单
-func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode string, brand string, deviceModel string, deviceModels []NetworkDeviceModel, response []NetworkDevices, deviceRoleId int64, confOverview string) ([]NetworkDevices, error) {
+func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode string, brand string, deviceModel string, deviceModels []NetworkDeviceModel, response []NetworkDevices, deviceRoleId int64, confOverview string, bomId string) ([]NetworkDevices, error) {
 	for i := 1; i <= groupNum; i++ {
 		logicalGrouping := funcCompoCode + "-" + strconv.Itoa(i)
 		for j := 1; j <= deviceNum; j++ {
@@ -535,6 +539,7 @@ func buildDto(groupNum int, deviceNum int, funcCompoName string, funcCompoCode s
 				DeviceModel:           deviceModel,
 				DeviceModels:          deviceModels,
 				ConfOverview:          confOverview,
+				BomId:                 bomId,
 			}
 			response = append(response, networkDevice)
 		}

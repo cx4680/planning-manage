@@ -11,6 +11,7 @@ type NetworkDeviceBaseline struct {
 	NetworkModel string `gorm:"column:network_model" json:"networkModel"` // 网络模型
 	ConfOverview string `gorm:"column:conf_overview" json:"confOverview"` // 配置概述
 	Purpose      string `gorm:"column:purpose" json:"purpose"`            // 用途
+	BomId        string `gorm:"column:bom_id" json:"bomId"`               // bom id
 }
 
 func (entity *NetworkDeviceBaseline) TableName() string {

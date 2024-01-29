@@ -11,7 +11,9 @@ type ServerBaseline struct {
 	ConfigurationInfo   string `gorm:"column:configuration_info" json:"configurationInfo"`      // 配置概要
 	Spec                string `gorm:"column:spec" json:"spec"`                                 // 规格
 	CpuType             string `gorm:"column:cpu_type" json:"cpuType"`                          // CPU类型
-	Cpu                 int    `gorm:"column:cpu" json:"cpu"`                                   // CPU核数
+	CpuNum              int    `gorm:"column:cpu_num" json:"cpuNum"`                            // CPU数
+	CpuCoreNum          int    `gorm:"column:cpu_core_num" json:"cpuCoreNum"`                   // CPU核数
+	Cpu                 int    `gorm:"column:cpu" json:"cpu"`                                   // vCPU数
 	Gpu                 string `gorm:"column:gpu" json:"gpu"`                                   // GPU
 	Memory              int    `gorm:"column:memory" json:"memory"`                             // 内存
 	SystemDiskType      string `gorm:"column:system_disk_type" json:"systemDiskType"`           // 系统盘类型

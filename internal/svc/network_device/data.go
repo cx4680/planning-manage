@@ -1,11 +1,12 @@
 package network_device
 
 import (
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
 	"fmt"
 	"strconv"
 	"time"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
@@ -120,7 +121,7 @@ func GetDeviceRoleLogicGroupByPlanId(tx *gorm.DB, planId int64) ([]*DeviceRoleLo
 
 func GetModelsByVersionIdAndRoleAndBrand(versionId int64, id int64, brand string, deviceType int) ([]NetworkDeviceModel, error) {
 	var deviceModel []NetworkDeviceModel
-	if err := data.DB.Table(entity.NetworkDeviceBaselineTable+" a").Select("a.device_model", "a.conf_overview").
+	if err := data.DB.Table(entity.NetworkDeviceBaselineTable+" a").Select("a.device_model", "a.conf_overview", "a.bom_id").
 		Joins("left join network_device_role_rel b on a.id = b.device_id").
 		Where("a.version_id = ? and b.device_role_id = ? and a.manufacturer = ? and a.device_type = ?", versionId, id, brand, deviceType).
 		Find(&deviceModel).Error; err != nil {
@@ -237,7 +238,7 @@ func UploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 	if len(networkDeviceShelveDownload) == 0 {
 		return errors.New("数据为空")
 	}
-	//网络设备列表
+	// 网络设备列表
 	var networkDeviceList []*entity.NetworkDeviceList
 	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceList).Error; err != nil {
 		return err
@@ -249,7 +250,7 @@ func UploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 	for _, v := range networkDeviceList {
 		networkDeviceMap[fmt.Sprintf("%v-%v", v.LogicalGrouping, v.DeviceId)] = v
 	}
-	//查询机柜信息
+	// 查询机柜信息
 	var cabinetInfoList []*entity.CabinetInfo
 	if err := data.DB.Where("plan_id = ?", planId).Find(&cabinetInfoList).Error; err != nil {
 		return err
@@ -299,7 +300,7 @@ func UploadNetworkShelve(planId int64, networkDeviceShelveDownload []NetworkDevi
 }
 
 func SaveNetworkShelve(request *Request) error {
-	//查询网络设备上架表
+	// 查询网络设备上架表
 	var cabinetIdList []string
 	if err := data.DB.Model(&entity.NetworkDeviceShelve{}).Select("cabinet_id").Where("plan_id = ?", request.PlanId).Group("cabinet_id").Find(&cabinetIdList).Error; err != nil {
 		return err
@@ -307,7 +308,7 @@ func SaveNetworkShelve(request *Request) error {
 	if len(cabinetIdList) == 0 {
 		return errors.New("网络设备未上架")
 	}
-	//查询机柜信息
+	// 查询机柜信息
 	var cabinetCount int64
 	if err := data.DB.Model(&entity.CabinetInfo{}).Where("id IN (?)", cabinetIdList).Count(&cabinetCount).Error; err != nil {
 		return err

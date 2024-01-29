@@ -573,3 +573,43 @@ func DeleteCapServerCalcBaseline(capServerCalcBaselines []entity.CapServerCalcBa
 	}
 	return nil
 }
+
+func QuerySoftwareBomLicenseBaselineByVersionId(versionId int64) ([]entity.SoftwareBomLicenseBaseline, error) {
+	var softwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline
+	if err := data.DB.Table(entity.SoftwareBomLicenseBaselineTable).Where("version_id = ? ", versionId).Find(&softwareBomLicenseBaselines).Error; err != nil {
+		return softwareBomLicenseBaselines, err
+	}
+	return softwareBomLicenseBaselines, nil
+}
+
+func BatchCreateSoftwareBomLicenseBaseline(softwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline) error {
+	if len(softwareBomLicenseBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.SoftwareBomLicenseBaselineTable).Create(&softwareBomLicenseBaselines).Error; err != nil {
+		log.Errorf("batch insert softwareBomLicenseBaseline error: %v", err)
+		return err
+	}
+	return nil
+}
+
+func UpdateSoftwareBomLicenseBaseline(softwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline) error {
+	for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselines {
+		if err := data.DB.Table(entity.SoftwareBomLicenseBaselineTable).Save(&softwareBomLicenseBaseline).Error; err != nil {
+			log.Errorf("update softwareBomLicenseBaseline error: %v", err)
+			return err
+		}
+	}
+	return nil
+}
+
+func DeleteSoftwareBomLicenseBaseline(softwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline) error {
+	if len(softwareBomLicenseBaselines) == 0 {
+		return nil
+	}
+	if err := data.DB.Table(entity.SoftwareBomLicenseBaselineTable).Delete(&softwareBomLicenseBaselines).Error; err != nil {
+		log.Errorf("delete softwareBomLicenseBaselines error: %v", err)
+		return err
+	}
+	return nil
+}

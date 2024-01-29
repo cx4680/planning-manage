@@ -220,7 +220,7 @@ CREATE TABLE `network_device_ip`
     `storage_front_network`         varchar(100) COLLATE utf8mb4_bin  DEFAULT NULL COMMENT '存储前端网',
     `storage_front_network_gateway` varchar(100) COLLATE utf8mb4_bin  DEFAULT NULL COMMENT '存储前端网网关',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='网络设备ip分配表';
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='网络设备ip分配表';
 
 CREATE TABLE `server_ip`
 (
@@ -232,4 +232,18 @@ CREATE TABLE `server_ip`
     `biz_intranet_ip`     varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '业务内网ip',
     `storage_network_ip`  varchar(100) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '存储网ip',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='服务器ip分配表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务器ip分配表';
+
+CREATE TABLE `software_bom_license_baseline` (
+        `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+        `version_id` bigint(20) DEFAULT NULL COMMENT '版本id',
+        `cloud_service` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '云服务',
+        `service_code` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '服务编码',
+        `sell_specs` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '售卖规格',
+        `authorized_unit` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '授权单元',
+        `sell_type` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '售卖类型',
+        `hardware_arch` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '硬件架构',
+        `bom_id` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'bom id',
+        `calc_method` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '计算方式',
+        PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='软件BOM/License基线表';
