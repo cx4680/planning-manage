@@ -1,16 +1,19 @@
 package customer
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_platform"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
+	"fmt"
 	"github.com/go-ldap/ldap/v3"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
+	"os"
 	"time"
 )
 
-func createCustomer(customerParam CreateCustomerRequest, leaderId string, ldapUser *ldap.Entry, currentUserId string) (*entity.CustomerManage, error) {
+func createCustomer(db *gorm.DB, customerParam CreateCustomerRequest, leaderId string, ldapUser *ldap.Entry, currentUserId string) (*entity.CustomerManage, *CreateCloudPlatform, error) {
 	customerManage := entity.CustomerManage{
 		CustomerName: customerParam.CustomerName,
 		LeaderId:     leaderId,
@@ -22,19 +25,15 @@ func createCustomer(customerParam CreateCustomerRequest, leaderId string, ldapUs
 		DeleteState:  0,
 	}
 	var customer entity.CustomerManage
-	if err := data.DB.Table(entity.CustomerManageTable).Create(&customerManage).Scan(&customer).Error; err != nil {
+	if err := db.Table(entity.CustomerManageTable).Create(&customerManage).Scan(&customer).Error; err != nil {
 		log.Errorf("[createCustomer] query db error", err)
-		return nil, err
-	}
-
-	request := cloud_platform.Request{
-		UserId:     currentUserId,
-		CustomerId: customer.ID,
+		return nil, nil, err
 	}
 	// 创建云平台、创建默认region、az、cell
-	if err := cloud_platform.CreateCloudPlatformByCustomerId(&request); err != nil {
+	createCloudPlatform, err := CreateCloudPlatformByCustomerId(db, customer.ID, currentUserId)
+	if err != nil {
 		log.Errorf("[createCustomer] CreateCloudPlatformByCustomerId error, %v", err)
-		return nil, err
+		return nil, nil, err
 	}
 	//保存用户到数据库
 	//user.SaveUser(ldapUser)
@@ -50,13 +49,13 @@ func createCustomer(customerParam CreateCustomerRequest, leaderId string, ldapUs
 			}
 			memberList = append(memberList, member)
 		}
-		if err := data.DB.Table(entity.PermissionsManageTable).CreateInBatches(&memberList, len(memberList)).Error; err != nil {
+		if err := db.Table(entity.PermissionsManageTable).CreateInBatches(&memberList, len(memberList)).Error; err != nil {
 			log.Errorf("[createCustomer] create members error", err)
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
-	return &customer, nil
+	return &customer, createCloudPlatform, nil
 }
 
 func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) ([]entity.CustomerManage, int64) {
@@ -221,18 +220,102 @@ func searchCustomerByName(customerName string) ([]entity.CustomerManage, error) 
 	return customerList, nil
 }
 
-func InnerCreateCustomer(customerParam CreateCustomerRequest, leaderId string, ldapUser *ldap.Entry, currentUserId string) (*entity.CustomerManage, error) {
-	customer, err := createCustomer(customerParam, leaderId, ldapUser, currentUserId)
-	if err != nil {
+func CreateCloudPlatformByCustomerId(db *gorm.DB, customerId int64, userId string) (*CreateCloudPlatform, error) {
+	now := datetime.GetNow()
+	cloudPlatformEntity := &entity.CloudPlatformManage{
+		Name:         "云平台1",
+		Type:         "operational",
+		CustomerId:   customerId,
+		CreateUserId: userId,
+		CreateTime:   now,
+		UpdateUserId: userId,
+		UpdateTime:   now,
+		DeleteState:  0,
+	}
+	regionEntity := &entity.RegionManage{
+		Name:         "region1",
+		Code:         "region1",
+		Type:         "merge",
+		CreateUserId: userId,
+		CreateTime:   now,
+		UpdateUserId: userId,
+		UpdateTime:   now,
+		DeleteState:  0,
+	}
+	azEntity := &entity.AzManage{
+		Code:         "zone1",
+		CreateUserId: userId,
+		CreateTime:   now,
+		UpdateUserId: userId,
+		UpdateTime:   now,
+		DeleteState:  0,
+	}
+	cellEntity := &entity.CellManage{
+		Name:         "cell1",
+		Type:         constant.CellTypeControl,
+		CreateUserId: userId,
+		CreateTime:   now,
+		UpdateUserId: userId,
+		UpdateTime:   now,
+		DeleteState:  0,
+	}
+	if err := db.Create(&cloudPlatformEntity).Error; err != nil {
 		return nil, err
 	}
-	//默认创建项目
+	regionEntity.CloudPlatformId = cloudPlatformEntity.Id
+	if err := db.Create(&regionEntity).Error; err != nil {
+		return nil, err
+	}
+	azEntity.RegionId = regionEntity.Id
+	if err := db.Create(&azEntity).Error; err != nil {
+		return nil, err
+	}
+	cellEntity.AzId = azEntity.Id
+	if err := db.Create(&cellEntity).Error; err != nil {
+		return nil, err
+	}
+	return &CreateCloudPlatform{CloudPlatformManage: cloudPlatformEntity, RegionManage: regionEntity, AzManage: azEntity, CellManage: cellEntity}, nil
+}
 
-	return customer, nil
+func InnerCreateCustomer(customerParam CreateCustomerRequest, leaderId string, ldapUser *ldap.Entry, currentUserId string) (*InnerCreateCustomerResponse, error) {
+	var customer *entity.CustomerManage
+	var createCloudPlatform *CreateCloudPlatform
+	var projectEntity *entity.ProjectManage
+	var now = datetime.GetNow()
+	var err error
+	if err = data.DB.Transaction(func(tx *gorm.DB) error {
+		customer, createCloudPlatform, err = createCustomer(tx, customerParam, leaderId, ldapUser, currentUserId)
+		if err != nil {
+			return err
+		}
+		//默认创建项目
+		projectEntity = &entity.ProjectManage{
+			Name:            "默认项目",
+			CloudPlatformId: createCloudPlatform.CloudPlatformManage.Id,
+			RegionId:        createCloudPlatform.RegionManage.Id,
+			AzId:            createCloudPlatform.AzManage.Id,
+			CellId:          createCloudPlatform.CellManage.Id,
+			CustomerId:      createCloudPlatform.CloudPlatformManage.CustomerId,
+			Type:            "create",
+			Stage:           constant.ProjectStagePlanning,
+			DeleteState:     0,
+			CreateUserId:    currentUserId,
+			CreateTime:      now,
+			UpdateUserId:    currentUserId,
+			UpdateTime:      now,
+		}
+		if err = tx.Create(&projectEntity).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return &InnerCreateCustomerResponse{CustomerManage: customer, FrontUrl: fmt.Sprintf("%v/projectInfo?projectid=%v", os.Getenv(constant.FrontUrl), projectEntity.Id)}, nil
 }
 
 func InnerUpdateCustomer(customerParam UpdateCustomerRequest) error {
-	if err := updateCustomer(customerParam, ""); err != nil {
+	if err := updateCustomer(customerParam, customerParam.LeaderId); err != nil {
 		return err
 	}
 	return nil

@@ -1,6 +1,9 @@
 package customer
 
-import "time"
+import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"time"
+)
 
 type CreateCustomerRequest struct {
 	CustomerName string   `json:"customerName"`
@@ -38,4 +41,16 @@ type UpdateCustomerRequest struct {
 	LeaderName   string   `json:"leaderName"`
 	MembersId    []string `json:"membersId"`
 	MembersName  []string `json:"membersName"`
+}
+
+type CreateCloudPlatform struct {
+	CloudPlatformManage *entity.CloudPlatformManage
+	RegionManage        *entity.RegionManage
+	AzManage            *entity.AzManage
+	CellManage          *entity.CellManage
+}
+
+type InnerCreateCustomerResponse struct {
+	*entity.CustomerManage
+	FrontUrl string `json:"frontUrl"`
 }

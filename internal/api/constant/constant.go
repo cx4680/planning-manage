@@ -22,6 +22,7 @@ const (
 	UserCenterUrl       = "USER_CENTER_URL"
 	ProductCode         = "PRODUCT_CODE"
 	UserCenterSecretKey = "USER_CENTER_SECRET_KEY"
+	FrontUrl            = "FRONT_URL"
 
 	NameSpace = "planning-manage"
 

@@ -3,12 +3,16 @@ package customer
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/data"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/user"
 	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
 )
@@ -116,9 +120,14 @@ func Create(context *gin.Context) {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-
-	customer, err := createCustomer(customerParam, leaderId, ldapUser, currentUserId)
-	if err != nil {
+	var customer *entity.CustomerManage
+	if err = data.DB.Transaction(func(tx *gorm.DB) error {
+		customer, _, err = createCustomer(tx, customerParam, leaderId, ldapUser, currentUserId)
+		if err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		log.Errorf("[Create] customer %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
@@ -174,16 +183,19 @@ func InnerCreate(c *gin.Context) {
 	ldapUser, err := user.SearchUserById(request.LeaderId)
 	if err != nil {
 		log.Errorf("[Create] customer search ldap user error, %v", err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if ldapUser == nil || util.IsBlank(ldapUser.GetAttributeValue("displayName")) {
+		result.Failure(c, "无法获取ldap用户信息", http.StatusInternalServerError)
 		return
 	}
 	customer, err := InnerCreateCustomer(request, request.LeaderId, ldapUser, "")
 	if err != nil {
 		log.Errorf("[Create] customer %v", err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	result.Success(c, customer)
 	return
 }

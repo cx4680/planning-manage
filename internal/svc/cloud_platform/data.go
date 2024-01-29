@@ -1,7 +1,6 @@
 package cloud_platform
 
 import (
-	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
@@ -162,68 +161,6 @@ func TreeCloudPlatform(request *Request) (*ResponseTree, error) {
 		}
 	}
 	return responseTree, nil
-}
-
-func CreateCloudPlatformByCustomerId(request *Request) error {
-	now := datetime.GetNow()
-	cloudPlatformEntity := &entity.CloudPlatformManage{
-		Name:         "云平台1",
-		Type:         "operational",
-		CustomerId:   request.CustomerId,
-		CreateUserId: request.UserId,
-		CreateTime:   now,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
-		DeleteState:  0,
-	}
-	regionEntity := &entity.RegionManage{
-		Name:         "region1",
-		Code:         "region1",
-		Type:         "merge",
-		CreateUserId: request.UserId,
-		CreateTime:   now,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
-		DeleteState:  0,
-	}
-	azEntity := &entity.AzManage{
-		Code:         "zone1",
-		CreateUserId: request.UserId,
-		CreateTime:   now,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
-		DeleteState:  0,
-	}
-	cellEntity := &entity.CellManage{
-		Name:         "cell1",
-		Type:         constant.CellTypeControl,
-		CreateUserId: request.UserId,
-		CreateTime:   now,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
-		DeleteState:  0,
-	}
-	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&cloudPlatformEntity).Error; err != nil {
-			return err
-		}
-		regionEntity.CloudPlatformId = cloudPlatformEntity.Id
-		if err := tx.Create(&regionEntity).Error; err != nil {
-			return err
-		}
-		azEntity.RegionId = regionEntity.Id
-		if err := tx.Create(&azEntity).Error; err != nil {
-			return err
-		}
-		cellEntity.AzId = azEntity.Id
-		if err := tx.Create(&cellEntity).Error; err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-	return nil
 }
 
 func checkBusiness(request *Request, isCreate bool) error {
