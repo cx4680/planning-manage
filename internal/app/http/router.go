@@ -338,6 +338,9 @@ func Auth() gin.HandlerFunc {
 			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
 			return
 		}
+		log.Infof("call sso tokenCheck url: %s", url)
+		log.Infof("call sso tokenCheck body: %s", string(reqJson))
+
 		response, err := httpcall.POSTResponse(httpcall.HttpRequest{
 			Context: context,
 			URI:     url,
