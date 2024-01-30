@@ -59,6 +59,7 @@ CREATE TABLE `server_shelve`
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='server_shelve';
 
+
 CREATE TABLE `cabinet_info`
 (
     `id`                       bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
@@ -84,11 +85,13 @@ CREATE TABLE `cabinet_info`
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机柜信息';
 
+
 CREATE TABLE `cabinet_idle_slot_rel`
 (
     `cabinet_id`       bigint(20) DEFAULT NULL COMMENT '机柜id',
     `idle_slot_number` int(11) DEFAULT NULL COMMENT '空闲槽位（U位）号'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机柜空闲槽位关联表';
+
 
 CREATE TABLE `cabinet_rack_server_slot_rel`
 (
@@ -96,11 +99,13 @@ CREATE TABLE `cabinet_rack_server_slot_rel`
     `rack_server_slot_num` int(11) DEFAULT NULL COMMENT '已上架服务器槽位（U位）号'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机柜已上架服务器槽位关联表';
 
+
 CREATE TABLE `cabinet_rack_asw_port_rel`
 (
     `cabinet_id`                 bigint(20) DEFAULT NULL COMMENT '机柜id',
     `residual_rack_asw_port_num` int(11) DEFAULT NULL COMMENT '剩余可上架ASW端口号'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='机柜剩余可上架ASW端口关联表';
+
 
 CREATE TABLE `vlan_id_config`
 (
@@ -115,6 +120,7 @@ CREATE TABLE `vlan_id_config`
     `update_time`           datetime                                DEFAULT NULL COMMENT '更新时间',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Vlan ID配置表';
+
 
 CREATE TABLE `cell_config`
 (
@@ -139,6 +145,7 @@ CREATE TABLE `cell_config`
     `update_time`                  datetime                                DEFAULT NULL COMMENT '更新时间',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='集群配置表';
+
 
 CREATE TABLE `route_planning_config`
 (
@@ -169,6 +176,7 @@ CREATE TABLE `route_planning_config`
     `update_time`                     datetime                                DEFAULT NULL COMMENT '更新时间',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='路由规划配置表';
+
 
 CREATE TABLE `large_network_segment_config`
 (
@@ -203,6 +211,7 @@ CREATE TABLE `ip_demand_shelve`
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='Ip需求规划表';
 
+
 CREATE TABLE `network_device_ip`
 (
     `id`                            bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
@@ -222,6 +231,7 @@ CREATE TABLE `network_device_ip`
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='网络设备ip分配表';
 
+
 CREATE TABLE `server_ip`
 (
     `id`                  bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
@@ -234,16 +244,30 @@ CREATE TABLE `server_ip`
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务器ip分配表';
 
-CREATE TABLE `software_bom_license_baseline` (
-        `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
-        `version_id` bigint(20) DEFAULT NULL COMMENT '版本id',
-        `cloud_service` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '云服务',
-        `service_code` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '服务编码',
-        `sell_specs` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '售卖规格',
-        `authorized_unit` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '授权单元',
-        `sell_type` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '售卖类型',
-        `hardware_arch` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '硬件架构',
-        `bom_id` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'bom id',
-        `calc_method` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '计算方式',
-        PRIMARY KEY (`id`)
+
+CREATE TABLE `software_bom_license_baseline`
+(
+    `id`              bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `version_id`      bigint(20) DEFAULT NULL COMMENT '版本id',
+    `cloud_service`   varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '云服务',
+    `service_code`    varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '服务编码',
+    `sell_specs`      varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '售卖规格',
+    `authorized_unit` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '授权单元',
+    `sell_type`       varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '售卖类型',
+    `hardware_arch`   varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '硬件架构',
+    `bom_id`          varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'bom id',
+    `calc_method`     varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '计算方式',
+    PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='软件BOM/License基线表';
+
+
+CREATE TABLE `software_bom_planning`
+(
+    `id`                   bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `plan_id`              bigint(20) DEFAULT NULL COMMENT '方案id',
+    `software_baseline_id` bigint(20) DEFAULT NULL COMMENT '软件基线id',
+    `service_year_bom`     varchar(255) DEFAULT NULL COMMENT '维保年限bom',
+    `platform_bom`         varchar(255) DEFAULT NULL COMMENT '软件base bom',
+    `software_base_bom`    varchar(255) DEFAULT NULL COMMENT '维保年限bom',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品规划bom表';

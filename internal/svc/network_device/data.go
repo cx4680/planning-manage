@@ -43,6 +43,64 @@ func SaveBatch(tx *gorm.DB, networkDeviceList []*entity.NetworkDeviceList) error
 	return nil
 }
 
+func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
+	//查询云产品规划表
+	var cloudProductPlanningList []*entity.CloudProductPlanning
+	if err := db.Where("plan_id = ?", planId).Find(&cloudProductPlanningList).Error; err != nil {
+		return err
+	}
+	var cloudProductPlanningMap = make(map[int64]*entity.CloudProductPlanning)
+	var productIdList []int64
+	for _, v := range cloudProductPlanningList {
+		cloudProductPlanningMap[v.ProductId] = v
+		productIdList = append(productIdList, v.ProductId)
+	}
+	//查询云产品和角色关联表
+	var cloudProductNodeRoleRelList []*entity.CloudProductNodeRoleRel
+	if err := db.Where("product_id IN (?)", productIdList).Find(&cloudProductNodeRoleRelList).Error; err != nil {
+		return err
+	}
+	//查询服务器规划
+	var serverPlanningList []*entity.ServerPlanning
+	if err := db.Where("plan_id = ?", planId).Find(&serverPlanningList).Error; err != nil {
+		return err
+	}
+	var serverPlanningMap = make(map[int64]*entity.ServerPlanning)
+	var serverBaselineIdList []int64
+	for _, v := range serverPlanningList {
+		serverPlanningMap[v.NodeRoleId] = v
+		serverBaselineIdList = append(serverBaselineIdList, v.ServerBaselineId)
+	}
+	//查询服务器基线表
+	var serverBaselineList []*entity.ServerBaseline
+	if err := db.Where("id IN (?)", serverBaselineIdList).Find(&serverBaselineList).Error; err != nil {
+		return err
+	}
+	var serverBaselineMap = make(map[int64]*entity.ServerBaseline)
+	for _, v := range serverBaselineList {
+		serverBaselineMap[v.Id] = v
+	}
+
+	var softwareBomPlanningList []*entity.SoftwareBomPlanning
+	for _, v := range cloudProductNodeRoleRelList {
+		serverPlanning := serverPlanningMap[v.NodeRoleId]
+		serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
+		// 保存云产品规划bom表
+		cloudProductPlanningBom := &entity.SoftwareBomPlanning{
+			PlanId:             planId,
+			SoftwareBaselineId: serverBaseline.Id,
+			ServiceYearBom:     constant.ServiceYearBom[cloudProductPlanningMap[v.ProductId].ServiceYear],
+			PlatformBom:        constant.PlatformBom,
+			SoftwareBaseBom:    constant.SoftwareBaseBom,
+		}
+		softwareBomPlanningList = append(softwareBomPlanningList, cloudProductPlanningBom)
+	}
+	if err := db.Create(softwareBomPlanningList).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 func ExpireDeviceListByPlanId(tx *gorm.DB, planId int64) error {
 	if err := tx.Model(&entity.NetworkDeviceList{}).Where("plan_id = ?", planId).Updates(map[string]interface{}{"delete_state": 1, "update_time": time.Now()}).Error; err != nil {
 		log.Errorf("[expireDeviceListByPlanId] expire device list error, %v", err)

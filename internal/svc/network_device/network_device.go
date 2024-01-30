@@ -211,21 +211,21 @@ func SaveDeviceList(c *gin.Context) {
 	planId := req.PlanId
 	// 组装网络设备清单数据
 	for _, networkDevice := range request {
-		device := new(entity.NetworkDeviceList)
-		device.PlanId = planId
-		device.NetworkDeviceRole = networkDevice.NetworkDeviceRole
-		device.NetworkDeviceRoleId = networkDevice.NetworkDeviceRoleId
-		device.NetworkDeviceRoleName = networkDevice.NetworkDeviceRoleName
-		device.ConfOverview = networkDevice.ConfOverview
-		device.LogicalGrouping = networkDevice.LogicalGrouping
-		device.DeviceId = networkDevice.DeviceId
-		device.Brand = networkDevice.Brand
-		device.DeviceModel = networkDevice.DeviceModel
-		device.BomId = networkDevice.BomId
-		device.CreateTime = now
-		device.UpdateTime = now
-		device.DeleteState = 0
-		networkDeviceList = append(networkDeviceList, device)
+		networkDeviceList = append(networkDeviceList, &entity.NetworkDeviceList{
+			PlanId:                planId,
+			NetworkDeviceRole:     networkDevice.NetworkDeviceRole,
+			NetworkDeviceRoleId:   networkDevice.NetworkDeviceRoleId,
+			NetworkDeviceRoleName: networkDevice.NetworkDeviceRoleName,
+			ConfOverview:          networkDevice.ConfOverview,
+			LogicalGrouping:       networkDevice.LogicalGrouping,
+			DeviceId:              networkDevice.DeviceId,
+			Brand:                 networkDevice.Brand,
+			DeviceModel:           networkDevice.DeviceModel,
+			BomId:                 networkDevice.BomId,
+			CreateTime:            now,
+			UpdateTime:            now,
+			DeleteState:           0,
+		})
 	}
 	deviceList, err := SearchDeviceListByPlanId(planId)
 	if err != nil {
@@ -250,11 +250,8 @@ func SaveDeviceList(c *gin.Context) {
 	if len(ipDemandBaselines) == 0 {
 		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.IpDemandBaselineEmpty)
 	}
-	// // 转ip基线ID Map
-	// ipBaselineIdMap := util.ListToMaps(ipDemandBaselines, "ID")
-	// log.Infof("IP需求基线表转为map后的数据=%v", ipBaselineIdMap)
 	userId := user.GetUserId(c)
-	err = data.DB.Transaction(func(tx *gorm.DB) error {
+	if err = data.DB.Transaction(func(tx *gorm.DB) error {
 		if len(deviceList) > 0 {
 			// 失效库里保存的
 			err = ExpireDeviceListByPlanId(tx, planId)
@@ -270,46 +267,6 @@ func SaveDeviceList(c *gin.Context) {
 		if err = SaveBatch(tx, networkDeviceList); err != nil {
 			return err
 		}
-		// // 根据方案ID查询网络设备清单
-		// deviceRoleNum, err := getDeviceRoleGroupNumByPlanId(tx, planId)
-		// // 转设备角色id和分组数 map
-		// deviceRoleIdMap := util.ListToMap(deviceRoleNum, "DeviceRoleId")
-		// log.Infof("deviceRoleIdMap=%v", deviceRoleIdMap)
-		// for _, value := range ipBaselineIdMap {
-		// 	var num = 0
-		// 	dto := new(ip_demand.IpDemandBaselineDto)
-		// 	var needCount bool
-		// 	// 根据IP需求规划表的关联设备组进行 网络设备清单分组累加
-		// 	for i, val := range value {
-		// 		v := val.(*ip_demand.IpDemandBaselineDto)
-		// 		log.Infof("IpDemandBaselineDto=%v", v)
-		// 		if i == 0 {
-		// 			dto = v
-		// 		}
-		// 		deviceRoleId := v.DeviceRoleId
-		// 		groupNum, ok := deviceRoleIdMap[strconv.FormatInt(deviceRoleId, 10)]
-		// 		if ok {
-		// 			needCount = true
-		// 			deviceGroupNum := groupNum.(*DeviceRoleGroupNum)
-		// 			num += deviceGroupNum.GroupNum
-		// 		}
-		// 	}
-		// 	if needCount {
-		// 		ipDemandPlanning := new(entity.IPDemandPlanning)
-		// 		ipDemandPlanning.PlanId = planId
-		// 		ipDemandPlanning.SegmentType = dto.Explain
-		// 		ipDemandPlanning.Vlan = dto.Vlan
-		// 		assignNum, _ := utils.String2Float(dto.AssignNum)
-		// 		cNum := assignNum * float64(num)
-		// 		ipDemandPlanning.Cnum = fmt.Sprintf("%g", cNum)
-		// 		ipDemandPlanning.Describe = dto.Description
-		// 		ipDemandPlanning.AddressPlanning = dto.IpSuggestion
-		// 		ipDemandPlanning.CreateTime = now
-		// 		ipDemandPlanning.UpdateTime = now
-		// 		ipDemandPlannings = append(ipDemandPlannings, ipDemandPlanning)
-		// 	}
-		// }
-
 		logicGroups, err := GetDeviceRoleLogicGroupByPlanId(tx, planId)
 		networkDevicePlan, err := SearchDevicePlanByPlanId(planId)
 		if err != nil {
@@ -345,10 +302,14 @@ func SaveDeviceList(c *gin.Context) {
 				return err
 			}
 		}
-		err = ip_demand.SaveBatch(tx, ipDemandPlannings)
-		return err
-	})
-	if err != nil {
+		if err = ip_demand.SaveBatch(tx, ipDemandPlannings); err != nil {
+			return err
+		}
+		if err = SaveSoftwareBomPlanning(tx, planId); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
 		log.Errorf("[SaveDeviceList] save device list error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
 		return

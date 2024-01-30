@@ -525,6 +525,7 @@ func CountServerNumber(number, featureNumber int, capActualResBaseline *entity.C
 		numerator = 1
 		denominator = 1
 	}
+	//总消耗
 	capacityNumber := float64(number) / numerator * denominator
 	//判断用哪个容量参数
 	var singleCapacity int
@@ -536,15 +537,16 @@ func CountServerNumber(number, featureNumber int, capActualResBaseline *entity.C
 	case "EBS_DISK", "EFS_DISK", "OSS_DISK":
 		singleCapacity = serverBaseline.StorageDiskNum * serverBaseline.StorageDiskCapacity
 	}
-
 	nodeWastage, _ := strconv.ParseFloat(capServerCalcBaseline.NodeWastage, 64)
 	waterLevel, _ := strconv.ParseFloat(capServerCalcBaseline.WaterLevel, 64)
+	//单个服务器消耗
 	var consumeNumber float64
 	if capServerCalcBaseline.NodeWastageCalcType == 1 {
 		consumeNumber = (float64(singleCapacity) - nodeWastage) * waterLevel
 	} else {
 		consumeNumber = (float64(singleCapacity) * (1 - nodeWastage)) * waterLevel
 	}
+	//总消耗除以单个服务器消耗，等于服务器数量
 	serverNumber := math.Ceil(capacityNumber / consumeNumber)
 	return int(serverNumber)
 }
