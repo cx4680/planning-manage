@@ -266,8 +266,13 @@ CREATE TABLE `software_bom_planning`
     `id`                   bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'id',
     `plan_id`              bigint(20) DEFAULT NULL COMMENT '方案id',
     `software_baseline_id` bigint(20) DEFAULT NULL COMMENT '软件基线id',
-    `service_year_bom`     varchar(255) DEFAULT NULL COMMENT '维保年限bom',
-    `platform_bom`         varchar(255) DEFAULT NULL COMMENT '软件base bom',
-    `software_base_bom`    varchar(255) DEFAULT NULL COMMENT '维保年限bom',
+    `bom_id`               varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT 'bom id',
+    `number`               int                              DEFAULT NULL COMMENT '数量',
+    `cloud_service`        varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '云服务',
+    `service_code`         varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '服务编码',
+    `sell_specs`           varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '售卖规格',
+    `authorized_unit`      varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '授权单元',
+    `sell_type`            varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '售卖类型',
+    `hardware_arch`        varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '硬件架构',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品规划bom表';

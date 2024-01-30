@@ -44,26 +44,86 @@ func SaveBatch(tx *gorm.DB, networkDeviceList []*entity.NetworkDeviceList) error
 }
 
 func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
+	cloudProductPlanningList, cloudProductNodeRoleRelList, cloudProductBaselineMap, serverPlanningMap, serverBaselineMap, softwareBomLicenseBaselineListMap, err := getSoftwareBomPlanningData(db, planId)
+	if err != nil {
+		return err
+	}
+	var cpuNumber, serviceYearBomNumber int
+	for _, v := range serverPlanningMap {
+		switch v.CpuType {
+		case "Intel", "Hygon", "Kunpeng":
+			cpuNumber += v.Number * 2
+		case "FT2000+":
+			cpuNumber += v.Number
+		}
+	}
+	var softwareBomPlanningList []*entity.SoftwareBomPlanning
+	//平台规模授权：0100115148387809，按云平台下服务器数量计算，N=整网所有服务器的物理CPU数量之和-管理减免（10）；N大于等于0
+	softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: constant.PlatformBom, Number: cpuNumber})
+	//软件base：0100115150861886，默认1套
+	softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: constant.SoftwareBaseBom, Number: 1})
+	for _, v := range cloudProductNodeRoleRelList {
+		cloudProductBaseline := cloudProductBaselineMap[v.ProductId]
+		serverPlanning := serverPlanningMap[v.NodeRoleId]
+		serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
+		list := softwareBomLicenseBaselineListMap[fmt.Sprintf("%v-%v-%v", cloudProductBaseline.ProductCode, cloudProductBaseline.SellSpecs, serverBaseline.Arch)]
+		if len(list) == 0 {
+			//部分软件bom只有一个，不区分硬件架构
+			list = softwareBomLicenseBaselineListMap[fmt.Sprintf("%v-%v-", cloudProductBaseline.ProductCode, cloudProductBaseline.SellSpecs)]
+			if len(list) == 0 {
+				continue
+			}
+		}
+		for _, softwareBomLicenseBaseline := range list {
+			cloudProductPlanningBom := &entity.SoftwareBomPlanning{
+				PlanId:             planId,
+				SoftwareBaselineId: softwareBomLicenseBaseline.Id,
+				BomId:              softwareBomLicenseBaseline.BomId,
+				Number:             1,
+				CloudService:       softwareBomLicenseBaseline.CloudService,
+				ServiceCode:        softwareBomLicenseBaseline.ServiceCode,
+				SellSpecs:          softwareBomLicenseBaseline.SellSpecs,
+				AuthorizedUnit:     softwareBomLicenseBaseline.AuthorizedUnit,
+				SellType:           softwareBomLicenseBaseline.SellType,
+				HardwareArch:       softwareBomLicenseBaseline.HardwareArch,
+			}
+			softwareBomPlanningList = append(softwareBomPlanningList, cloudProductPlanningBom)
+			if softwareBomLicenseBaseline.SellType == "升级维保" {
+				serviceYearBomNumber++
+			}
+		}
+	}
+	//平台升级维保：根据选择年限对应不同BOM
+	softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: constant.ServiceYearBom[cloudProductPlanningList[0].ServiceYear], Number: serviceYearBomNumber})
+	// 保存云产品规划bom表
+	if err := db.Delete(&entity.SoftwareBomPlanning{}, "plan_id = ?", planId).Error; err != nil {
+		return err
+	}
+	if err := db.Create(softwareBomPlanningList).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func getSoftwareBomPlanningData(db *gorm.DB, planId int64) ([]*entity.CloudProductPlanning, []*entity.CloudProductNodeRoleRel, map[int64]*entity.CloudProductBaseline, map[int64]*entity.ServerPlanning, map[int64]*entity.ServerBaseline, map[string][]*entity.SoftwareBomLicenseBaseline, error) {
 	//查询云产品规划表
 	var cloudProductPlanningList []*entity.CloudProductPlanning
 	if err := db.Where("plan_id = ?", planId).Find(&cloudProductPlanningList).Error; err != nil {
-		return err
+		return nil, nil, nil, nil, nil, nil, err
 	}
-	var cloudProductPlanningMap = make(map[int64]*entity.CloudProductPlanning)
 	var productIdList []int64
 	for _, v := range cloudProductPlanningList {
-		cloudProductPlanningMap[v.ProductId] = v
 		productIdList = append(productIdList, v.ProductId)
 	}
 	//查询云产品和角色关联表
 	var cloudProductNodeRoleRelList []*entity.CloudProductNodeRoleRel
 	if err := db.Where("product_id IN (?)", productIdList).Find(&cloudProductNodeRoleRelList).Error; err != nil {
-		return err
+		return nil, nil, nil, nil, nil, nil, err
 	}
 	//查询服务器规划
 	var serverPlanningList []*entity.ServerPlanning
 	if err := db.Where("plan_id = ?", planId).Find(&serverPlanningList).Error; err != nil {
-		return err
+		return nil, nil, nil, nil, nil, nil, err
 	}
 	var serverPlanningMap = make(map[int64]*entity.ServerPlanning)
 	var serverBaselineIdList []int64
@@ -71,34 +131,50 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 		serverPlanningMap[v.NodeRoleId] = v
 		serverBaselineIdList = append(serverBaselineIdList, v.ServerBaselineId)
 	}
+	//查询容量规划
+	var serverCapPlanningList []*entity.ServerCapPlanning
+	if err := db.Where("plan_id = ?", planId).Find(&serverCapPlanningList).Error; err != nil {
+		return nil, nil, nil, nil, nil, nil, err
+	}
+	var serverCapPlanningMap = make(map[int64]*entity.ServerCapPlanning)
+	for _, v := range serverCapPlanningList {
+		serverCapPlanningMap[v.NodeRoleId] = v
+	}
 	//查询服务器基线表
 	var serverBaselineList []*entity.ServerBaseline
 	if err := db.Where("id IN (?)", serverBaselineIdList).Find(&serverBaselineList).Error; err != nil {
-		return err
+		return nil, nil, nil, nil, nil, nil, err
 	}
 	var serverBaselineMap = make(map[int64]*entity.ServerBaseline)
 	for _, v := range serverBaselineList {
 		serverBaselineMap[v.Id] = v
 	}
-
-	var softwareBomPlanningList []*entity.SoftwareBomPlanning
-	for _, v := range cloudProductNodeRoleRelList {
-		serverPlanning := serverPlanningMap[v.NodeRoleId]
-		serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
-		// 保存云产品规划bom表
-		cloudProductPlanningBom := &entity.SoftwareBomPlanning{
-			PlanId:             planId,
-			SoftwareBaselineId: serverBaseline.Id,
-			ServiceYearBom:     constant.ServiceYearBom[cloudProductPlanningMap[v.ProductId].ServiceYear],
-			PlatformBom:        constant.PlatformBom,
-			SoftwareBaseBom:    constant.SoftwareBaseBom,
+	//查询云产品基线
+	var cloudProductBaselineList []*entity.CloudProductBaseline
+	if err := db.Where("id IN (?)", productIdList).Find(&cloudProductBaselineList).Error; err != nil {
+		return nil, nil, nil, nil, nil, nil, err
+	}
+	var cloudProductBaselineMap = make(map[int64]*entity.CloudProductBaseline)
+	for _, v := range cloudProductBaselineList {
+		cloudProductBaselineMap[v.Id] = v
+	}
+	var productCodeList []string
+	for _, v := range cloudProductBaselineList {
+		productCodeList = append(productCodeList, v.ProductCode)
+	}
+	//查询软件bom表
+	var softwareBomLicenseBaselineList []*entity.SoftwareBomLicenseBaseline
+	if err := db.Where("service_code IN (?) AND version_id = ?", productCodeList, cloudProductPlanningList[0].VersionId).Find(&softwareBomLicenseBaselineList).Error; err != nil {
+		return nil, nil, nil, nil, nil, nil, err
+	}
+	var softwareBomLicenseBaselineListMap = make(map[string][]*entity.SoftwareBomLicenseBaseline)
+	for _, v := range softwareBomLicenseBaselineList {
+		if v.HardwareArch == "xc" {
+			v.HardwareArch = "ARM"
 		}
-		softwareBomPlanningList = append(softwareBomPlanningList, cloudProductPlanningBom)
+		softwareBomLicenseBaselineListMap[fmt.Sprintf("%v-%v-%v", v.ServiceCode, v.SellSpecs, v.HardwareArch)] = append(softwareBomLicenseBaselineListMap[fmt.Sprintf("%v-%v-%v", v.ServiceCode, v.SellSpecs, v.HardwareArch)], v)
 	}
-	if err := db.Create(softwareBomPlanningList).Error; err != nil {
-		return err
-	}
-	return nil
+	return cloudProductPlanningList, cloudProductNodeRoleRelList, cloudProductBaselineMap, serverPlanningMap, serverBaselineMap, softwareBomLicenseBaselineListMap, nil
 }
 
 func ExpireDeviceListByPlanId(tx *gorm.DB, planId int64) error {
