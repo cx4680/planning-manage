@@ -309,3 +309,78 @@ func Sha3224(str string) string {
 	hash.Write([]byte(str))
 	return hex.EncodeToString(hash.Sum(nil))
 }
+
+func CurrentUserInfo(context *gin.Context) {
+	userCenterUrl := os.Getenv(constant.UserCenterUrl)
+	productCode := os.Getenv(constant.ProductCode)
+	redirectUrlMap := make(map[string]string)
+	redirectUrlMap["redirectUrl"] = fmt.Sprintf("%s/auth/sso/ssoLogin?productCode=%s&redirect=", userCenterUrl, productCode)
+	cookie, err := context.Request.Cookie("cestcToken")
+	if err != nil {
+		log.Errorf("[Auth] invalid authorized")
+		result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+		return
+	}
+	token := cookie.Value
+	if token == "" {
+		log.Errorf("[Auth] invalid authorized")
+		result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+		return
+	}
+	url := fmt.Sprintf("%s/auth/sso/tokenCheck", userCenterUrl)
+	body := TokenCheckRequest{
+		ProductCode: productCode,
+		CestcToken:  token,
+	}
+	reqJson, err := json.Marshal(body)
+	if err != nil {
+		log.Errorf("Body json marshal error: %v", err)
+		result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+		return
+	}
+
+	response, err := httpcall.POSTResponse(httpcall.HttpRequest{
+		Context: context,
+		URI:     url,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+		Body: bytes.NewBuffer(reqJson),
+	})
+	if err != nil {
+		log.Errorf("call sso tokenCheck error: %v", err)
+		result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+		return
+	}
+	log.Infof("call sso tokenCheck: %v", response)
+	resByte, err := json.Marshal(response)
+	if err != nil {
+		log.Errorf("Marshal json error: %v", err)
+		result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+		return
+	}
+	var responseData TokenCheckResponse
+	if err = json.Unmarshal(resByte, &responseData); err != nil {
+		log.Errorf("Unmarshal json error: %v", err)
+		result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+		return
+	}
+	if responseData.Code != RequestSuccessCode {
+		responseJson, _ := json.Marshal(response)
+		log.Error("call sso tokenCheck failure: %s", string(responseJson))
+		result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+		return
+	}
+	result.Success(context, map[string]string{
+		"deptNum":     responseData.Data.DeptNum,
+		"displayName": responseData.Data.DisplayName,
+		"workNum":     responseData.Data.WorkNum,
+		"l":           responseData.Data.L,
+		"email":       responseData.Data.Email,
+		"deptName":    responseData.Data.DeptName,
+		"mobile":      responseData.Data.Mobile,
+		"userName":    responseData.Data.UserName,
+		"deptRoot":    responseData.Data.DeptRoot,
+	})
+	return
+}

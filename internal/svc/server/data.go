@@ -465,6 +465,13 @@ func SaveServerCapacity(request *Request) error {
 				CapacityBaselineId: v.Id,
 				Number:             v.Number,
 				FeatureNumber:      v.FeatureNumber,
+				VersionId:          capConvertBaseline.VersionId,
+				ProductName:        capConvertBaseline.ProductName,
+				ProductCode:        capConvertBaseline.ProductCode,
+				SellSpecs:          capConvertBaseline.SellSpecs,
+				CapPlanningInput:   capConvertBaseline.CapPlanningInput,
+				Unit:               capConvertBaseline.Unit,
+				Features:           capConvertBaseline.Features,
 				ExpendResCode:      capActualResBaseline.ExpendResCode,
 			})
 		}

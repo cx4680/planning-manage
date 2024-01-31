@@ -1,16 +1,18 @@
 package customer
 
 import (
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/go-ldap/ldap/v3"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
-	"fmt"
-	"github.com/go-ldap/ldap/v3"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"gorm.io/gorm"
-	"os"
-	"time"
 )
 
 func createCustomer(db *gorm.DB, customerParam CreateCustomerRequest, leaderId string, ldapUser *ldap.Entry, currentUserId string) (*entity.CustomerManage, *CreateCloudPlatform, error) {
@@ -25,7 +27,7 @@ func createCustomer(db *gorm.DB, customerParam CreateCustomerRequest, leaderId s
 		DeleteState:  0,
 	}
 	var customer entity.CustomerManage
-	if err := db.Create(&customerManage).Find(&customer).Error; err != nil {
+	if err := data.DB.Table(entity.CustomerManageTable).Create(&customerManage).Scan(&customer).Error; err != nil {
 		log.Errorf("[createCustomer] query db error", err)
 		return nil, nil, err
 	}
@@ -35,8 +37,8 @@ func createCustomer(db *gorm.DB, customerParam CreateCustomerRequest, leaderId s
 		log.Errorf("[createCustomer] CreateCloudPlatformByCustomerId error, %v", err)
 		return nil, nil, err
 	}
-	//保存用户到数据库
-	//user.SaveUser(ldapUser)
+	// 保存用户到数据库
+	// user.SaveUser(ldapUser)
 	// 如果membersId不为空，创建成员
 	if len(customerParam.MembersId) > 0 {
 		var memberList []entity.PermissionsManage
@@ -61,7 +63,7 @@ func createCustomer(db *gorm.DB, customerParam CreateCustomerRequest, leaderId s
 func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) ([]entity.CustomerManage, int64) {
 	log.Infof("current user id:%s", currentUserId)
 	var roleManage entity.RoleManage
-	if err := data.DB.Where("user_id=?", currentUserId).Find(&roleManage).Error; err != nil {
+	if err := data.DB.Table(entity.RoleManageTable).Where("user_id=?", currentUserId).Scan(&roleManage).Error; err != nil {
 		log.Errorf("[pageCustomer] query role manage from db error")
 		return nil, 0
 	}
@@ -71,7 +73,6 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	db := data.DB.Table("customer_manage cm").Select("DISTINCT cm.*")
 
 	db.Where("cm.delete_state=0")
-	db.Where("pm.delete_state = 0")
 	if len(customerPageParam.CustomerName) > 0 {
 		db.Where("cm.customer_name like ?", `%`+customerPageParam.CustomerName+`%`)
 	}
@@ -81,7 +82,7 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	if roleManage.Role != "admin" {
 		db.Where("cm.leader_id = ? OR pm.user_id = ?", currentUserId, currentUserId)
 	}
-	if err := db.Joins("LEFT JOIN permissions_manage pm ON pm.customer_id = cm.id").
+	if err := db.Joins("LEFT JOIN (select * from permissions_manage where delete_state = 0) pm ON pm.customer_id = cm.id").
 		Order(customerPageParam.OrderBy).
 		Limit(customerPageParam.Size).
 		Offset((customerPageParam.Current - 1) * customerPageParam.Size).
@@ -99,7 +100,7 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 
 func updateCustomer(customerParam UpdateCustomerRequest, currentUserId string) error {
 	var customerManage entity.CustomerManage
-	if err := data.DB.Where("id=?", customerParam.ID).Find(&customerManage).Error; err != nil {
+	if err := data.DB.Table(entity.CustomerManageTable).Where("id=?", customerParam.ID).Scan(&customerManage).Error; err != nil {
 		log.Errorf("[updateCustomer] query customer by id error,%v", err)
 		return err
 	}
@@ -114,11 +115,11 @@ func updateCustomer(customerParam UpdateCustomerRequest, currentUserId string) e
 				UpdateTime:   time.Now(),
 				UpdateUserId: currentUserId,
 			}
-			if err := tx.Updates(&customerManageUpdate).Error; err != nil {
+			if err := tx.Table(entity.CustomerManageTable).Updates(&customerManageUpdate).Error; err != nil {
 				log.Errorf("[updateCustomer] update customer error, %v", err)
 				return err
 			}
-			//如果修改了接口人，同时保存接口人信息
+			// 如果修改了接口人，同时保存接口人信息
 			/*if customerManage.LeaderId != customerParam.LeaderId {
 				ldapUser, err := user.SearchUserById(customerParam.LeaderId)
 				if err != nil {
@@ -195,7 +196,7 @@ func updateCustomer(customerParam UpdateCustomerRequest, currentUserId string) e
 
 func searchMembersByCustomerId(customerId int64) ([]entity.PermissionsManage, error) {
 	var members []entity.PermissionsManage
-	if err := data.DB.Where("customer_id=? and delete_state=0", customerId).Find(&members).Error; err != nil {
+	if err := data.DB.Table(entity.PermissionsManageTable).Where("customer_id=? and delete_state=0", customerId).Scan(&members).Error; err != nil {
 		log.Errorf("[updateCustomer] query customer members error, %v", err)
 		return nil, err
 	}
@@ -204,7 +205,7 @@ func searchMembersByCustomerId(customerId int64) ([]entity.PermissionsManage, er
 
 func searchCustomerById(customerId int64) (*entity.CustomerManage, error) {
 	var customer entity.CustomerManage
-	if err := data.DB.Where("id=? and delete_state=0", customerId).Find(&customer).Error; err != nil {
+	if err := data.DB.Table(entity.CustomerManageTable).Where("id=? and delete_state=0", customerId).Scan(&customer).Error; err != nil {
 		log.Errorf("[updateCustomer] query customer members error, %v", err)
 		return nil, err
 	}
@@ -213,7 +214,7 @@ func searchCustomerById(customerId int64) (*entity.CustomerManage, error) {
 
 func searchCustomerByName(customerName string) ([]entity.CustomerManage, error) {
 	var customerList []entity.CustomerManage
-	if err := data.DB.Where("customer_name=? and delete_state=0", customerName).Find(&customerList).Error; err != nil {
+	if err := data.DB.Table(entity.CustomerManageTable).Where("customer_name=? and delete_state=0", customerName).Scan(&customerList).Error; err != nil {
 		log.Errorf("[searchCustomerByName] query customer by name error, %v", err)
 		return nil, err
 	}
@@ -288,7 +289,7 @@ func InnerCreateCustomer(customerParam CreateCustomerRequest, leaderId string, l
 		if err != nil {
 			return err
 		}
-		//默认创建项目
+		// 默认创建项目
 		projectEntity = &entity.ProjectManage{
 			Name:            "默认项目",
 			CloudPlatformId: createCloudPlatform.CloudPlatformManage.Id,
