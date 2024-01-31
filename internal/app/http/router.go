@@ -59,7 +59,7 @@ func Router(engine *gin.Engine) {
 			userGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("根据关键字查询用户", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByName)
 			userGroup.GET("/listByUid", middleware.OperatorLog(DefaultEventOpInfo("根据关键字查询用户", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByUid)
 			userGroup.GET("/listByEmployeeNumber", middleware.OperatorLog(DefaultEventOpInfo("根据关键字查询用户", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByEmployeeNumber)
-
+			userGroup.GET("/currentUserInfo", middleware.OperatorLog(DefaultEventOpInfo("获取当前登录人信息", "currentUserInfo", middleware.OPERATE, middleware.INFO)), user.CurrentUserInfo)
 		}
 
 		customerGroup := api.Group("/customer")
