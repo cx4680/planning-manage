@@ -224,7 +224,7 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 			var updateCloudProductBaselines []entity.CloudProductBaseline
 			var originCloudProductIds []int64
 			for _, originCloudProductBaseline := range originCloudProductBaselines {
-				key := fmt.Sprintf("%s%s%s", originCloudProductBaseline.ProductCode, originCloudProductBaseline.SellSpecs, originCloudProductBaseline.AuthorizedUnit)
+				key := fmt.Sprintf("%s%s", originCloudProductBaseline.ProductCode, originCloudProductBaseline.SellSpecs)
 				originCloudProductMap[key] = originCloudProductBaseline
 				originCloudProductIds = append(originCloudProductIds, originCloudProductBaseline.Id)
 			}
@@ -237,7 +237,7 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 				return true
 			}
 			for _, cloudProductBaseline := range cloudProductBaselines {
-				key := fmt.Sprintf("%s%s%s", cloudProductBaseline.ProductCode, cloudProductBaseline.SellSpecs, cloudProductBaseline.AuthorizedUnit)
+				key := fmt.Sprintf("%s%s", cloudProductBaseline.ProductCode, cloudProductBaseline.SellSpecs)
 				originCloudProductBaseline, ok := originCloudProductMap[key]
 				if ok {
 					cloudProductBaseline.Id = originCloudProductBaseline.Id
@@ -1118,6 +1118,7 @@ func ImportCapConvertBaseline(context *gin.Context, versionId int64, f *excelize
 				SellSpecs:        capConvertBaselineExcel.SellSpecs,
 				CapPlanningInput: capConvertBaselineExcel.CapPlanningInput,
 				Unit:             capConvertBaselineExcel.Unit,
+				FeaturesMode:     capConvertBaselineExcel.FeaturesMode,
 				Features:         capConvertBaselineExcel.Features,
 				Description:      capConvertBaselineExcel.Description,
 			})
@@ -1208,6 +1209,7 @@ func ImportCapActualResBaseline(context *gin.Context, versionId int64, f *exceli
 				Features:            capActualResBaselineExcel.Features,
 				OccRatioNumerator:   occRatioNumerator,
 				OccRatioDenominator: occRatioDenominator,
+				ActualConsume:       capActualResBaselineExcel.ActualConsume,
 				Remarks:             capActualResBaselineExcel.Remarks,
 			})
 		}

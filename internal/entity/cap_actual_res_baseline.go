@@ -13,6 +13,7 @@ type CapActualResBaseline struct {
 	Features            string `gorm:"column:features" json:"features"`                         // 特性
 	OccRatioNumerator   string `gorm:"column:occ_ratio_numerator" json:"occRatioNumerator"`     // 占用比例分子，为N的时候需要根据用户实际填写来做计算
 	OccRatioDenominator string `gorm:"column:occ_ratio_denominator" json:"occRatioDenominator"` // 占用比例分母
+	ActualConsume       string `gorm:"column:actual_consume" json:"actualConsume"`              // 实际消耗
 	Remarks             string `gorm:"column:remarks" json:"remarks"`                           // 备注
 }
 

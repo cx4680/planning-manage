@@ -10,6 +10,7 @@ type CapConvertBaseline struct {
 	SellSpecs        string `gorm:"column:sell_specs" json:"sellSpecs"`                // 售卖规格
 	CapPlanningInput string `gorm:"column:cap_planning_input" json:"capPlanningInput"` // 容量规划输入
 	Unit             string `gorm:"column:unit" json:"unit"`                           // 单位
+	FeaturesMode     string `gorm:"column:features_mode" json:"featuresMode"`          // 特性模式
 	Features         string `gorm:"column:features" json:"features"`                   // 特性
 	Description      string `gorm:"column:description" json:"description"`             // 说明
 }
