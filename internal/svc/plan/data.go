@@ -17,13 +17,6 @@ import (
 	"time"
 )
 
-var (
-	SelectQuotationIdSql   = `SELECT quotation_no from plan_manage LEFT JOIN project_manage on plan_manage.project_id = project_manage.id where plan_manage.id = ?`
-	ProductFeatureCodeSql  = `SELECT feature_name, feature_code FROM cloud_product_baseline LEFT JOIN feature_name_code_rel on cloud_product_baseline.product_type = feature_name_code_rel.feature_name WHERE product_code = ? `
-	ServerFeatureCodeSql   = `SELECT feature_name, feature_code FROM node_role_baseline LEFT JOIN feature_name_code_rel on node_role_baseline.classify = feature_name_code_rel.feature_name where node_role_baseline.id = ?`
-	NetWorkDeviceSelectSql = `SELECT plan_id, network_device_role, network_device_role_name, bom_id, count(*) as number FROM network_device_list where delete_state = 0 and plan_id = ? GROUP BY plan_id, network_device_role, bom_id, network_device_role_name`
-)
-
 func PagePlan(request *Request) ([]*Plan, int64, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " CASE WHEN type = 'standby' OR type = 'delivery' THEN 0 ELSE 1 END ASC "
 	if request.ProjectId != 0 {
@@ -232,7 +225,10 @@ func SendPlan(planId int64) (*SendBomsRequest, error) {
 
 	// 查ProductConfigLibId
 	var quotationId string
-	if err := data.DB.Raw(SelectQuotationIdSql, planId).First(&quotationId).Error; err != nil {
+	if err := data.DB.Table("plan_manage").Select("quotation_no").
+		Joins("LEFT JOIN project_manage on plan_manage.project_id = project_manage.id").
+		Where("plan_manage.id = ?", planId).
+		Find(&quotationId).Error; err != nil {
 		return nil, err
 	}
 
@@ -305,20 +301,23 @@ func buildCloudProductFeatures(planId int64) ([]*SendBomsRequestFeature, error) 
 			return nil, err
 		}
 
-		if baseLine.BomId == "" {
+		if plan.BomId == "" {
 			continue
 		}
 
 		// feature code/name
 		var featureInfo entity.FeatureNameCodeRel
-		if err := data.DB.Raw(ProductFeatureCodeSql, plan.ServiceCode).First(&featureInfo).Error; err != nil {
+		if err := data.DB.Table("cloud_product_baseline cpb").Select("f.feature_name, f.feature_code").
+			Joins("left join feature_name_code_rel f on cpb.product_type = f.feature_name").
+			Where("cpb.product_code = ?", plan.ServiceCode).
+			Find(&featureInfo).Error; err != nil {
 			return nil, err
 		}
 
 		// 拼request先用字典
 		if _, flag := featureMap[featureInfo.FeatureCode]; flag {
 			featureMap[featureInfo.FeatureCode].Boms = append(featureMap[featureInfo.FeatureCode].Boms, &SendBomsRequestBom{
-				Code:  baseLine.BomId,
+				Code:  plan.BomId,
 				Count: plan.Number,
 			})
 		} else {
@@ -327,7 +326,7 @@ func buildCloudProductFeatures(planId int64) ([]*SendBomsRequestFeature, error) 
 				FeatureName: featureInfo.FeatureName,
 				Boms: []*SendBomsRequestBom{
 					{
-						Code:  baseLine.BomId,
+						Code:  plan.BomId,
 						Count: plan.Number,
 					},
 				},
@@ -360,7 +359,10 @@ func buildServerFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 
 		// feature code/name
 		var featureInfo entity.FeatureNameCodeRel
-		if err := data.DB.Raw(ServerFeatureCodeSql, plan.NodeRoleId).First(&featureInfo).Error; err != nil {
+		if err := data.DB.Table("node_role_baseline").Select("f.feature_name, f.feature_code").
+			Joins("LEFT JOIN feature_name_code_rel f on node_role_baseline.classify = f.feature_name").
+			Where("node_role_baseline.id = ?", plan.NodeRoleId).
+			Find(&featureInfo).Error; err != nil {
 			return nil, err
 		}
 
@@ -392,9 +394,12 @@ func buildServerFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 func buildNetDeviceFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 	featureMap := make(map[string]*SendBomsRequestFeature)
 	var planList []entity.NetworkDeviceSelect
-	if err := data.DB.Raw(NetWorkDeviceSelectSql, planId).Find(&planList).Error; err != nil {
+	if err := data.DB.Table("network_device_list").Select("plan_id, network_device_role, network_device_role_name, bom_id, count(*) as number").
+		Where("delete_state = 0 and plan_id = ? ", planId).Group("plan_id, network_device_role, bom_id, network_device_role_name").
+		Find(&planList).Error; err != nil {
 		return nil, err
 	}
+
 	for _, plan := range planList {
 
 		//if plan.BomId == ""{
