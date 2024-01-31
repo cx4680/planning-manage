@@ -276,3 +276,28 @@ CREATE TABLE `software_bom_planning`
     `hardware_arch`        varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '硬件架构',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品规划bom表';
+
+CREATE TABLE IF NOT EXISTS `feature_name_code_rel`
+(
+    `id`                    int NOT NULL AUTO_INCREMENT COMMENT 'id',
+    `feature_name`          varchar(255) DEFAULT NULL COMMENT 'feature名称',
+    `feature_code`          varchar(255) DEFAULT NULL COMMENT 'feature_code',
+    `feature_type`          varchar(255) DEFAULT NULL COMMENT '类别：云产品、服务器、网络',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='feature名称与code对应表';
+
+insert into `feature_name_code_rel` (`feature_name`, `feature_code`, `feature_type`)
+values 	("运营运维", "OM", "cloud_product"),
+          ("计算服务", "Compute", "cloud_product"),
+          ("存储服务", "Storage", "cloud_product"),
+          ("网络服务", "Network", "cloud_product"),
+          ("安全服务", "Security", "cloud_product"),
+          ("大数据", "Bigdata", "cloud_product"),
+          ("数据库", "Database", "cloud_product"),
+          ("应用服务", "AppService", "cloud_product"),
+          ("应用商店", "AppMarket", "cloud_product"),
+
+          ("管理区", "master_node", "server_node"),
+          ("存储区", "storage_node", "server_node"),
+          ("业务区", "worker_node", "server_node"),
+          ("网络区", "network_node", "server_node");

@@ -1,16 +1,27 @@
 package plan
 
 import (
+	"bytes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/httpcall"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
+	"encoding/json"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
 	"strings"
 	"time"
+)
+
+var (
+	SelectQuotationIdSql   = `SELECT quotation_no from plan_manage LEFT JOIN project_manage on plan_manage.project_id = project_manage.id where plan_manage.id = ?`
+	ProductFeatureCodeSql  = `SELECT feature_name, feature_code FROM cloud_product_baseline LEFT JOIN feature_name_code_rel on cloud_product_baseline.product_type = feature_name_code_rel.feature_name WHERE product_code = ? `
+	ServerFeatureCodeSql   = `SELECT feature_name, feature_code FROM node_role_baseline LEFT JOIN feature_name_code_rel on node_role_baseline.classify = feature_name_code_rel.feature_name where node_role_baseline.id = ?`
+	NetWorkDeviceSelectSql = `SELECT plan_id, network_device_role, network_device_role_name, bom_id, count(*) as number FROM network_device_list where delete_state = 0 and plan_id = ? GROUP BY plan_id, network_device_role, bom_id, network_device_role_name`
 )
 
 func PagePlan(request *Request) ([]*Plan, int64, error) {
@@ -214,4 +225,203 @@ func checkBusiness(request *Request, isCreate bool) error {
 		}
 	}
 	return nil
+}
+
+func SendPlan(planId int64) (*SendBomsRequest, error) {
+	var result []*SendBomsRequestStep
+
+	// 查ProductConfigLibId
+	var quotationId string
+	if err := data.DB.Raw(SelectQuotationIdSql, planId).First(&quotationId).Error; err != nil {
+		return nil, err
+	}
+
+	stepProductRequest := SendBomsRequestStep{
+		StepName: "Step1 - Cloud Product",
+	}
+	productFeatures, err := buildCloudProductFeatures(planId)
+	if err != nil {
+		return nil, err
+	}
+	stepProductRequest.Features = productFeatures
+	result = append(result, &stepProductRequest)
+
+	stepServerRequest := SendBomsRequestStep{
+		StepName: "Step2 - Server",
+	}
+	serverFeatures, err := buildServerFeatures(planId)
+	if err != nil {
+		return nil, err
+	}
+	stepServerRequest.Features = serverFeatures
+	result = append(result, &stepServerRequest)
+
+	stepNetworkRequest := SendBomsRequestStep{
+		StepName: "Step3 - Network Device",
+	}
+	netDeviceFeatures, err := buildNetDeviceFeatures(planId)
+	if err != nil {
+		return nil, err
+	}
+	stepNetworkRequest.Features = netDeviceFeatures
+	result = append(result, &stepNetworkRequest)
+
+	// POST
+	request := SendBomsRequest{
+		ProductConfigLibId: quotationId,
+		Steps:              result,
+	}
+	reqJson, err := json.Marshal(request)
+	// 正式环境: https://cbs.cestc.cn
+	// 测试环境: http://bom.cestcdev.cn
+	// 预演环境: http://cbs.cestcpre.cn
+	url := "http://bom.cestcdev.cn" + "/api/v1/product/receiveConfig"
+	response, err := httpcall.POSTResponse(httpcall.HttpRequest{
+		Context: &gin.Context{},
+		URI:     url,
+		Headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+		Body: bytes.NewBuffer(reqJson),
+	})
+	if err != nil {
+		log.Errorf("Do Post Err %v", err)
+	}
+	log.Infof("Send Plan Resp: %v", response)
+
+	return &request, nil
+}
+
+func buildCloudProductFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
+	featureMap := make(map[string]*SendBomsRequestFeature)
+	var planList []entity.SoftwareBomPlanning
+	if err := data.DB.Model(&entity.SoftwareBomPlanning{}).Where("plan_id = ?", planId).Find(&planList).Error; err != nil {
+		return nil, err
+	}
+	for _, plan := range planList {
+		// bomId
+		var baseLine entity.SoftwareBomLicenseBaseline
+		if err := data.DB.Model(&entity.SoftwareBomLicenseBaseline{}).Where("id = ?", plan.SoftwareBaselineId).Find(&baseLine).Error; err != nil {
+			return nil, err
+		}
+
+		if baseLine.BomId == "" {
+			continue
+		}
+
+		// feature code/name
+		var featureInfo entity.FeatureNameCodeRel
+		if err := data.DB.Raw(ProductFeatureCodeSql, plan.ServiceCode).First(&featureInfo).Error; err != nil {
+			return nil, err
+		}
+
+		// 拼request先用字典
+		if _, flag := featureMap[featureInfo.FeatureCode]; flag {
+			featureMap[featureInfo.FeatureCode].Boms = append(featureMap[featureInfo.FeatureCode].Boms, &SendBomsRequestBom{
+				Code:  baseLine.BomId,
+				Count: plan.Number,
+			})
+		} else {
+			featureMap[featureInfo.FeatureCode] = &SendBomsRequestFeature{
+				FeatureCode: featureInfo.FeatureCode,
+				FeatureName: featureInfo.FeatureName,
+				Boms: []*SendBomsRequestBom{
+					{
+						Code:  baseLine.BomId,
+						Count: plan.Number,
+					},
+				},
+			}
+		}
+	}
+	var result []*SendBomsRequestFeature
+	for _, v := range featureMap {
+		result = append(result, v)
+	}
+	return result, nil
+}
+
+func buildServerFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
+	featureMap := make(map[string]*SendBomsRequestFeature)
+	var planList []entity.ServerPlanning
+	if err := data.DB.Model(&entity.ServerPlanning{}).Where("plan_id = ? and delete_state = 0", planId).Find(&planList).Error; err != nil {
+		return nil, err
+	}
+	for _, plan := range planList {
+		// bomId
+		var baseLine entity.ServerBaseline
+		if err := data.DB.Model(&entity.ServerBaseline{}).Where("id = ? ", plan.ServerBaselineId).Find(&baseLine).Error; err != nil {
+			return nil, err
+		}
+
+		if baseLine.BomCode == "" {
+			continue
+		}
+
+		// feature code/name
+		var featureInfo entity.FeatureNameCodeRel
+		if err := data.DB.Raw(ServerFeatureCodeSql, plan.NodeRoleId).First(&featureInfo).Error; err != nil {
+			return nil, err
+		}
+
+		if _, flag := featureMap[featureInfo.FeatureCode]; flag {
+			featureMap[featureInfo.FeatureCode].Boms = append(featureMap[featureInfo.FeatureCode].Boms, &SendBomsRequestBom{
+				Code:  baseLine.BomCode,
+				Count: plan.Number,
+			})
+		} else {
+			featureMap[featureInfo.FeatureCode] = &SendBomsRequestFeature{
+				FeatureCode: featureInfo.FeatureCode,
+				FeatureName: featureInfo.FeatureName,
+				Boms: []*SendBomsRequestBom{
+					{
+						Code:  baseLine.BomCode,
+						Count: plan.Number,
+					},
+				},
+			}
+		}
+	}
+	var result []*SendBomsRequestFeature
+	for _, v := range featureMap {
+		result = append(result, v)
+	}
+	return result, nil
+}
+
+func buildNetDeviceFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
+	featureMap := make(map[string]*SendBomsRequestFeature)
+	var planList []entity.NetworkDeviceSelect
+	if err := data.DB.Raw(NetWorkDeviceSelectSql, planId).Find(&planList).Error; err != nil {
+		return nil, err
+	}
+	for _, plan := range planList {
+
+		//if plan.BomId == ""{
+		//	continue
+		//}
+
+		if _, flag := featureMap[plan.NetworkDeviceRole]; flag {
+			featureMap[plan.NetworkDeviceRole].Boms = append(featureMap[plan.NetworkDeviceRole].Boms, &SendBomsRequestBom{
+				Code:  plan.BomId,
+				Count: plan.Number,
+			})
+		} else {
+			featureMap[plan.NetworkDeviceRole] = &SendBomsRequestFeature{
+				FeatureCode: plan.NetworkDeviceRole,
+				FeatureName: plan.NetworkDeviceRoleName,
+				Boms: []*SendBomsRequestBom{
+					{
+						Code:  plan.BomId,
+						Count: plan.Number,
+					},
+				},
+			}
+		}
+	}
+	var result []*SendBomsRequestFeature
+	for _, v := range featureMap {
+		result = append(result, v)
+	}
+	return result, nil
 }

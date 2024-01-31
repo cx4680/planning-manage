@@ -104,3 +104,15 @@ func checkRequest(request *Request, isCreate bool) error {
 	}
 	return nil
 }
+
+func Send(c *gin.Context) {
+	Id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	data, err := SendPlan(Id)
+
+	if err != nil {
+		log.Errorf("update plan error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, data)
+}

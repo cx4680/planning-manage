@@ -154,6 +154,8 @@ func Router(engine *gin.Engine) {
 			planGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改方案", "determinePlanById", middleware.UPDATE, middleware.INFO)), plan.Update)
 			// 删除方案
 			planGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除方案", "deletePlanById", middleware.DELETE, middleware.INFO)), plan.Delete)
+			// 推送方案
+			planGroup.PUT("/send/:id", middleware.OperatorLog(DefaultEventOpInfo("推送方案", "sendPlanToBoms", middleware.UPDATE, middleware.INFO)), plan.Send)
 		}
 
 		// 服务器规划
