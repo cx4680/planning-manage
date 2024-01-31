@@ -371,6 +371,16 @@ func CurrentUserInfo(context *gin.Context) {
 		result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
 		return
 	}
-	result.Success(context, responseData)
+	result.Success(context, map[string]string{
+		"deptNum":     responseData.Data.DeptNum,
+		"displayName": responseData.Data.DisplayName,
+		"workNum":     responseData.Data.WorkNum,
+		"l":           responseData.Data.L,
+		"email":       responseData.Data.Email,
+		"deptName":    responseData.Data.DeptName,
+		"mobile":      responseData.Data.Mobile,
+		"userName":    responseData.Data.UserName,
+		"deptRoot":    responseData.Data.DeptRoot,
+	})
 	return
 }
