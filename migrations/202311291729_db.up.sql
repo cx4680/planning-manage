@@ -78,14 +78,14 @@ CREATE TABLE `region_manage`
 
 CREATE TABLE `az_manage`
 (
-    `id`                bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'azId',
-    `code`              varchar(255) DEFAULT NULL COMMENT 'az编码',
-    `region_id`         bigint(20) NULL DEFAULT NULL COMMENT 'regionId',
-    `create_user_id`    varchar(255) NULL DEFAULT NULL COMMENT '创建人id',
-    `create_time`       datetime NULL DEFAULT NULL COMMENT '创建时间',
-    `update_user_id`    varchar(255) DEFAULT NULL COMMENT '更新人id',
-    `update_time`       datetime NULL DEFAULT NULL COMMENT '更新时间',
-    `delete_state`      tinyint(1) NULL DEFAULT NULL COMMENT '作废状态：1，作废；0，正常',
+    `id`             bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'azId',
+    `code`           varchar(255) DEFAULT NULL COMMENT 'az编码',
+    `region_id`      bigint(20) NULL DEFAULT NULL COMMENT 'regionId',
+    `create_user_id` varchar(255) NULL DEFAULT NULL COMMENT '创建人id',
+    `create_time`    datetime NULL DEFAULT NULL COMMENT '创建时间',
+    `update_user_id` varchar(255) DEFAULT NULL COMMENT '更新人id',
+    `update_time`    datetime NULL DEFAULT NULL COMMENT '更新时间',
+    `delete_state`   tinyint(1) NULL DEFAULT NULL COMMENT '作废状态：1，作废；0，正常',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = 'az管理表' ROW_FORMAT = Dynamic;
 
@@ -153,34 +153,62 @@ CREATE TABLE `config_item`
     `sort` int NULL DEFAULT NULL COMMENT '排序'
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '配置表' ROW_FORMAT = Dynamic;
 
-INSERT INTO `config_item` VALUES (1, 0, '云平台类型', 'cloudPlatformType', NULL, NULL);
-INSERT INTO `config_item` VALUES (101, 1, '运营云', 'operational', NULL, 1);
-INSERT INTO `config_item` VALUES (102, 1, '交付云', 'delivery', NULL, 2);
-INSERT INTO `config_item` VALUES (2, 0, '区域类型', 'regionType', NULL, NULL);
-INSERT INTO `config_item` VALUES (201, 2, '合设区域', 'merge', NULL, 1);
-INSERT INTO `config_item` VALUES (202, 2, '业务区域', 'business', NULL, 2);
-INSERT INTO `config_item` VALUES (203, 2, '管理区域', 'manage', NULL, 3);
-INSERT INTO `config_item` VALUES (3, 0, '项目类型', 'projectType', NULL, NULL);
-INSERT INTO `config_item` VALUES (301, 3, '新建', 'create', NULL, 1);
-INSERT INTO `config_item` VALUES (302, 3, '扩容', 'expansion', NULL, 2);
-INSERT INTO `config_item` VALUES (303, 3, '升级', 'upgradation', NULL, 3);
-INSERT INTO `config_item` VALUES (4, 0, '项目阶段', 'projectStage', NULL, NULL);
-INSERT INTO `config_item` VALUES (401, 4, '规划阶段', 'planning', NULL, 1);
-INSERT INTO `config_item` VALUES (402, 4, '交付阶段', 'delivery', NULL, 2);
-INSERT INTO `config_item` VALUES (403, 4, '已交付', 'delivered', NULL, 3);
-INSERT INTO `config_item` VALUES (5, 0, '方案类型', 'planType', NULL, NULL);
-INSERT INTO `config_item` VALUES (501, 5, '普通方案', 'general', NULL, 1);
-INSERT INTO `config_item` VALUES (502, 5, '备选方案', 'alternate', NULL, 2);
-INSERT INTO `config_item` VALUES (503, 5, '交付方案', 'delivery', NULL, 3);
-INSERT INTO `config_item` VALUES (6, 0, '方案阶段', 'planStage', NULL, NULL);
-INSERT INTO `config_item` VALUES (601, 6, '待规划', 'plan', NULL, 1);
-INSERT INTO `config_item` VALUES (602, 6, '规划中', 'planning', NULL, 2);
-INSERT INTO `config_item` VALUES (603, 6, '规划完成', 'planned', NULL, 3);
-INSERT INTO `config_item` VALUES (604, 6, '交付中', 'delivering', NULL, 4);
-INSERT INTO `config_item` VALUES (605, 6, '交付完成', 'delivered', NULL, 5);
-INSERT INTO `config_item` VALUES (7, 0, '集群类型', 'cellType', NULL, NULL);
-INSERT INTO `config_item` VALUES (701, 7, '控制集群', 'control', NULL, 1);
-INSERT INTO `config_item` VALUES (702, 7, '业务集群', 'business', NULL, 2);
+INSERT INTO `config_item`
+VALUES (1, 0, '云平台类型', 'cloudPlatformType', NULL, NULL);
+INSERT INTO `config_item`
+VALUES (101, 1, '运营云', 'operational', NULL, 1);
+INSERT INTO `config_item`
+VALUES (102, 1, '交付云', 'delivery', NULL, 2);
+INSERT INTO `config_item`
+VALUES (2, 0, '区域类型', 'regionType', NULL, NULL);
+INSERT INTO `config_item`
+VALUES (201, 2, '合设区域', 'merge', NULL, 1);
+INSERT INTO `config_item`
+VALUES (202, 2, '业务区域', 'business', NULL, 2);
+INSERT INTO `config_item`
+VALUES (203, 2, '管理区域', 'manage', NULL, 3);
+INSERT INTO `config_item`
+VALUES (3, 0, '项目类型', 'projectType', NULL, NULL);
+INSERT INTO `config_item`
+VALUES (301, 3, '新建', 'create', NULL, 1);
+INSERT INTO `config_item`
+VALUES (302, 3, '扩容', 'expansion', NULL, 2);
+INSERT INTO `config_item`
+VALUES (303, 3, '升级', 'upgradation', NULL, 3);
+INSERT INTO `config_item`
+VALUES (4, 0, '项目阶段', 'projectStage', NULL, NULL);
+INSERT INTO `config_item`
+VALUES (401, 4, '规划阶段', 'planning', NULL, 1);
+INSERT INTO `config_item`
+VALUES (402, 4, '交付阶段', 'delivery', NULL, 2);
+INSERT INTO `config_item`
+VALUES (403, 4, '已交付', 'delivered', NULL, 3);
+INSERT INTO `config_item`
+VALUES (5, 0, '方案类型', 'planType', NULL, NULL);
+INSERT INTO `config_item`
+VALUES (501, 5, '普通方案', 'general', NULL, 1);
+INSERT INTO `config_item`
+VALUES (502, 5, '备选方案', 'alternate', NULL, 2);
+INSERT INTO `config_item`
+VALUES (503, 5, '交付方案', 'delivery', NULL, 3);
+INSERT INTO `config_item`
+VALUES (6, 0, '方案阶段', 'planStage', NULL, NULL);
+INSERT INTO `config_item`
+VALUES (601, 6, '待规划', 'plan', NULL, 1);
+INSERT INTO `config_item`
+VALUES (602, 6, '规划中', 'planning', NULL, 2);
+INSERT INTO `config_item`
+VALUES (603, 6, '规划完成', 'planned', NULL, 3);
+INSERT INTO `config_item`
+VALUES (604, 6, '交付中', 'delivering', NULL, 4);
+INSERT INTO `config_item`
+VALUES (605, 6, '交付完成', 'delivered', NULL, 5);
+INSERT INTO `config_item`
+VALUES (7, 0, '集群类型', 'cellType', NULL, NULL);
+INSERT INTO `config_item`
+VALUES (701, 7, '控制集群', 'control', NULL, 1);
+INSERT INTO `config_item`
+VALUES (702, 7, '业务集群', 'business', NULL, 2);
 
 
 CREATE TABLE `cloud_product_baseline`
@@ -229,6 +257,13 @@ CREATE TABLE `server_cap_planning`
     `capacity_baseline_id` bigint(20) NULL DEFAULT NULL COMMENT '容量指标id',
     `number`               int          DEFAULT NULL COMMENT '数量',
     `feature_number`       int NULL DEFAULT NULL COMMENT '特性数量',
+    `version_id`           bigint(20) DEFAULT NULL COMMENT '版本id',
+    `product_name`         varchar(255) DEFAULT NULL COMMENT '产品名称',
+    `product_code`         varchar(255) DEFAULT NULL COMMENT '产品code',
+    `sell_specs`           varchar(255) DEFAULT NULL COMMENT '售卖规格',
+    `cap_planning_input`   varchar(255) DEFAULT NULL COMMENT '容量规划输入',
+    `unit`                 varchar(255) DEFAULT NULL COMMENT '单位',
+    `features`             varchar(255) DEFAULT NULL COMMENT '特性',
     `expend_res_code`      varchar(255) DEFAULT NULL COMMENT '消耗资源编码',
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COMMENT = '服务器容量规划表';
@@ -278,9 +313,9 @@ CREATE TABLE `network_device_list`
     `logical_grouping`         varchar(255)  DEFAULT NULL COMMENT '逻辑分组',
     `device_id`                varchar(255)  DEFAULT NULL COMMENT '设备ID',
     `conf_overview`            varchar(1000) DEFAULT NULL COMMENT '配置概述',
-    `brand`                    varchar(255)   DEFAULT NULL COMMENT '厂商',
-    `device_model`             varchar(255)   DEFAULT NULL COMMENT '设备型号',
-    `bom_id`                   varchar(255)   DEFAULT NULL COMMENT 'bom id',
+    `brand`                    varchar(255)  DEFAULT NULL COMMENT '厂商',
+    `device_model`             varchar(255)  DEFAULT NULL COMMENT '设备型号',
+    `bom_id`                   varchar(255)  DEFAULT NULL COMMENT 'bom id',
     `create_time`              datetime      DEFAULT NULL COMMENT '创建时间',
     `update_time`              datetime      DEFAULT NULL COMMENT '修改时间',
     `delete_state`             tinyint(4) DEFAULT NULL COMMENT '删除状态0：未删除；1：已删除',
@@ -294,13 +329,13 @@ CREATE TABLE `network_device_planning`
     `id`                     bigint(20) NOT NULL AUTO_INCREMENT,
     `plan_id`                bigint(20) NOT NULL COMMENT '方案ID',
     `brand`                  varchar(255) CHARACTER SET utf8 DEFAULT NULL COMMENT '厂商',
-    `application_dispersion` char(1)                        DEFAULT '1' COMMENT '应用分散度: 1-分散在不同服务器',
+    `application_dispersion` char(1)                         DEFAULT '1' COMMENT '应用分散度: 1-分散在不同服务器',
     `aws_server_num`         tinyint(2) DEFAULT NULL COMMENT 'AWS下连服务器数44/45',
     `aws_box_num`            tinyint(2) DEFAULT NULL COMMENT '每组AWS几个机柜4/3',
     `total_box_num`          tinyint(4) DEFAULT NULL COMMENT '机柜估算数量',
-    `create_time`            datetime                       DEFAULT NULL COMMENT '创建时间',
-    `update_time`            datetime                       DEFAULT NULL COMMENT '更新时间',
-    `ipv6`                   char(1)                        DEFAULT '0' COMMENT '是否为ipv4/ipv6双栈交付 0：ipv4交付 1:ipv4/ipv6双栈交付',
+    `create_time`            datetime                        DEFAULT NULL COMMENT '创建时间',
+    `update_time`            datetime                        DEFAULT NULL COMMENT '更新时间',
+    `ipv6`                   char(1)                         DEFAULT '0' COMMENT '是否为ipv4/ipv6双栈交付 0：ipv4交付 1:ipv4/ipv6双栈交付',
     `network_model`          tinyint(4) DEFAULT 1 COMMENT '组网模型: 1-三网合一  2-两网分离  3-三网分离',
     `device_type`            tinyint(4) DEFAULT NULL COMMENT '设备类型，0：信创，1：商用',
     PRIMARY KEY (`id`) USING BTREE,
@@ -366,7 +401,7 @@ CREATE TABLE `network_device_baseline`
     `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
     `version_id`    bigint(20) DEFAULT NULL COMMENT '版本id',
     `device_model`  varchar(255)  DEFAULT NULL COMMENT '设备型号',
-    `bom_id`        varchar(255)   DEFAULT NULL COMMENT 'bom id',
+    `bom_id`        varchar(255)  DEFAULT NULL COMMENT 'bom id',
     `manufacturer`  varchar(255)  DEFAULT NULL COMMENT '厂商',
     `device_type`   tinyint(4) DEFAULT NULL COMMENT '信创/商用， 0：信创，1：商用',
     `network_model` varchar(255)  DEFAULT NULL COMMENT '网络模型',
@@ -436,19 +471,19 @@ CREATE TABLE `cloud_product_planning`
 
 CREATE TABLE `ip_demand_planning`
 (
-    `id`                 BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `plan_id`            bigint(20) NOT NULL COMMENT '方案ID',
-    `logical_grouping`   varchar(255)  DEFAULT NULL COMMENT '逻辑分组',
-    `segment_type`       varchar(255) DEFAULT NULL COMMENT '网段类型',
-    `network_type`       tinyint(4) DEFAULT NULL COMMENT '网络类型，0：ipv4，1：ipv6',
-    `vlan`               varchar(45)  DEFAULT NULL COMMENT 'VLAN ID',
-    `c_num`              varchar(45)  DEFAULT NULL COMMENT 'C数量',
-    `address`            varchar(255) DEFAULT NULL COMMENT '地址段',
-    `describe`           varchar(255) DEFAULT NULL COMMENT '描述',
-    `address_planning`   varchar(255) DEFAULT NULL COMMENT 'IP地址规划建议',
-    `create_time`        datetime     DEFAULT NULL COMMENT '创建时间',
-    `update_time`        datetime     DEFAULT NULL COMMENT '更新时间',
-    KEY                  `IDX_PLAN_ID` (`plan_id`),
+    `id`               BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `plan_id`          bigint(20) NOT NULL COMMENT '方案ID',
+    `logical_grouping` varchar(255) DEFAULT NULL COMMENT '逻辑分组',
+    `segment_type`     varchar(255) DEFAULT NULL COMMENT '网段类型',
+    `network_type`     tinyint(4) DEFAULT NULL COMMENT '网络类型，0：ipv4，1：ipv6',
+    `vlan`             varchar(45)  DEFAULT NULL COMMENT 'VLAN ID',
+    `c_num`            varchar(45)  DEFAULT NULL COMMENT 'C数量',
+    `address`          varchar(255) DEFAULT NULL COMMENT '地址段',
+    `describe`         varchar(255) DEFAULT NULL COMMENT '描述',
+    `address_planning` varchar(255) DEFAULT NULL COMMENT 'IP地址规划建议',
+    `create_time`      datetime     DEFAULT NULL COMMENT '创建时间',
+    `update_time`      datetime     DEFAULT NULL COMMENT '更新时间',
+    KEY                `IDX_PLAN_ID` (`plan_id`),
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT COMMENT='Ip需求规划表';
 
@@ -465,7 +500,7 @@ CREATE TABLE `network_model_role_rel`
 
 CREATE TABLE `cap_convert_baseline`
 (
-    `id`                 bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `id`                 bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     `version_id`         bigint(20) DEFAULT NULL COMMENT '版本id',
     `product_name`       varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '产品名称',
     `product_code`       varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '产品code',

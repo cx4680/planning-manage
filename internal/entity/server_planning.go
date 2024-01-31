@@ -39,6 +39,13 @@ type ServerCapPlanning struct {
 	CapacityBaselineId int64  `gorm:"column:capacity_baseline_id" json:"capacityBaselineId"` // 容量指标id
 	Number             int    `gorm:"column:number" json:"number"`                           // 数量
 	FeatureNumber      int    `gorm:"column:feature_number" json:"featureNumber"`            // 特性数量
+	VersionId          int64  `gorm:"column:version_id" json:"versionId"`                    // 版本id
+	ProductName        string `gorm:"column:product_name" json:"productName"`                // 产品名称
+	ProductCode        string `gorm:"column:product_code" json:"productCode"`                // 产品编码
+	SellSpecs          string `gorm:"column:sell_specs" json:"sellSpecs"`                    // 售卖规格
+	CapPlanningInput   string `gorm:"column:cap_planning_input" json:"capPlanningInput"`     // 容量规划输入
+	Unit               string `gorm:"column:unit" json:"unit"`                               // 单位
+	Features           string `gorm:"column:features" json:"features"`                       // 特性
 	ExpendResCode      string `gorm:"column:expend_res_code" json:"expendResCode"`           // 消耗资源编码
 }
 
