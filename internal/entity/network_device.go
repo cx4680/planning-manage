@@ -52,7 +52,7 @@ type NetworkDeviceSelect struct {
 	PlanId                int64  `gorm:"column:plan_id" json:"planId"`                                 // 方案ID
 	NetworkDeviceRoleName string `gorm:"column:network_device_role_name" json:"networkDeviceRoleName"` // 设备类型->设备角色名称
 	NetworkDeviceRole     string `gorm:"column:network_device_role" json:"networkDeviceRole"`          // 设备类型->网络设备角色编码
-	Number                int    `gornm:"column:number" json:"number"`                                 // group by 数量
+	Number                int    `gorm:"column:number" json:"number"`                                  // group by 数量
 	BomId                 string `gorm:"column:bom_id" json:"bomId"`                                   // bom id
 	DeleteState           int    `gorm:"column:delete_state" json:"deleteState"`                       // 删除状态0：未删除；1：已删除
 }
