@@ -27,7 +27,7 @@ func createCustomer(db *gorm.DB, customerParam CreateCustomerRequest, leaderId s
 		DeleteState:  0,
 	}
 	var customer entity.CustomerManage
-	if err := db.Create(&customerManage).Find(&customer).Error; err != nil {
+	if err := data.DB.Table(entity.CustomerManageTable).Create(&customerManage).Scan(&customer).Error; err != nil {
 		log.Errorf("[createCustomer] query db error", err)
 		return nil, nil, err
 	}
@@ -63,7 +63,7 @@ func createCustomer(db *gorm.DB, customerParam CreateCustomerRequest, leaderId s
 func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) ([]entity.CustomerManage, int64) {
 	log.Infof("current user id:%s", currentUserId)
 	var roleManage entity.RoleManage
-	if err := data.DB.Where("user_id=?", currentUserId).Find(&roleManage).Error; err != nil {
+	if err := data.DB.Table(entity.RoleManageTable).Where("user_id=?", currentUserId).Scan(&roleManage).Error; err != nil {
 		log.Errorf("[pageCustomer] query role manage from db error")
 		return nil, 0
 	}
@@ -100,7 +100,7 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 
 func updateCustomer(customerParam UpdateCustomerRequest, currentUserId string) error {
 	var customerManage entity.CustomerManage
-	if err := data.DB.Where("id=?", customerParam.ID).Find(&customerManage).Error; err != nil {
+	if err := data.DB.Table(entity.CustomerManageTable).Where("id=?", customerParam.ID).Scan(&customerManage).Error; err != nil {
 		log.Errorf("[updateCustomer] query customer by id error,%v", err)
 		return err
 	}
@@ -115,7 +115,7 @@ func updateCustomer(customerParam UpdateCustomerRequest, currentUserId string) e
 				UpdateTime:   time.Now(),
 				UpdateUserId: currentUserId,
 			}
-			if err := tx.Updates(&customerManageUpdate).Error; err != nil {
+			if err := tx.Table(entity.CustomerManageTable).Updates(&customerManageUpdate).Error; err != nil {
 				log.Errorf("[updateCustomer] update customer error, %v", err)
 				return err
 			}
@@ -196,7 +196,7 @@ func updateCustomer(customerParam UpdateCustomerRequest, currentUserId string) e
 
 func searchMembersByCustomerId(customerId int64) ([]entity.PermissionsManage, error) {
 	var members []entity.PermissionsManage
-	if err := data.DB.Where("customer_id=? and delete_state=0", customerId).Find(&members).Error; err != nil {
+	if err := data.DB.Table(entity.PermissionsManageTable).Where("customer_id=? and delete_state=0", customerId).Scan(&members).Error; err != nil {
 		log.Errorf("[updateCustomer] query customer members error, %v", err)
 		return nil, err
 	}
@@ -205,7 +205,7 @@ func searchMembersByCustomerId(customerId int64) ([]entity.PermissionsManage, er
 
 func searchCustomerById(customerId int64) (*entity.CustomerManage, error) {
 	var customer entity.CustomerManage
-	if err := data.DB.Where("id=? and delete_state=0", customerId).Find(&customer).Error; err != nil {
+	if err := data.DB.Table(entity.CustomerManageTable).Where("id=? and delete_state=0", customerId).Scan(&customer).Error; err != nil {
 		log.Errorf("[updateCustomer] query customer members error, %v", err)
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func searchCustomerById(customerId int64) (*entity.CustomerManage, error) {
 
 func searchCustomerByName(customerName string) ([]entity.CustomerManage, error) {
 	var customerList []entity.CustomerManage
-	if err := data.DB.Where("customer_name=? and delete_state=0", customerName).Find(&customerList).Error; err != nil {
+	if err := data.DB.Table(entity.CustomerManageTable).Where("customer_name=? and delete_state=0", customerName).Scan(&customerList).Error; err != nil {
 		log.Errorf("[searchCustomerByName] query customer by name error, %v", err)
 		return nil, err
 	}

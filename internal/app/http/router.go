@@ -313,12 +313,12 @@ func Auth() gin.HandlerFunc {
 		redirectUrlMap := make(map[string]string)
 		redirectUrlMap["redirectUrl"] = fmt.Sprintf("%s/auth/sso/ssoLogin?productCode=%s&redirect=", userCenterUrl, productCode)
 		cookie, err := context.Request.Cookie("cestcToken")
-		if err != nil {
-			context.Abort()
-			log.Errorf("[Auth] invalid authorized")
-			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
-			return
-		}
+		//if err != nil {
+		//	context.Abort()
+		//	log.Errorf("[Auth] invalid authorized")
+		//	result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+		//	return
+		//}
 		token := cookie.Value
 		if token == "" {
 			context.Abort()

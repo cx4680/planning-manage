@@ -148,9 +148,4 @@ const (
 
 	CpuTypeIntel = "intel"
 	CpuTypeHygon = "hygon"
-
-	PlatformBom     = "0100115148387809"
-	SoftwareBaseBom = "0100115150861886"
 )
-
-var ServiceYearBom = map[int]string{1: "0100115152958526", 2: "0100115153975617", 3: "0100115154780568", 4: "0100115155303482", 5: "0100115156784743"}
