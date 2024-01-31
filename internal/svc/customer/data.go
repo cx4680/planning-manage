@@ -1,16 +1,18 @@
 package customer
 
 import (
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/go-ldap/ldap/v3"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
-	"fmt"
-	"github.com/go-ldap/ldap/v3"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"gorm.io/gorm"
-	"os"
-	"time"
 )
 
 func createCustomer(db *gorm.DB, customerParam CreateCustomerRequest, leaderId string, ldapUser *ldap.Entry, currentUserId string) (*entity.CustomerManage, *CreateCloudPlatform, error) {
@@ -35,8 +37,8 @@ func createCustomer(db *gorm.DB, customerParam CreateCustomerRequest, leaderId s
 		log.Errorf("[createCustomer] CreateCloudPlatformByCustomerId error, %v", err)
 		return nil, nil, err
 	}
-	//保存用户到数据库
-	//user.SaveUser(ldapUser)
+	// 保存用户到数据库
+	// user.SaveUser(ldapUser)
 	// 如果membersId不为空，创建成员
 	if len(customerParam.MembersId) > 0 {
 		var memberList []entity.PermissionsManage
@@ -71,7 +73,6 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	db := data.DB.Table("customer_manage cm").Select("DISTINCT cm.*")
 
 	db.Where("cm.delete_state=0")
-	db.Where("pm.delete_state = 0")
 	if len(customerPageParam.CustomerName) > 0 {
 		db.Where("cm.customer_name like ?", `%`+customerPageParam.CustomerName+`%`)
 	}
@@ -81,7 +82,7 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	if roleManage.Role != "admin" {
 		db.Where("cm.leader_id = ? OR pm.user_id = ?", currentUserId, currentUserId)
 	}
-	if err := db.Joins("LEFT JOIN permissions_manage pm ON pm.customer_id = cm.id").
+	if err := db.Joins("LEFT JOIN (select * from permissions_manage where delete_state = 0) pm ON pm.customer_id = cm.id").
 		Order(customerPageParam.OrderBy).
 		Limit(customerPageParam.Size).
 		Offset((customerPageParam.Current - 1) * customerPageParam.Size).
@@ -118,7 +119,7 @@ func updateCustomer(customerParam UpdateCustomerRequest, currentUserId string) e
 				log.Errorf("[updateCustomer] update customer error, %v", err)
 				return err
 			}
-			//如果修改了接口人，同时保存接口人信息
+			// 如果修改了接口人，同时保存接口人信息
 			/*if customerManage.LeaderId != customerParam.LeaderId {
 				ldapUser, err := user.SearchUserById(customerParam.LeaderId)
 				if err != nil {
@@ -288,7 +289,7 @@ func InnerCreateCustomer(customerParam CreateCustomerRequest, leaderId string, l
 		if err != nil {
 			return err
 		}
-		//默认创建项目
+		// 默认创建项目
 		projectEntity = &entity.ProjectManage{
 			Name:            "默认项目",
 			CloudPlatformId: createCloudPlatform.CloudPlatformManage.Id,
