@@ -51,28 +51,12 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 		return err
 	}
 	var cpuNumber int
-	//平台规模授权：0100115148387809，按云平台下服务器数量计算，N=整网所有服务器的物理CPU数量之和-管理减免（10）；N大于等于0
-	for _, v := range softwareData.ServerPlanningMap {
-		switch v.CpuType {
-		case "Intel", "Hygon", "Kunpeng":
-			cpuNumber += v.Number*2 - 10
-		case "FT2000+":
-			cpuNumber += v.Number - 10
-		}
-	}
-	if cpuNumber < 0 {
-		cpuNumber = 0
-	}
-	softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: software_count.PlatformBom, Number: cpuNumber})
-	//软件base：0100115150861886，默认1套
-	softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: software_count.SoftwareBaseBom, Number: 1})
-	//平台升级维保：根据选择年限对应不同BOM
-	softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: software_count.ServiceYearBom[softwareData.CloudProductPlanningList[0].ServiceYear], Number: 1})
 	var softwareBomMap = make(map[string]*entity.SoftwareBomPlanning)
 	for _, v := range softwareData.CloudProductNodeRoleRelList {
 		cloudProductBaseline := softwareData.CloudProductBaselineMap[v.ProductId]
 		serverPlanning := softwareData.ServerPlanningMap[v.NodeRoleId]
 		serverBaseline := softwareData.ServerBaselineMap[serverPlanning.ServerBaselineId]
+		cpuNumber += serverPlanning.Number * serverBaseline.CpuNum
 		list := softwareData.SoftwareBomLicenseBaselineListMap[fmt.Sprintf("%v-%v-%v", cloudProductBaseline.ProductCode, cloudProductBaseline.SellSpecs, serverBaseline.Arch)]
 		if len(list) == 0 {
 			//部分软件bom只有一个，不区分硬件架构
@@ -81,15 +65,16 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 				continue
 			}
 		}
-		for _, softwareBomLicenseBaseline := range list {
+		for i, softwareBomLicenseBaseline := range list {
+			log.Info("softwareBomLicenseBaseline:", softwareBomLicenseBaseline)
 			if _, ok := softwareBomMap[softwareBomLicenseBaseline.BomId]; ok {
-				softwareBomMap[softwareBomLicenseBaseline.BomId].Number += software_count.SoftwareCount(softwareBomLicenseBaseline, softwareData.CloudProductPlanningList[0], serverPlanning, serverBaseline, softwareData.ServerCapPlanningMap)
+				softwareBomMap[softwareBomLicenseBaseline.BomId].Number += software_count.SoftwareCount(i, softwareBomLicenseBaseline, softwareData.CloudProductPlanningList[0], serverPlanning, serverBaseline, softwareData.ServerCapPlanningMap)
 			} else {
 				softwareBomMap[softwareBomLicenseBaseline.BomId] = &entity.SoftwareBomPlanning{
 					PlanId:             planId,
 					SoftwareBaselineId: softwareBomLicenseBaseline.Id,
 					BomId:              softwareBomLicenseBaseline.BomId,
-					Number:             software_count.SoftwareCount(softwareBomLicenseBaseline, softwareData.CloudProductPlanningList[0], serverPlanning, serverBaseline, softwareData.ServerCapPlanningMap),
+					Number:             software_count.SoftwareCount(i, softwareBomLicenseBaseline, softwareData.CloudProductPlanningList[0], serverPlanning, serverBaseline, softwareData.ServerCapPlanningMap),
 					CloudService:       softwareBomLicenseBaseline.CloudService,
 					ServiceCode:        softwareBomLicenseBaseline.ServiceCode,
 					SellSpecs:          softwareBomLicenseBaseline.SellSpecs,
@@ -100,26 +85,25 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 			}
 		}
 	}
+	//平台规模授权：0100115148387809，按云平台下服务器数量计算，N=整网所有服务器的物理CPU数量之和-管理减免（10）；N大于等于0
+	cpuNumber = cpuNumber - 10
+	if cpuNumber < 0 {
+		cpuNumber = 0
+	}
+	softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: software_count.PlatformBom, CloudService: software_count.PlatformName, ServiceCode: software_count.PlatformCode, Number: cpuNumber - 10})
+	//软件base：0100115150861886，默认1套
+	softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: software_count.SoftwareBaseBom, CloudService: software_count.SoftwareName, ServiceCode: software_count.SoftwareCode, Number: 1})
+	//平台升级维保：根据选择年限对应不同BOM
+	softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: software_count.ServiceYearBom[softwareData.CloudProductPlanningList[0].ServiceYear], CloudService: software_count.ServiceYearName, ServiceCode: software_count.ServiceYearCode, Number: 1})
+
 	for _, v := range softwareBomMap {
-		cloudProductPlanningBom := &entity.SoftwareBomPlanning{
-			PlanId:             planId,
-			SoftwareBaselineId: v.Id,
-			BomId:              v.BomId,
-			Number:             v.Number,
-			CloudService:       v.CloudService,
-			ServiceCode:        v.ServiceCode,
-			SellSpecs:          v.SellSpecs,
-			AuthorizedUnit:     v.AuthorizedUnit,
-			SellType:           v.SellType,
-			HardwareArch:       v.HardwareArch,
-		}
-		softwareBomPlanningList = append(softwareBomPlanningList, cloudProductPlanningBom)
+		softwareBomPlanningList = append(softwareBomPlanningList, v)
 	}
 	// 保存云产品规划bom表
-	if err := db.Delete(&entity.SoftwareBomPlanning{}, "plan_id = ?", planId).Error; err != nil {
+	if err = db.Delete(&entity.SoftwareBomPlanning{}, "plan_id = ?", planId).Error; err != nil {
 		return err
 	}
-	if err := db.Create(softwareBomPlanningList).Error; err != nil {
+	if err = db.Create(softwareBomPlanningList).Error; err != nil {
 		return err
 	}
 	return nil
