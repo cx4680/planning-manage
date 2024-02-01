@@ -2,6 +2,7 @@ package plan
 
 import (
 	"bytes"
+	"code.cestc.cn/ccos/cnm/ops-base/logging"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
@@ -10,9 +11,11 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"encoding/json"
 	"errors"
+	"github.com/acmestack/godkits/gox/stringsx"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
+	"os"
 	"strings"
 	"time"
 )
@@ -220,7 +223,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 	return nil
 }
 
-func SendPlan(planId int64) (*SendBomsRequest, error) {
+func SendPlan(planId int64) (interface{}, error) {
 	var result []*SendBomsRequestStep
 
 	// 查ProductConfigLibId
@@ -275,10 +278,12 @@ func SendPlan(planId int64) (*SendBomsRequest, error) {
 		Steps:              result,
 	}
 	reqJson, err := json.Marshal(request)
+	logging.Infof("Send Bom Req: %v", string(reqJson))
 	// 正式环境: https://cbs.cestc.cn
 	// 测试环境: http://bom.cestcdev.cn
 	// 预演环境: http://cbs.cestcpre.cn
-	url := "http://bom.cestcdev.cn" + "/api/v1/product/receiveConfig"
+	bomUrl := stringsx.DefaultIfEmpty(os.Getenv("BOM_URL"), "http://bom.cestcdev.cn")
+	url := bomUrl + "/api/v1/product/receiveConfig"
 	response, err := httpcall.POSTResponse(httpcall.HttpRequest{
 		Context: &gin.Context{},
 		URI:     url,
@@ -292,7 +297,7 @@ func SendPlan(planId int64) (*SendBomsRequest, error) {
 	}
 	log.Infof("Send Plan Resp: %v", response)
 
-	return &request, nil
+	return response, nil
 }
 
 func buildCloudProductFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
