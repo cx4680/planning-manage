@@ -333,7 +333,7 @@ func InnerCreateCustomer(quotationNo string, user entity.UserManage, currentUser
 
 func checkIsExist(quotationNo string) (bool, int64) {
 	var projectEntitys []entity.ProjectManage
-	data.DB.Where("delete_state = ? AND quotation_no >= ?", 0, quotationNo).Find(&projectEntitys)
+	data.DB.Where("delete_state = ? AND quotation_no = ?", 0, quotationNo).Find(&projectEntitys)
 	if len(projectEntitys) == 0 {
 		return false, 0
 	}

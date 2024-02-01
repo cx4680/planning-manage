@@ -209,8 +209,9 @@ func InnerUpdate(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if request.QuotationNo == "" {
-		request.QuotationNo = c.Param("QuotationNo")
+	quotationNo := c.Param("QuotationNo")
+	if quotationNo != "" {
+		request.QuotationNo = quotationNo
 	}
 	if request.QuotationNo == "" {
 		log.Errorf("[Update] customer bind param error")
