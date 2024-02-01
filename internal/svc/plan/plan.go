@@ -111,13 +111,13 @@ func Send(c *gin.Context) {
 	data, err := SendPlan(Id)
 	if err != nil {
 		message := fmt.Sprintf("创建bom请求体错误：%s", err.Error())
-		result.FailureWithMsg(c, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, message)
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, message)
 		return
 	}
 	if data.Success {
 		result.Success(c, data.Data)
 	} else {
 		message := fmt.Sprintf("请求bom错误：%s, %s", data.Desc, data.Message)
-		result.FailureWithMsg(c, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, message)
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, message)
 	}
 }

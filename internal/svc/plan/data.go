@@ -237,7 +237,7 @@ func SendPlan(planId int64) (*SendBomsResponse, error) {
 	}
 
 	stepProductRequest := SendBomsRequestStep{
-		StepName: "Step1 - Cloud Product",
+		StepName: "Step1 - 云产品配置",
 	}
 	productFeatures, err := buildCloudProductFeatures(planId)
 	if err != nil {
@@ -249,7 +249,7 @@ func SendPlan(planId int64) (*SendBomsResponse, error) {
 	}
 
 	stepServerRequest := SendBomsRequestStep{
-		StepName: "Step2 - Server",
+		StepName: "Step2 - 服务器规划",
 	}
 	serverFeatures, err := buildServerFeatures(planId)
 	if err != nil {
@@ -261,7 +261,7 @@ func SendPlan(planId int64) (*SendBomsResponse, error) {
 	}
 
 	stepNetworkRequest := SendBomsRequestStep{
-		StepName: "Step3 - Network Device",
+		StepName: "Step3 - 网络设备规划",
 	}
 	netDeviceFeatures, err := buildNetDeviceFeatures(planId)
 	if err != nil {
