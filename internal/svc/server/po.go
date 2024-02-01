@@ -95,6 +95,7 @@ type ResponseCapConvert struct {
 	Number           int                 `json:"number"`           // 数量
 	Unit             string              `json:"unit"`             // 单位
 	FeatureId        int64               `json:"featureId"`        // 特性id
+	FeatureMode      string              `json:"featureMode"`      // 特性模式
 	FeatureType      string              `json:"featureType"`      // 特性类型
 	FeatureNumber    int                 `json:"featureNumber"`    // 特性数量
 	Features         []*ResponseFeatures `json:"features"`         // 特性选项

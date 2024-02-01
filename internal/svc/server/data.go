@@ -268,6 +268,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 				SellSpecs:        v.SellSpecs,
 				CapPlanningInput: v.CapPlanningInput,
 				Unit:             v.Unit,
+				FeatureMode:      v.FeaturesMode,
 				FeatureType:      FeatureMap[v.Features],
 				Description:      v.Description,
 			}
