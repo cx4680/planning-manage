@@ -278,7 +278,7 @@ func CreateCloudPlatformByCustomerId(db *gorm.DB, customerId int64, userId strin
 	return &CreateCloudPlatform{CloudPlatformManage: cloudPlatformEntity, RegionManage: regionEntity, AzManage: azEntity, CellManage: cellEntity}, nil
 }
 
-func InnerCreateCustomer(quotationNo string, user entity.UserManage) (*InnerCreateCustomerResponse, error) {
+func InnerCreateCustomer(quotationNo string, user entity.UserManage, currentUserId string) (*InnerCreateCustomerResponse, error) {
 	var customer *entity.CustomerManage
 	var createCloudPlatform *CreateCloudPlatform
 	var projectEntity *entity.ProjectManage
@@ -300,7 +300,7 @@ func InnerCreateCustomer(quotationNo string, user entity.UserManage) (*InnerCrea
 	}
 
 	if err = data.DB.Transaction(func(tx *gorm.DB) error {
-		customer, createCloudPlatform, err = createCustomer(tx, createCustomerRequest, user.ID, &ldapUser, user.ID)
+		customer, createCloudPlatform, err = createCustomer(tx, createCustomerRequest, user.ID, &ldapUser, currentUserId)
 		if err != nil {
 			return err
 		}
@@ -316,9 +316,9 @@ func InnerCreateCustomer(quotationNo string, user entity.UserManage) (*InnerCrea
 			Type:            "create",
 			Stage:           constant.ProjectStagePlanning,
 			DeleteState:     0,
-			CreateUserId:    user.ID,
+			CreateUserId:    currentUserId,
 			CreateTime:      now,
-			UpdateUserId:    user.ID,
+			UpdateUserId:    currentUserId,
 			UpdateTime:      now,
 		}
 		if err = tx.Create(&projectEntity).Error; err != nil {

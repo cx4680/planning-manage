@@ -192,7 +192,7 @@ func InnerCreate(c *gin.Context) {
 		return
 	}
 	ldapUser := userList[0]
-	customer, err := InnerCreateCustomer(request.QuotationNo, ldapUser)
+	customer, err := InnerCreateCustomer(request.QuotationNo, ldapUser, c.GetString(constant.CurrentUserId))
 	if err != nil {
 		log.Errorf("[Create] customer %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
