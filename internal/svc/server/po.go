@@ -11,6 +11,7 @@ type Request struct {
 	CpuType            string                   `form:"cpuType"`
 	ServerList         []*RequestServer         `form:"serverList"`
 	ServerCapacityList []*RequestServerCapacity `form:"serverCapacityList"`
+	EcsCapacity        *EcsCapacity             `form:"ecsCapacity"`
 	UserId             string
 }
 
@@ -79,7 +80,10 @@ type ResponseDownloadServer struct {
 
 type ResponseCapClassification struct {
 	Classification string                `json:"classification"` // 分类
+	ProductName    string                `json:"productName"`    // 产品名称
+	ProductCode    string                `json:"productCode"`    // 产品编码
 	CapConvert     []*ResponseCapConvert `json:"capConvert"`
+	Special        *EcsCapacity          `json:"special"`
 }
 
 type ResponseCapCount struct {
@@ -96,7 +100,6 @@ type ResponseCapConvert struct {
 	Unit             string              `json:"unit"`             // 单位
 	FeatureId        int64               `json:"featureId"`        // 特性id
 	FeatureMode      string              `json:"featureMode"`      // 特性模式
-	FeatureType      string              `json:"featureType"`      // 特性类型
 	FeatureNumber    int                 `json:"featureNumber"`    // 特性数量
 	Features         []*ResponseFeatures `json:"features"`         // 特性选项
 	Description      string              `json:"description"`      // 说明
@@ -106,8 +109,6 @@ type ResponseFeatures struct {
 	Id   int64  `json:"id"`
 	Name string `json:"name"`
 }
-
-var FeatureMap = map[string]string{"超分": "超分比", "三副本": "副本模式", "EC纠删码": "副本模式"}
 
 type ResponseServerShelve struct {
 	*entity.ServerShelve
@@ -140,4 +141,13 @@ type Cabinet struct {
 	*entity.CabinetInfo
 	CabinetLocation string `json:"cabinetLocation"`
 	IdleSlot        string `json:"idleSlot"`
+}
+
+type EcsCapacity struct {
+	FeatureNumber int `form:"featureNumber" json:"featureNumber"`
+	List          []*struct {
+		CpuNumber    int `form:"cpuNumber" json:"cpuNumber"`
+		MemoryNumber int `form:"memoryNumber" json:"memoryNumber"`
+		Count        int `form:"count" json:"count"`
+	} `json:"list"`
 }

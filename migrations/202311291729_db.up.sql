@@ -154,62 +154,34 @@ CREATE TABLE `config_item`
     `sort` int NULL DEFAULT NULL COMMENT '排序'
 ) ENGINE = InnoDB CHARACTER SET = utf8 COLLATE = utf8_general_ci COMMENT = '配置表' ROW_FORMAT = Dynamic;
 
-INSERT INTO `config_item`
-VALUES (1, 0, '云平台类型', 'cloudPlatformType', NULL, NULL);
-INSERT INTO `config_item`
-VALUES (101, 1, '运营云', 'operational', NULL, 1);
-INSERT INTO `config_item`
-VALUES (102, 1, '交付云', 'delivery', NULL, 2);
-INSERT INTO `config_item`
-VALUES (2, 0, '区域类型', 'regionType', NULL, NULL);
-INSERT INTO `config_item`
-VALUES (201, 2, '合设区域', 'merge', NULL, 1);
-INSERT INTO `config_item`
-VALUES (202, 2, '业务区域', 'business', NULL, 2);
-INSERT INTO `config_item`
-VALUES (203, 2, '管理区域', 'manage', NULL, 3);
-INSERT INTO `config_item`
-VALUES (3, 0, '项目类型', 'projectType', NULL, NULL);
-INSERT INTO `config_item`
-VALUES (301, 3, '新建', 'create', NULL, 1);
-INSERT INTO `config_item`
-VALUES (302, 3, '扩容', 'expansion', NULL, 2);
-INSERT INTO `config_item`
-VALUES (303, 3, '升级', 'upgradation', NULL, 3);
-INSERT INTO `config_item`
-VALUES (4, 0, '项目阶段', 'projectStage', NULL, NULL);
-INSERT INTO `config_item`
-VALUES (401, 4, '规划阶段', 'planning', NULL, 1);
-INSERT INTO `config_item`
-VALUES (402, 4, '交付阶段', 'delivery', NULL, 2);
-INSERT INTO `config_item`
-VALUES (403, 4, '已交付', 'delivered', NULL, 3);
-INSERT INTO `config_item`
-VALUES (5, 0, '方案类型', 'planType', NULL, NULL);
-INSERT INTO `config_item`
-VALUES (501, 5, '普通方案', 'general', NULL, 1);
-INSERT INTO `config_item`
-VALUES (502, 5, '备选方案', 'alternate', NULL, 2);
-INSERT INTO `config_item`
-VALUES (503, 5, '交付方案', 'delivery', NULL, 3);
-INSERT INTO `config_item`
-VALUES (6, 0, '方案阶段', 'planStage', NULL, NULL);
-INSERT INTO `config_item`
-VALUES (601, 6, '待规划', 'plan', NULL, 1);
-INSERT INTO `config_item`
-VALUES (602, 6, '规划中', 'planning', NULL, 2);
-INSERT INTO `config_item`
-VALUES (603, 6, '规划完成', 'planned', NULL, 3);
-INSERT INTO `config_item`
-VALUES (604, 6, '交付中', 'delivering', NULL, 4);
-INSERT INTO `config_item`
-VALUES (605, 6, '交付完成', 'delivered', NULL, 5);
-INSERT INTO `config_item`
-VALUES (7, 0, '集群类型', 'cellType', NULL, NULL);
-INSERT INTO `config_item`
-VALUES (701, 7, '控制集群', 'control', NULL, 1);
-INSERT INTO `config_item`
-VALUES (702, 7, '业务集群', 'business', NULL, 2);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (1, 0, '云平台类型', 'cloudPlatformType', NULL, NULL);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (101, 1, '运营云', 'operational', NULL, 1);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (102, 1, '交付云', 'delivery', NULL, 2);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (2, 0, '区域类型', 'regionType', NULL, NULL);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (201, 2, '合设区域', 'merge', NULL, 1);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (202, 2, '业务区域', 'business', NULL, 2);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (203, 2, '管理区域', 'manage', NULL, 3);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (3, 0, '项目类型', 'projectType', NULL, NULL);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (301, 3, '新建', 'create', NULL, 1);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (302, 3, '扩容', 'expansion', NULL, 2);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (303, 3, '升级', 'upgradation', NULL, 3);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (4, 0, '项目阶段', 'projectStage', NULL, NULL);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (401, 4, '规划阶段', 'planning', NULL, 1);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (402, 4, '交付阶段', 'delivery', NULL, 2);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (403, 4, '已交付', 'delivered', NULL, 3);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (5, 0, '方案类型', 'planType', NULL, NULL);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (501, 5, '普通方案', 'general', NULL, 1);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (502, 5, '备选方案', 'alternate', NULL, 2);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (503, 5, '交付方案', 'delivery', NULL, 3);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (6, 0, '方案阶段', 'planStage', NULL, NULL);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (601, 6, '待规划', 'plan', NULL, 1);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (602, 6, '规划中', 'planning', NULL, 2);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (603, 6, '规划完成', 'planned', NULL, 3);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (604, 6, '交付中', 'delivering', NULL, 4);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (605, 6, '交付完成', 'delivered', NULL, 5);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (7, 0, '集群类型', 'cellType', NULL, NULL);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (701, 7, '控制集群', 'control', NULL, 1);
+INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data`, `sort`) VALUES (702, 7, '业务集群', 'business', NULL, 2);
 
 
 CREATE TABLE `cloud_product_baseline`
@@ -255,6 +227,7 @@ CREATE TABLE `server_cap_planning`
     `id`                   bigint(20) NOT NULL AUTO_INCREMENT COMMENT '容量规划id',
     `plan_id`              bigint(20) NOT NULL COMMENT '方案id',
     `node_role_id`         bigint(20) NOT NULL COMMENT '节点角色id',
+    `type`                 tinyint(2) DEFAULT NULL COMMENT '类型',
     `capacity_baseline_id` bigint(20) NULL DEFAULT NULL COMMENT '容量指标id',
     `number`               int          DEFAULT NULL COMMENT '数量',
     `feature_number`       int NULL DEFAULT NULL COMMENT '特性数量',
@@ -264,8 +237,10 @@ CREATE TABLE `server_cap_planning`
     `sell_specs`           varchar(255) DEFAULT NULL COMMENT '售卖规格',
     `cap_planning_input`   varchar(255) DEFAULT NULL COMMENT '容量规划输入',
     `unit`                 varchar(255) DEFAULT NULL COMMENT '单位',
+    `features_mode`        varchar(255) DEFAULT NULL COMMENT '特性模式',
     `features`             varchar(255) DEFAULT NULL COMMENT '特性',
     `expend_res_code`      varchar(255) DEFAULT NULL COMMENT '消耗资源编码',
+    `special`              json NULL,
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COMMENT = '服务器容量规划表';
 
