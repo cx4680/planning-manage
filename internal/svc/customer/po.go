@@ -50,6 +50,14 @@ type CreateCloudPlatform struct {
 	CellManage          *entity.CellManage
 }
 
+type InnerCreateCustomerRequest struct {
+	QuotationNo string `json:"quotationNo"`
+	EmployeeId  string `json:"employeeId"`
+}
+type InnerUpdateCustomerRequest struct {
+	QuotationNo string   `json:"quotationNo"`
+	EmployeeId  []string `json:"employeeId"`
+}
 type InnerCreateCustomerResponse struct {
 	*entity.CustomerManage
 	FrontUrl string `json:"frontUrl"`

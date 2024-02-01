@@ -284,11 +284,11 @@ func Router(engine *gin.Engine) {
 			// 导入版本基线
 			baselineGroup.POST("/import", middleware.OperatorLog(DefaultEventOpInfo("导入版本基线", "importBaseline", middleware.IMPORT, middleware.INFO)), baseline.Import)
 		}
-		// 客户管理
-		customerGroup := innerApi.Group("/customer")
+		// 方案管理
+		projectGroup := innerApi.Group("/project")
 		{
-			customerGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建客户", "innerCreateCustomer", middleware.CREATE, middleware.INFO)), customer.InnerCreate)
-			customerGroup.POST("/update", middleware.OperatorLog(DefaultEventOpInfo("根据id修改客户", "innerEditCustomer", middleware.UPDATE, middleware.INFO)), customer.InnerUpdate)
+			projectGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建方案", "innerCreateProject", middleware.CREATE, middleware.INFO)), customer.InnerCreate)
+			projectGroup.PUT("/update/employee/:QuotationNo", middleware.OperatorLog(DefaultEventOpInfo("根据报价单号修改客户成员", "innerEditProjectCustomer", middleware.UPDATE, middleware.INFO)), customer.InnerUpdate)
 		}
 	}
 }

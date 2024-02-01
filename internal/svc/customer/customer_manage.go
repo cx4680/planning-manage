@@ -6,7 +6,6 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/user"
 	"encoding/json"
 	"errors"
@@ -171,26 +170,29 @@ func Update(context *gin.Context) {
 }
 
 func InnerCreate(c *gin.Context) {
-	var request CreateCustomerRequest
+	var request InnerCreateCustomerRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
 		log.Errorf("[Create] customer bind param error", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if err := checkRequest(&request, nil, true); err != nil {
-		result.Failure(c, err.Error(), http.StatusBadRequest)
+	if request.QuotationNo == "" || request.EmployeeId == "" {
+		log.Errorf("[Create] customer bind param error QuotationNo:%v,EmployeeId:%v", request.QuotationNo, request.EmployeeId)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
 	}
-	ldapUser, err := user.SearchUserById(request.LeaderId)
+	userList, err := user.GetEmployeeListByNumberList([]string{request.EmployeeId})
 	if err != nil {
 		log.Errorf("[Create] customer search ldap user error, %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if ldapUser == nil || util.IsBlank(ldapUser.GetAttributeValue("displayName")) {
+	if userList == nil || len(userList) == 0 {
 		result.Failure(c, "无法获取ldap用户信息", http.StatusInternalServerError)
 		return
 	}
-	customer, err := InnerCreateCustomer(request, request.LeaderId, ldapUser, "")
+	ldapUser := userList[0]
+	customer, err := InnerCreateCustomer(request.QuotationNo, ldapUser)
 	if err != nil {
 		log.Errorf("[Create] customer %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
@@ -201,16 +203,30 @@ func InnerCreate(c *gin.Context) {
 }
 
 func InnerUpdate(c *gin.Context) {
-	var request = &UpdateCustomerRequest{}
+	var request InnerUpdateCustomerRequest
 	if err := c.BindJSON(&request); err != nil {
 		log.Errorf("[Update] customer bind param error", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if err := checkRequest(nil, request, false); err != nil {
-		result.Failure(c, err.Error(), http.StatusBadRequest)
+	if request.QuotationNo == "" {
+		request.QuotationNo = c.Param("QuotationNo")
 	}
-	if err := InnerUpdateCustomer(*request); err != nil {
+	if request.QuotationNo == "" {
+		log.Errorf("[Update] customer bind param error")
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	var userList []entity.UserManage
+	if len(request.EmployeeId) != 0 {
+		userList, _ = user.GetEmployeeListByNumberList(request.EmployeeId)
+		if len(userList) == 0 {
+			log.Errorf("[Create] customer search ldap user error")
+			result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+			return
+		}
+	}
+	if err := InnerUpdateCustomer(request.QuotationNo, userList, c.GetString(constant.CurrentUserId)); err != nil {
 		log.Errorf("[Update] customer updateCustomer: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
