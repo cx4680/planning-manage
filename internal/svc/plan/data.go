@@ -240,8 +240,10 @@ func SendPlan(planId int64) (*SendBomsRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	stepProductRequest.Features = productFeatures
-	result = append(result, &stepProductRequest)
+	if len(productFeatures) > 0 {
+		stepProductRequest.Features = productFeatures
+		result = append(result, &stepProductRequest)
+	}
 
 	stepServerRequest := SendBomsRequestStep{
 		StepName: "Step2 - Server",
@@ -250,8 +252,10 @@ func SendPlan(planId int64) (*SendBomsRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	stepServerRequest.Features = serverFeatures
-	result = append(result, &stepServerRequest)
+	if len(serverFeatures) > 0 {
+		stepServerRequest.Features = serverFeatures
+		result = append(result, &stepServerRequest)
+	}
 
 	stepNetworkRequest := SendBomsRequestStep{
 		StepName: "Step3 - Network Device",
@@ -260,8 +264,10 @@ func SendPlan(planId int64) (*SendBomsRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	stepNetworkRequest.Features = netDeviceFeatures
-	result = append(result, &stepNetworkRequest)
+	if len(netDeviceFeatures) > 0 {
+		stepNetworkRequest.Features = netDeviceFeatures
+		result = append(result, &stepNetworkRequest)
+	}
 
 	// POST
 	request := SendBomsRequest{
