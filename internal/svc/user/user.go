@@ -248,6 +248,17 @@ func ListByEmployeeNumber(context *gin.Context) {
 	if queryEmpNumList != "" {
 		empNumList = strings.Split(queryEmpNumList, constant.Comma)
 	}
+	ldapUserList, err := GetEmployeeListByNumberList(empNumList)
+	if err != nil {
+		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
+		return
+	}
+	result.Success(context, ldapUserList)
+	return
+}
+
+func GetEmployeeListByNumberList(empNumList []string) ([]entity.UserManage, error) {
+	var ldapUserList []entity.UserManage
 	timestamp := datetime.CurrentUnixMilli()
 	productCode := os.Getenv(constant.ProductCode)
 	userCenterSecretKey := os.Getenv(constant.UserCenterSecretKey)
@@ -264,7 +275,7 @@ func ListByEmployeeNumber(context *gin.Context) {
 		log.Errorf("Body json marshal error: %v", err)
 	}
 	response, err := httpcall.POSTResponse(httpcall.HttpRequest{
-		Context: context,
+		Context: &gin.Context{},
 		URI:     url,
 		Headers: map[string]string{
 			"Content-Type": "application/json",
@@ -282,10 +293,8 @@ func ListByEmployeeNumber(context *gin.Context) {
 	var responseData QueryUserByUidResponse
 	if err = json.Unmarshal(resByte, &responseData); err != nil {
 		log.Errorf("Unmarshal json error: %v", err)
-		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-		return
+		return ldapUserList, err
 	}
-	var ldapUserList []entity.UserManage
 	for _, item := range responseData.Data {
 		userManage := entity.UserManage{
 			ID:               item.Uid,
@@ -300,8 +309,7 @@ func ListByEmployeeNumber(context *gin.Context) {
 		}
 		ldapUserList = append(ldapUserList, userManage)
 	}
-	result.Success(context, ldapUserList)
-	return
+	return ldapUserList, nil
 }
 
 func Sha3224(str string) string {

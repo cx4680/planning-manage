@@ -12,6 +12,7 @@ type ProjectManage struct {
 	AzId            int64     `gorm:"column:az_id" json:"azId"`                        //azId
 	CellId          int64     `gorm:"column:cell_id" json:"cellId"`                    //cell Id
 	CustomerId      int64     `gorm:"column:customer_id" json:"customerId"`            //客户id
+	QuotationNo     string    `gorm:"column:quotation_no" json:"quotationNo"`          //报价单编号
 	Type            string    `gorm:"column:type" json:"type"`                         //项目类型
 	Stage           string    `gorm:"column:stage" json:"stage"`                       //项目进度
 	CreateUserId    string    `gorm:"column:create_user_id" json:"createUserId"`       //创建人id
