@@ -129,6 +129,7 @@ type CapConvertBaselineExcel struct {
 	SellSpecs        string `excel:"name:售卖规格;" json:"sellSpecs"`          // 售卖规格
 	CapPlanningInput string `excel:"name:容量规划输入;" json:"capPlanningInput"` // 容量规划输入
 	Unit             string `excel:"name:单位;" json:"unit"`                 // 单位
+	FeaturesMode     string `excel:"name:特性模式;" json:"featuresMode"`       // 特性模式
 	Features         string `excel:"name:特性;" json:"features"`             // 特性
 	Description      string `excel:"name:说明;" json:"description"`          // 说明
 }
@@ -141,6 +142,7 @@ type CapActualResBaselineExcel struct {
 	ExpendResCode string `excel:"name:消耗资源编码;" json:"expendResCode"` // 消耗资源编码
 	Features      string `excel:"name:特性;" json:"features"`          // 特性
 	OccRatio      string `excel:"name:占用比例;" json:"occRatio"`        // 占用比例
+	ActualConsume string `excel:"name:实际消耗;" json:"actualConsume"`   // 实际消耗
 	Remarks       string `excel:"name:备注;" json:"remarks"`           // 备注
 }
 
