@@ -114,6 +114,7 @@ CREATE TABLE `project_manage`
     `az_id`             bigint(20) NULL DEFAULT NULL COMMENT 'azId',
     `cell_id`           bigint(20) NULL DEFAULT NULL COMMENT 'cell Id',
     `customer_id`       bigint(20) NULL DEFAULT NULL COMMENT '客户id',
+    `quotation_no`      varchar(50) NULL DEFAULT NULL COMMENT '报价单编号',
     `type`              varchar(50)  DEFAULT NULL COMMENT '项目类型',
     `stage`             varchar(50)  DEFAULT NULL COMMENT '项目阶段',
     `create_user_id`    varchar(255) DEFAULT NULL COMMENT '创建人id',
