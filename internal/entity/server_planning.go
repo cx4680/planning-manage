@@ -83,3 +83,10 @@ type ServerShelve struct {
 func (entity *ServerShelve) TableName() string {
 	return ServerShelveTable
 }
+
+type ServerPlanningSelect struct {
+	PlanId           int64  `gorm:"column:plan_id" json:"planId"`                      // 方案id
+	ServerBaselineId int64  `gorm:"column:server_baseline_id" json:"serverBaselineId"` // 服务器基线表id
+	Number           int    `gorm:"column:number" json:"number"`                       // 数量
+	Classify         string `gorm:"column:classify" json:"classify"`
+}

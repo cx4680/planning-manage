@@ -224,8 +224,9 @@ func SendPlan(planId int64) (*SendBomsRequest, error) {
 	var result []*SendBomsRequestStep
 
 	// 查ProductConfigLibId
-	var quotationId string
-	if err := data.DB.Table("plan_manage").Select("quotation_no").
+	var quotationId entity.PlanQuotationId
+
+	if err := data.DB.Table(entity.PlanManageTable).Select("quotation_no").
 		Joins("LEFT JOIN project_manage on plan_manage.project_id = project_manage.id").
 		Where("plan_manage.id = ?", planId).
 		Find(&quotationId).Error; err != nil {
@@ -264,7 +265,7 @@ func SendPlan(planId int64) (*SendBomsRequest, error) {
 
 	// POST
 	request := SendBomsRequest{
-		ProductConfigLibId: quotationId,
+		ProductConfigLibId: quotationId.QuotationNo,
 		Steps:              result,
 	}
 	reqJson, err := json.Marshal(request)
@@ -342,10 +343,23 @@ func buildCloudProductFeatures(planId int64) ([]*SendBomsRequestFeature, error) 
 
 func buildServerFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 	featureMap := make(map[string]*SendBomsRequestFeature)
-	var planList []entity.ServerPlanning
-	if err := data.DB.Model(&entity.ServerPlanning{}).Where("plan_id = ? and delete_state = 0", planId).Find(&planList).Error; err != nil {
+
+	// 该方案按照node_role分组，同一个feature会有相同的bom_id，改为按照role的classify分组
+	//var planList []entity.ServerPlanning
+	//if err := data.DB.Model(&entity.ServerPlanning{}).Where("plan_id = ? and delete_state = 0", planId).Find(&planList).Error; err != nil {
+	//	return nil, err
+	//}
+
+	var planList []entity.ServerPlanningSelect
+	if err := data.DB.Table(entity.ServerPlanningTable).
+		Select("plan_id, server_baseline_id, SUM(number) as number, classify").
+		Joins("LEFT JOIN node_role_baseline on server_planning.node_role_id = node_role_baseline.id ").
+		Where("plan_id = ? and delete_state = 0", planId).
+		Group("plan_id, server_baseline_id, classify").
+		Find(&planList).Error; err != nil {
 		return nil, err
 	}
+
 	for _, plan := range planList {
 		// bomId
 		var baseLine entity.ServerBaseline
@@ -359,12 +373,16 @@ func buildServerFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 
 		// feature code/name
 		var featureInfo entity.FeatureNameCodeRel
-		if err := data.DB.Table("node_role_baseline").Select("f.feature_name, f.feature_code").
-			Joins("LEFT JOIN feature_name_code_rel f on node_role_baseline.classify = f.feature_name").
-			Where("node_role_baseline.id = ?", plan.NodeRoleId).
-			Find(&featureInfo).Error; err != nil {
+		if err := data.DB.Model(&entity.FeatureNameCodeRel{}).Where("feature_name = ?", plan.Classify).Find(&featureInfo).Error; err != nil {
 			return nil, err
 		}
+
+		//if err := data.DB.Table("node_role_baseline").Select("f.feature_name, f.feature_code").
+		//	Joins("LEFT JOIN feature_name_code_rel f on node_role_baseline.classify = f.feature_name").
+		//	Where("node_role_baseline.id = ?", plan.NodeRoleId).
+		//	Find(&featureInfo).Error; err != nil {
+		//	return nil, err
+		//}
 
 		if _, flag := featureMap[featureInfo.FeatureCode]; flag {
 			featureMap[featureInfo.FeatureCode].Boms = append(featureMap[featureInfo.FeatureCode].Boms, &SendBomsRequestBom{
@@ -394,7 +412,7 @@ func buildServerFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 func buildNetDeviceFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 	featureMap := make(map[string]*SendBomsRequestFeature)
 	var planList []entity.NetworkDeviceSelect
-	if err := data.DB.Table("network_device_list").Select("plan_id, network_device_role, network_device_role_name, bom_id, count(*) as number").
+	if err := data.DB.Table(entity.NetworkDeviceListTable).Select("plan_id, network_device_role, network_device_role_name, bom_id, count(*) as number").
 		Where("delete_state = 0 and plan_id = ? ", planId).Group("plan_id, network_device_role, bom_id, network_device_role_name").
 		Find(&planList).Error; err != nil {
 		return nil, err
@@ -402,9 +420,9 @@ func buildNetDeviceFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 
 	for _, plan := range planList {
 
-		//if plan.BomId == ""{
-		//	continue
-		//}
+		if plan.BomId == "" {
+			continue
+		}
 
 		if _, flag := featureMap[plan.NetworkDeviceRole]; flag {
 			featureMap[plan.NetworkDeviceRole].Boms = append(featureMap[plan.NetworkDeviceRole].Boms, &SendBomsRequestBom{

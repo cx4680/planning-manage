@@ -22,3 +22,7 @@ type PlanManage struct {
 func (entity *PlanManage) TableName() string {
 	return PlanManageTable
 }
+
+type PlanQuotationId struct {
+	QuotationNo string `gorm:"column:quotation_no" json:"quotationNo"`
+}
