@@ -6,6 +6,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"net/http"
@@ -108,11 +109,15 @@ func checkRequest(request *Request, isCreate bool) error {
 func Send(c *gin.Context) {
 	Id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
 	data, err := SendPlan(Id)
-
 	if err != nil {
-		log.Errorf("update plan error: ", err)
-		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		message := fmt.Sprintf("创建bom请求体错误：%s", err.Error())
+		result.FailureWithMsg(c, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, message)
 		return
 	}
-	result.Success(c, data)
+	if data.Success {
+		result.Success(c, data.Data)
+	} else {
+		message := fmt.Sprintf("请求bom错误：%s, %s", data.Desc, data.Message)
+		result.FailureWithMsg(c, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError, message)
+	}
 }

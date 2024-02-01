@@ -44,9 +44,9 @@ type SendBomsRequestBom struct {
 }
 
 type SendBomsResponse struct {
-	Code    int    `json:"code"`
-	Data    string `json:"data"`
-	Desc    string `json:"desc"`
-	Message string `json:"message"`
-	Success bool   `json:"success"`
+	Code    int         `json:"code"`
+	Data    interface{} `json:"data"`
+	Desc    string      `json:"desc"`
+	Message string      `json:"message"`
+	Success bool        `json:"success"`
 }

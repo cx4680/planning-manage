@@ -223,7 +223,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 	return nil
 }
 
-func SendPlan(planId int64) (interface{}, error) {
+func SendPlan(planId int64) (*SendBomsResponse, error) {
 	var result []*SendBomsRequestStep
 
 	// 查ProductConfigLibId
@@ -296,8 +296,17 @@ func SendPlan(planId int64) (interface{}, error) {
 		log.Errorf("Do Post Err %v", err)
 	}
 	log.Infof("Send Plan Resp: %v", response)
+	resByte, err := json.Marshal(response)
+	if err != nil {
+		log.Errorf("Marshal json error: %v", err)
+	}
+	var responseData SendBomsResponse
+	if err = json.Unmarshal(resByte, &responseData); err != nil {
+		log.Errorf("Unmarshal resp json error: %v", err)
+		return nil, err
+	}
 
-	return response, nil
+	return &responseData, nil
 }
 
 func buildCloudProductFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
