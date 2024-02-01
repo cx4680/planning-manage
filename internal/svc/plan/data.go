@@ -315,6 +315,12 @@ func buildCloudProductFeatures(planId int64) ([]*SendBomsRequestFeature, error) 
 			return nil, err
 		}
 
+		// 如果没查到所属类别，用自己的ServiceCode作为featureCode
+		if featureInfo.FeatureCode == "" || featureInfo.FeatureName == "" {
+			featureInfo.FeatureCode = plan.ServiceCode
+			featureInfo.FeatureName = plan.CloudService
+		}
+
 		// 拼request先用字典
 		if _, flag := featureMap[featureInfo.FeatureCode]; flag {
 			featureMap[featureInfo.FeatureCode].Boms = append(featureMap[featureInfo.FeatureCode].Boms, &SendBomsRequestBom{
