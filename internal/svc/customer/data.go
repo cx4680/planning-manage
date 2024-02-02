@@ -225,7 +225,7 @@ func CreateCloudPlatformByCustomerId(db *gorm.DB, customerId int64, userId strin
 	now := datetime.GetNow()
 	cloudPlatformEntity := &entity.CloudPlatformManage{
 		Name:         "云平台1",
-		Type:         "operational",
+		Type:         "delivery",
 		CustomerId:   customerId,
 		CreateUserId: userId,
 		CreateTime:   now,

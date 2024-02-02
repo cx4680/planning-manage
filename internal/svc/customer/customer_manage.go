@@ -1,19 +1,21 @@
 package customer
 
 import (
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/user"
-	"encoding/json"
-	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"gorm.io/gorm"
-	"net/http"
-	"strconv"
 )
 
 func Page(context *gin.Context) {
@@ -35,7 +37,7 @@ func Page(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidData, http.StatusBadRequest)
 		return
 	}
-	//封装权限成员
+	// 封装权限成员
 	var responseList []CustomerResponse
 	for _, customer := range customerResponseList {
 		members, err := searchMembersByCustomerId(customer.ID)
@@ -67,7 +69,7 @@ func GetById(context *gin.Context) {
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 		return
 	}
-	//members, err := searchMembersByCustomerId(customer.ID)
+	// members, err := searchMembersByCustomerId(customer.ID)
 	result.Success(context, customer)
 	return
 }
@@ -91,9 +93,9 @@ func Create(context *gin.Context) {
 		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, "客户名称不可超过30个字符")
 		return
 	}
-	if len(customerParam.LeaderId) < 1 || len(customerParam.LeaderName) < 1 || len(customerParam.MembersId) < 1 || len(customerParam.MembersName) < 1 {
-		log.Errorf("[Create] customer membersId or membersName can not be nil", err)
-		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, "客户接口人及项目成员必选")
+	if len(customerParam.LeaderId) < 1 || len(customerParam.LeaderName) < 1 {
+		log.Errorf("[Create] customer membersId can not be nil", err)
+		result.FailureWithMsg(context, errorcodes.InvalidParam, http.StatusBadRequest, "客户接口人必选")
 		return
 	}
 	customerExist, err := searchCustomerByName(customerParam.CustomerName)
