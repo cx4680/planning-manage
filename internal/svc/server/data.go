@@ -422,9 +422,10 @@ func SaveServerCapacity(request *Request) error {
 		for _, v := range request.ServerCapacityList {
 			capConvertBaseline := capConvertBaselineMap[v.Id]
 			//查询容量实际资源消耗表
-			capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
+			key := fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)
+			capActualResBaseline := capActualResBaselineMap[key]
 			if capActualResBaseline == nil {
-				return errors.New("服务器容量规划特性不存在")
+				return errors.New("服务器容量规划特性不存在，key：" + key)
 			}
 			//查询容量服务器数量计算
 			capServerCalcBaseline := capServerCalcBaselineMap[capActualResBaseline.ExpendResCode]
@@ -488,6 +489,7 @@ func SaveServerCapacity(request *Request) error {
 				FeaturesMode:       capConvertBaseline.FeaturesMode,
 				Features:           capConvertBaseline.Features,
 				ExpendResCode:      capActualResBaseline.ExpendResCode,
+				Special:            "{}",
 			})
 		}
 		if request.EcsCapacity != nil {
