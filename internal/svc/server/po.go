@@ -144,8 +144,9 @@ type Cabinet struct {
 }
 
 type EcsCapacity struct {
-	FeatureNumber int `form:"featureNumber" json:"featureNumber"`
-	List          []*struct {
+	CapacityIdList []int64 `form:"capacityIdList" json:"capacityIdList"`
+	FeatureNumber  int     `form:"featureNumber" json:"featureNumber"`
+	List           []*struct {
 		CpuNumber    int `form:"cpuNumber" json:"cpuNumber"`
 		MemoryNumber int `form:"memoryNumber" json:"memoryNumber"`
 		Count        int `form:"count" json:"count"`
