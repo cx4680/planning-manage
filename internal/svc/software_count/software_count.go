@@ -17,6 +17,7 @@ func SoftwareCount(i int, softwareBomLicenseBaseline *entity.SoftwareBomLicenseB
 		}
 		return 1
 	case "EBS", "EFS", "OSS", "CBR":
+		//todo 暂时写死
 		serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", softwareBomLicenseBaseline.ServiceCode, "容量")]
 		if serverCapPlanning != nil && serverCapPlanning.Features == "三副本" {
 			return int(math.Ceil(float64(serverPlanning.Number*serverBaseline.StorageDiskNum*serverBaseline.StorageDiskCapacity) / 1024 * 0.9 * 0.91 * 1 / 3))
