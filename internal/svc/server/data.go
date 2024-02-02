@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
-	"gorm.io/gorm/utils"
 	"math"
 	"strconv"
 	"strings"
@@ -258,7 +257,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	var ecsCapacity *EcsCapacity
 	for _, v := range serverCapPlanningList {
 		if v.Type == 2 && util.IsNotBlank(v.Special) {
-			util.ToObject(v.Special, ecsCapacity)
+			util.ToObject(v.Special, &ecsCapacity)
 			continue
 		}
 		serverCapPlanningMap[v.CapacityBaselineId] = v
@@ -499,7 +498,7 @@ func SaveServerCapacity(request *Request) error {
 				NodeRoleId:  nodeRoleBaseline.Id,
 				ProductCode: "ECS",
 				Type:        2,
-				Special:     utils.ToString(request.EcsCapacity),
+				Special:     util.ToString(request.EcsCapacity),
 			})
 		}
 		//保存服务器容量规划
