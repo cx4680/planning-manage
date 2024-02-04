@@ -378,6 +378,10 @@ func SaveServerCapacity(request *Request) error {
 	for _, v := range request.ServerCapacityList {
 		serverCapacityIdList = append(serverCapacityIdList, v.Id)
 	}
+	//单独处理ecs容量规划-按规格计算
+	if request.EcsCapacity != nil {
+		serverCapacityIdList = append(serverCapacityIdList, request.EcsCapacity.CapacityIdList...)
+	}
 	//查询容量指标基线
 	capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, err := getCapBaseline(db, serverCapacityIdList)
 	if err != nil {
@@ -422,7 +426,7 @@ func SaveServerCapacity(request *Request) error {
 			//处理参数
 			capConvertBaseline, capActualResBaseline, capServerCalcBaseline, nodeRoleBaseline, serverPlanning, serverBaseline, err := handleCapCapacityParam(v.Id, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, nodeRoleBaselineMap, serverPlanningMap, serverBaselineMap)
 			if err != nil {
-				return err
+				log.Errorf("handleCapCapacityParam error: %v", err)
 			}
 			//计算服务器数量
 			serverNumber := CountServerNumber(v.Number, v.FeatureNumber, capActualResBaseline, capServerCalcBaseline, serverBaseline)
