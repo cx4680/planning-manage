@@ -58,7 +58,7 @@ type InnerCreateCustomerRequest struct {
 type InnerUpdateCustomerRequest struct {
 	QuotationNo  string   `json:"quotationNo"`
 	EmployeeId   []string `json:"employeeId"`
-	CreateUserId string   `json:"createUserId"`
+	UpdateUserId string   `json:"updateUserId"`
 }
 type InnerCreateCustomerResponse struct {
 	*entity.CustomerManage

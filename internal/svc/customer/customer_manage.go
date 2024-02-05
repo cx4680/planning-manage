@@ -229,7 +229,7 @@ func InnerUpdate(c *gin.Context) {
 			return
 		}
 	}
-	if err := InnerUpdateCustomer(request.QuotationNo, userList, request.CreateUserId); err != nil {
+	if err := InnerUpdateCustomer(request.QuotationNo, userList, request.UpdateUserId); err != nil {
 		log.Errorf("[Update] customer updateCustomer: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
