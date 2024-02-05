@@ -51,12 +51,14 @@ type CreateCloudPlatform struct {
 }
 
 type InnerCreateCustomerRequest struct {
-	QuotationNo string `json:"quotationNo"`
-	EmployeeId  string `json:"employeeId"`
+	QuotationNo  string `json:"quotationNo"`
+	EmployeeId   string `json:"employeeId"`
+	CreateUserId string `json:"createUserId"`
 }
 type InnerUpdateCustomerRequest struct {
-	QuotationNo string   `json:"quotationNo"`
-	EmployeeId  []string `json:"employeeId"`
+	QuotationNo  string   `json:"quotationNo"`
+	EmployeeId   []string `json:"employeeId"`
+	CreateUserId string   `json:"createUserId"`
 }
 type InnerCreateCustomerResponse struct {
 	*entity.CustomerManage

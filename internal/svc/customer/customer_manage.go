@@ -194,7 +194,7 @@ func InnerCreate(c *gin.Context) {
 		return
 	}
 	ldapUser := userList[0]
-	customer, err := InnerCreateCustomer(request.QuotationNo, ldapUser, c.GetString(constant.CurrentUserId))
+	customer, err := InnerCreateCustomer(request.QuotationNo, ldapUser, request.CreateUserId)
 	if err != nil {
 		log.Errorf("[Create] customer %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
@@ -229,7 +229,7 @@ func InnerUpdate(c *gin.Context) {
 			return
 		}
 	}
-	if err := InnerUpdateCustomer(request.QuotationNo, userList, c.GetString(constant.CurrentUserId)); err != nil {
+	if err := InnerUpdateCustomer(request.QuotationNo, userList, request.CreateUserId); err != nil {
 		log.Errorf("[Update] customer updateCustomer: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return

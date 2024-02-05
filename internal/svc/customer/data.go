@@ -341,16 +341,16 @@ func checkIsExist(quotationNo string) (bool, int64) {
 }
 
 func InnerUpdateCustomer(quotationNo string, userList []entity.UserManage, currentUserId string) error {
-	var customerManage entity.CustomerManage
-	if err := data.DB.Table(entity.CustomerManageTable).Where("quotation_no=?", quotationNo).Scan(&customerManage).Error; err != nil {
-		log.Errorf("[updateCustomer] query customer by id error,%v", err)
+	var projectManage entity.ProjectManage
+	if err := data.DB.Table(entity.ProjectManageTable).Where("quotation_no=?", quotationNo).Scan(&projectManage).Error; err != nil {
+		log.Errorf("[updateCustomer] query project by quotation_no error,%v", err)
 		return err
 	}
 
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		if customerManage.ID != 0 {
+		if projectManage.CustomerId != 0 {
 			customerManageUpdate := entity.CustomerManage{
-				ID:           customerManage.ID,
+				ID:           projectManage.CustomerId,
 				UpdateTime:   time.Now(),
 				UpdateUserId: currentUserId,
 			}
@@ -360,7 +360,7 @@ func InnerUpdateCustomer(quotationNo string, userList []entity.UserManage, curre
 			}
 		}
 		// 更改成员信息
-		members, err := searchMembersByCustomerId(customerManage.ID)
+		members, err := searchMembersByCustomerId(projectManage.CustomerId)
 		if err != nil {
 			log.Errorf("[updateCustomer] search customer members error, %v", err)
 			return err
@@ -408,7 +408,7 @@ func InnerUpdateCustomer(quotationNo string, userList []entity.UserManage, curre
 				permissionManage := entity.PermissionsManage{
 					UserId:      id,
 					UserName:    addNameList[i],
-					CustomerId:  customerManage.ID,
+					CustomerId:  projectManage.CustomerId,
 					DeleteState: 0,
 				}
 				permissionManageList = append(permissionManageList, permissionManage)
