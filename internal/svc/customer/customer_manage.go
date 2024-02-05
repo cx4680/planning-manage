@@ -194,6 +194,9 @@ func InnerCreate(c *gin.Context) {
 		return
 	}
 	ldapUser := userList[0]
+	if request.CreateUserId == "" {
+		request.CreateUserId = ldapUser.ID
+	}
 	customer, err := InnerCreateCustomer(request.QuotationNo, ldapUser, request.CreateUserId)
 	if err != nil {
 		log.Errorf("[Create] customer %v", err)
