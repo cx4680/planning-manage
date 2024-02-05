@@ -489,21 +489,25 @@ func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entit
 		return nil, nil, nil, errors.New("服务器容量规划指标不存在")
 	}
 	var capConvertBaselineMap = make(map[int64]*entity.CapConvertBaseline)
+	var productCoedList []string
 	for _, v := range capConvertBaselineList {
 		capConvertBaselineMap[v.Id] = v
+		productCoedList = append(productCoedList, v.ProductCode)
 	}
 	//查询容量实际资源消耗表
 	var capActualResBaselineList []*entity.CapActualResBaseline
-	if err := db.Where("version_id = ?", capConvertBaselineList[0].VersionId).Find(&capActualResBaselineList).Error; err != nil {
+	if err := db.Where("version_id = ? AND product_code IN (?)", capConvertBaselineList[0].VersionId, productCoedList).Find(&capActualResBaselineList).Error; err != nil {
 		return nil, nil, nil, err
 	}
 	var capActualResBaselineMap = make(map[string]*entity.CapActualResBaseline)
+	var expendResCodeList []string
 	for _, v := range capActualResBaselineList {
 		capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", v.ProductCode, v.SellSpecs, v.SellUnit, v.Features)] = v
+		expendResCodeList = append(expendResCodeList, v.ExpendResCode)
 	}
 	//查询容量服务器数量计算
 	var capServerCalcBaselineList []*entity.CapServerCalcBaseline
-	if err := db.Where("version_id = ?", capConvertBaselineList[0].VersionId).Find(&capServerCalcBaselineList).Error; err != nil {
+	if err := db.Where("version_id = ? AND expend_res_code IN (?)", capConvertBaselineList[0].VersionId, expendResCodeList).Find(&capServerCalcBaselineList).Error; err != nil {
 		return nil, nil, nil, err
 	}
 	var capServerCalcBaselineMap = make(map[string]*entity.CapServerCalcBaseline)
@@ -514,27 +518,31 @@ func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entit
 }
 
 func CountServerNumber(number, featureNumber int, capActualResBaseline *entity.CapActualResBaseline, capServerCalcBaseline *entity.CapServerCalcBaseline, serverBaseline *entity.ServerBaseline) int {
+	if featureNumber <= 0 {
+		featureNumber = 1
+	}
 	numerator, _ := strconv.ParseFloat(capActualResBaseline.OccRatioNumerator, 64)
 	if numerator == 0 {
 		numerator = float64(featureNumber)
 	}
 	denominator, _ := strconv.ParseFloat(capActualResBaseline.OccRatioDenominator, 64)
-	if numerator == 0 || denominator == 0 {
-		numerator = 1
-		denominator = 1
+	if denominator == 0 {
+		denominator = float64(featureNumber)
 	}
 	//总消耗
 	capacityNumber := float64(number) / numerator * denominator
 	//判断用哪个容量参数
 	var singleCapacity int
-	switch capActualResBaseline.ExpendResCode {
-	case "ECS_VCPU":
+	if strings.Contains(capActualResBaseline.ExpendResCode, "_VCPU") {
 		singleCapacity = serverBaseline.Cpu
-	case "ECS_MEM":
+	}
+	if strings.Contains(capActualResBaseline.ExpendResCode, "_MEM") {
 		singleCapacity = serverBaseline.Memory
-	case "EBS_DISK", "EFS_DISK", "OSS_DISK":
+	}
+	if strings.Contains(capActualResBaseline.ExpendResCode, "_DISK") {
 		singleCapacity = serverBaseline.StorageDiskNum * serverBaseline.StorageDiskCapacity
 	}
+
 	nodeWastage, _ := strconv.ParseFloat(capServerCalcBaseline.NodeWastage, 64)
 	waterLevel, _ := strconv.ParseFloat(capServerCalcBaseline.WaterLevel, 64)
 	//单个服务器消耗
