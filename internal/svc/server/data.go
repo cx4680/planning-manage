@@ -799,6 +799,9 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 	if err := db.Where("plan_id = ?", request.PlanId).Find(&serverCapPlanningList).Error; err != nil {
 		return nil, err
 	}
+	if serverCapPlanningList == nil || len(serverCapPlanningList) == 0 {
+		return nil, nil
+	}
 	versionId := serverCapPlanningList[0].VersionId
 	var nodeRoleCapMap = make(map[int64]int)
 	if len(serverCapPlanningList) == 0 {
