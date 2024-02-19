@@ -327,7 +327,7 @@ func CountCapacity(request *RequestServerCapacityCount) (*ResponseCapCount, erro
 	}
 	var capacityBaselineIdList []int64
 	for _, v := range serverCapPlanningList {
-		if v.CapacityBaselineId == 0 {
+		if v.Type == 2 && util.IsNotBlank(v.Special) {
 			var ecsCapacity *EcsCapacity
 			util.ToObject(v.Special, &ecsCapacity)
 			capacityBaselineIdList = append(capacityBaselineIdList, ecsCapacity.CapacityIdList...)
@@ -353,7 +353,7 @@ func CountCapacity(request *RequestServerCapacityCount) (*ResponseCapCount, erro
 	var serverNumber int
 	for _, v := range serverCapPlanningList {
 		//单独处理ecs容量规划-按规格数量计算
-		if util.IsNotBlank(v.Special) {
+		if v.Type == 2 && util.IsNotBlank(v.Special) {
 			var ecsCapacity *EcsCapacity
 			util.ToObject(v.Special, &ecsCapacity)
 			var cpuNumber, memoryNumber int
@@ -837,7 +837,7 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 		expendResCodeList = append(expendResCodeList, v.ExpendResCode)
 		productCodeList = append(productCodeList, v.ProductCode)
 		//单独处理ecs容量规划-按规格数量计算
-		if util.IsNotBlank(v.Special) {
+		if v.Type == 2 && util.IsNotBlank(v.Special) {
 			util.ToObject(v.Special, &ecsCapacity)
 			expendResCodeList = append(expendResCodeList, "ECS_VCPU", "ECS_MEM")
 		}
