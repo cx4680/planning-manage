@@ -176,7 +176,7 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 		return true
 	}
 	var cloudProductBaselineExcelList []CloudProductBaselineExcel
-	if err := excel.ImportBySheet(f, &cloudProductBaselineExcelList, CloudProductBaselineSheetName, 0, 1); err != nil {
+	if err = excel.ImportBySheet(f, &cloudProductBaselineExcelList, CloudProductBaselineSheetName, 0, 1); err != nil {
 		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return true
@@ -202,14 +202,15 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 				whetherRequiredType = constant.WhetherRequiredYes
 			}
 			cloudProductBaselines = append(cloudProductBaselines, entity.CloudProductBaseline{
-				VersionId:       versionId,
-				ProductType:     cloudProductBaselineExcelList[i].ProductType,
-				ProductName:     cloudProductBaselineExcelList[i].ProductName,
-				ProductCode:     cloudProductBaselineExcelList[i].ProductCode,
-				SellSpecs:       cloudProductBaselineExcelList[i].SellSpecs,
-				AuthorizedUnit:  cloudProductBaselineExcelList[i].AuthorizedUnit,
-				WhetherRequired: whetherRequiredType,
-				Instructions:    cloudProductBaselineExcelList[i].Instructions,
+				VersionId:         versionId,
+				ProductType:       cloudProductBaselineExcelList[i].ProductType,
+				ProductName:       cloudProductBaselineExcelList[i].ProductName,
+				ProductCode:       cloudProductBaselineExcelList[i].ProductCode,
+				SellSpecs:         cloudProductBaselineExcelList[i].SellSpecs,
+				ValueAddedService: cloudProductBaselineExcelList[i].ValueAddedService,
+				AuthorizedUnit:    cloudProductBaselineExcelList[i].AuthorizedUnit,
+				WhetherRequired:   whetherRequiredType,
+				Instructions:      cloudProductBaselineExcelList[i].Instructions,
 			})
 		}
 		originCloudProductBaselines, err := QueryCloudProductBaselineByVersionId(versionId)
@@ -224,21 +225,19 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 			var updateCloudProductBaselines []entity.CloudProductBaseline
 			var originCloudProductIds []int64
 			for _, originCloudProductBaseline := range originCloudProductBaselines {
-				key := fmt.Sprintf("%s%s", originCloudProductBaseline.ProductCode, originCloudProductBaseline.SellSpecs)
-				originCloudProductMap[key] = originCloudProductBaseline
+				originCloudProductMap[originCloudProductBaseline.ProductCode] = originCloudProductBaseline
 				originCloudProductIds = append(originCloudProductIds, originCloudProductBaseline.Id)
 			}
 			if err = DeleteCloudProductDependRel(originCloudProductIds); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := DeleteCloudProductNodeRoleRel(originCloudProductIds); err != nil {
+			if err = DeleteCloudProductNodeRoleRel(originCloudProductIds); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
 			for _, cloudProductBaseline := range cloudProductBaselines {
-				key := fmt.Sprintf("%s%s", cloudProductBaseline.ProductCode, cloudProductBaseline.SellSpecs)
-				originCloudProductBaseline, ok := originCloudProductMap[key]
+				originCloudProductBaseline, ok := originCloudProductMap[cloudProductBaseline.ProductCode]
 				if ok {
 					cloudProductBaseline.Id = originCloudProductBaseline.Id
 					updateCloudProductBaselines = append(updateCloudProductBaselines, cloudProductBaseline)
@@ -247,11 +246,11 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 					insertCloudProductBaselines = append(insertCloudProductBaselines, cloudProductBaseline)
 				}
 			}
-			if err := BatchCreateCloudProductBaseline(insertCloudProductBaselines); err != nil {
+			if err = BatchCreateCloudProductBaseline(insertCloudProductBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := UpdateCloudProductBaseline(updateCloudProductBaselines); err != nil {
+			if err = UpdateCloudProductBaseline(updateCloudProductBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -260,7 +259,7 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 				for _, cloudProductBaseline := range originCloudProductMap {
 					deleteCloudProductBaselines = append(deleteCloudProductBaselines, cloudProductBaseline)
 				}
-				if err := DeleteCloudProductBaseline(deleteCloudProductBaselines); err != nil {
+				if err = DeleteCloudProductBaseline(deleteCloudProductBaselines); err != nil {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
@@ -268,7 +267,7 @@ func ImportCloudProductBaseline(context *gin.Context, versionId int64, f *exceli
 			cloudProductBaselines = append(insertCloudProductBaselines, updateCloudProductBaselines...)
 			return HandleCloudProductDependAndNodeRole(context, cloudProductBaselines, nodeRoleBaselines, cloudProductBaselineExcelList)
 		} else {
-			if err := BatchCreateCloudProductBaseline(cloudProductBaselines); err != nil {
+			if err = BatchCreateCloudProductBaseline(cloudProductBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -412,11 +411,11 @@ func ImportNodeRoleBaseline(context *gin.Context, versionId int64, f *excelize.F
 					insertNodeRoleBaselines = append(insertNodeRoleBaselines, nodeRoleBaseline)
 				}
 			}
-			if err := BatchCreateNodeRoleBaseline(insertNodeRoleBaselines); err != nil {
+			if err = BatchCreateNodeRoleBaseline(insertNodeRoleBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := UpdateNodeRoleBaseline(updateNodeRoleBaselines); err != nil {
+			if err = UpdateNodeRoleBaseline(updateNodeRoleBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -426,7 +425,7 @@ func ImportNodeRoleBaseline(context *gin.Context, versionId int64, f *excelize.F
 				for _, nodeRoleBaseline := range originNodeRoleMap {
 					deleteNodeRoleBaselines = append(deleteNodeRoleBaselines, nodeRoleBaseline)
 				}
-				if err := DeleteNodeRoleBaseline(deleteNodeRoleBaselines); err != nil {
+				if err = DeleteNodeRoleBaseline(deleteNodeRoleBaselines); err != nil {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
@@ -434,7 +433,7 @@ func ImportNodeRoleBaseline(context *gin.Context, versionId int64, f *excelize.F
 			nodeRoleBaselines = append(insertNodeRoleBaselines, updateNodeRoleBaselines...)
 			return HandleNodeRoleMixedDeploy(context, nodeRoleBaselines, nodeRoleBaselineExcelList)
 		} else {
-			if err := BatchCreateNodeRoleBaseline(nodeRoleBaselines); err != nil {
+			if err = BatchCreateNodeRoleBaseline(nodeRoleBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -488,7 +487,7 @@ func ImportServerBaseline(context *gin.Context, versionId int64, f *excelize.Fil
 		return true
 	}
 	var serverBaselineExcelList []ServerBaselineExcel
-	if err := excel.ImportBySheet(f, &serverBaselineExcelList, ServerBaselineSheetName, 0, 1); err != nil {
+	if err = excel.ImportBySheet(f, &serverBaselineExcelList, ServerBaselineSheetName, 0, 1); err != nil {
 		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return true
@@ -552,11 +551,11 @@ func ImportServerBaseline(context *gin.Context, versionId int64, f *excelize.Fil
 					insertServerBaselines = append(insertServerBaselines, serverBaseline)
 				}
 			}
-			if err := BatchCreateServerBaseline(insertServerBaselines); err != nil {
+			if err = BatchCreateServerBaseline(insertServerBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := UpdateServerBaseline(updateServerBaselines); err != nil {
+			if err = UpdateServerBaseline(updateServerBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -573,7 +572,7 @@ func ImportServerBaseline(context *gin.Context, versionId int64, f *excelize.Fil
 			serverBaselines = append(insertServerBaselines, updateServerBaselines...)
 			return HandleServerNodeRole(context, serverBaselines, nodeRoleBaselines, serverBaselineExcelList)
 		} else {
-			if err := BatchCreateServerBaseline(serverBaselines); err != nil {
+			if err = BatchCreateServerBaseline(serverBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -716,11 +715,11 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, versionId int64, f *e
 					insertNetworkDeviceRoleBaselines = append(insertNetworkDeviceRoleBaselines, networkDeviceRoleBaseline)
 				}
 			}
-			if err := BatchCreateNetworkDeviceRoleBaseline(insertNetworkDeviceRoleBaselines); err != nil {
+			if err = BatchCreateNetworkDeviceRoleBaseline(insertNetworkDeviceRoleBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := UpdateNetworkDeviceRoleBaseline(updateNetworkDeviceRoleBaselines); err != nil {
+			if err = UpdateNetworkDeviceRoleBaseline(updateNetworkDeviceRoleBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -729,7 +728,7 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, versionId int64, f *e
 				for _, networkDeviceRoleBaseline := range originNetworkDeviceRoleMap {
 					deleteNetworkDeviceRoleBaselines = append(deleteNetworkDeviceRoleBaselines, networkDeviceRoleBaseline)
 				}
-				if err := DeleteNetworkDeviceRoleBaseline(deleteNetworkDeviceRoleBaselines); err != nil {
+				if err = DeleteNetworkDeviceRoleBaseline(deleteNetworkDeviceRoleBaselines); err != nil {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
@@ -737,7 +736,7 @@ func ImportNetworkDeviceRoleBaseline(context *gin.Context, versionId int64, f *e
 			networkDeviceRoleBaselines = append(insertNetworkDeviceRoleBaselines, updateNetworkDeviceRoleBaselines...)
 			return HandleNetworkModelRole(context, nodeRoleBaselines, networkDeviceRoleBaselines, networkDeviceRoleBaselineExcelList)
 		} else {
-			if err := BatchCreateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines); err != nil {
+			if err = BatchCreateNetworkDeviceRoleBaseline(networkDeviceRoleBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -841,7 +840,7 @@ func ImportNetworkDeviceBaseline(context *gin.Context, versionId int64, f *excel
 		return true
 	}
 	var networkDeviceBaselineExcelList []NetworkDeviceBaselineExcel
-	if err := excel.ImportBySheet(f, &networkDeviceBaselineExcelList, NetworkDeviceBaselineSheetName, 0, 1); err != nil {
+	if err = excel.ImportBySheet(f, &networkDeviceBaselineExcelList, NetworkDeviceBaselineSheetName, 0, 1); err != nil {
 		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return true
@@ -899,11 +898,11 @@ func ImportNetworkDeviceBaseline(context *gin.Context, versionId int64, f *excel
 					insertNetworkDeviceBaselines = append(insertNetworkDeviceBaselines, networkDeviceBaseline)
 				}
 			}
-			if err := BatchCreateNetworkDeviceBaseline(insertNetworkDeviceBaselines); err != nil {
+			if err = BatchCreateNetworkDeviceBaseline(insertNetworkDeviceBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := UpdateNetworkDeviceBaseline(updateNetworkDeviceBaselines); err != nil {
+			if err = UpdateNetworkDeviceBaseline(updateNetworkDeviceBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -912,7 +911,7 @@ func ImportNetworkDeviceBaseline(context *gin.Context, versionId int64, f *excel
 				for _, networkDeviceBaseline := range originNetworkDeviceMap {
 					deleteNetworkDeviceBaselines = append(deleteNetworkDeviceBaselines, networkDeviceBaseline)
 				}
-				if err := DeleteNetworkDeviceBaseline(deleteNetworkDeviceBaselines); err != nil {
+				if err = DeleteNetworkDeviceBaseline(deleteNetworkDeviceBaselines); err != nil {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
@@ -920,7 +919,7 @@ func ImportNetworkDeviceBaseline(context *gin.Context, versionId int64, f *excel
 			networkDeviceBaselines = append(insertNetworkDeviceBaselines, updateNetworkDeviceBaselines...)
 			return HandleNetworkDeviceRoleRel(context, networkDeviceBaselines, networkDeviceRoleBaselines, networkDeviceBaselineExcelList)
 		} else {
-			if err := BatchCreateNetworkDeviceBaseline(networkDeviceBaselines); err != nil {
+			if err = BatchCreateNetworkDeviceBaseline(networkDeviceBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -974,7 +973,7 @@ func ImportIPDemandBaseline(context *gin.Context, versionId int64, f *excelize.F
 		return true
 	}
 	var ipDemandBaselineExcelList []IPDemandBaselineExcel
-	if err := excel.ImportBySheet(f, &ipDemandBaselineExcelList, IPDemandBaselineSheetName, 0, 1); err != nil {
+	if err = excel.ImportBySheet(f, &ipDemandBaselineExcelList, IPDemandBaselineSheetName, 0, 1); err != nil {
 		log.Errorf("excel import error: %v", err)
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return true
@@ -1032,11 +1031,11 @@ func ImportIPDemandBaseline(context *gin.Context, versionId int64, f *excelize.F
 					insertIPDemandBaselines = append(insertIPDemandBaselines, ipDemandBaseline)
 				}
 			}
-			if err := BatchCreateIPDemandBaseline(insertIPDemandBaselines); err != nil {
+			if err = BatchCreateIPDemandBaseline(insertIPDemandBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := UpdateIPDemandBaseline(updateIPDemandBaselines); err != nil {
+			if err = UpdateIPDemandBaseline(updateIPDemandBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -1045,7 +1044,7 @@ func ImportIPDemandBaseline(context *gin.Context, versionId int64, f *excelize.F
 				for _, originIPDemandBaseline := range originIPDemandMap {
 					deleteIPDemandBaselines = append(deleteIPDemandBaselines, originIPDemandBaseline)
 				}
-				if err := DeleteIPDemandBaseline(deleteIPDemandBaselines); err != nil {
+				if err = DeleteIPDemandBaseline(deleteIPDemandBaselines); err != nil {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
@@ -1053,7 +1052,7 @@ func ImportIPDemandBaseline(context *gin.Context, versionId int64, f *excelize.F
 			ipDemandBaselines = append(insertIPDemandBaselines, updateIPDemandBaselines...)
 			return HandleIPDemandDeviceRoleRel(context, ipDemandBaselines, networkDeviceRoleBaselines, ipDemandBaselineExcelList)
 		} else {
-			if err := BatchCreateIPDemandBaseline(ipDemandBaselines); err != nil {
+			if err = BatchCreateIPDemandBaseline(ipDemandBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -1112,15 +1111,16 @@ func ImportCapConvertBaseline(context *gin.Context, versionId int64, f *excelize
 		var capConvertBaselines []entity.CapConvertBaseline
 		for _, capConvertBaselineExcel := range capConvertBaselineExcelList {
 			capConvertBaselines = append(capConvertBaselines, entity.CapConvertBaseline{
-				VersionId:        versionId,
-				ProductName:      capConvertBaselineExcel.ProductName,
-				ProductCode:      capConvertBaselineExcel.ProductCode,
-				SellSpecs:        capConvertBaselineExcel.SellSpecs,
-				CapPlanningInput: capConvertBaselineExcel.CapPlanningInput,
-				Unit:             capConvertBaselineExcel.Unit,
-				FeaturesMode:     capConvertBaselineExcel.FeaturesMode,
-				Features:         capConvertBaselineExcel.Features,
-				Description:      capConvertBaselineExcel.Description,
+				VersionId:         versionId,
+				ProductName:       capConvertBaselineExcel.ProductName,
+				ProductCode:       capConvertBaselineExcel.ProductCode,
+				SellSpecs:         capConvertBaselineExcel.SellSpecs,
+				ValueAddedService: capConvertBaselineExcel.ValueAddedService,
+				CapPlanningInput:  capConvertBaselineExcel.CapPlanningInput,
+				Unit:              capConvertBaselineExcel.Unit,
+				FeaturesMode:      capConvertBaselineExcel.FeaturesMode,
+				Features:          capConvertBaselineExcel.Features,
+				Description:       capConvertBaselineExcel.Description,
 			})
 		}
 		originCapConvertBaselines, err := QueryCapConvertBaselineByVersionId(versionId)
@@ -1134,11 +1134,11 @@ func ImportCapConvertBaseline(context *gin.Context, versionId int64, f *excelize
 			var insertCapConvertBaselines []entity.CapConvertBaseline
 			var updateCapConvertBaselines []entity.CapConvertBaseline
 			for _, originCapConvertBaseline := range originCapConvertBaselines {
-				key := originCapConvertBaseline.ProductCode + originCapConvertBaseline.SellSpecs + originCapConvertBaseline.CapPlanningInput + originCapConvertBaseline.Features
+				key := fmt.Sprintf("%s-%s-%s-%s-%s", originCapConvertBaseline.ProductCode, originCapConvertBaseline.SellSpecs, originCapConvertBaseline.ValueAddedService, originCapConvertBaseline.CapPlanningInput, originCapConvertBaseline.Features)
 				originCapConvertMap[key] = originCapConvertBaseline
 			}
 			for _, capConvertBaseline := range capConvertBaselines {
-				key := capConvertBaseline.ProductCode + capConvertBaseline.SellSpecs + capConvertBaseline.CapPlanningInput + capConvertBaseline.Features
+				key := fmt.Sprintf("%s-%s-%s-%s-%s", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.ValueAddedService, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)
 				originCapConvertBaseline, ok := originCapConvertMap[key]
 				if ok {
 					capConvertBaseline.Id = originCapConvertBaseline.Id
@@ -1148,11 +1148,11 @@ func ImportCapConvertBaseline(context *gin.Context, versionId int64, f *excelize
 					insertCapConvertBaselines = append(insertCapConvertBaselines, capConvertBaseline)
 				}
 			}
-			if err := BatchCreateCapConvertBaseline(insertCapConvertBaselines); err != nil {
+			if err = BatchCreateCapConvertBaseline(insertCapConvertBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := UpdateCapConvertBaseline(updateCapConvertBaselines); err != nil {
+			if err = UpdateCapConvertBaseline(updateCapConvertBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -1161,13 +1161,13 @@ func ImportCapConvertBaseline(context *gin.Context, versionId int64, f *excelize
 				for _, originCapConvertBaseline := range originCapConvertMap {
 					deleteCapConvertBaselines = append(deleteCapConvertBaselines, originCapConvertBaseline)
 				}
-				if err := DeleteCapConvertBaseline(deleteCapConvertBaselines); err != nil {
+				if err = DeleteCapConvertBaseline(deleteCapConvertBaselines); err != nil {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
 			}
 		} else {
-			if err := BatchCreateCapConvertBaseline(capConvertBaselines); err != nil {
+			if err = BatchCreateCapConvertBaseline(capConvertBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -1238,11 +1238,11 @@ func ImportCapActualResBaseline(context *gin.Context, versionId int64, f *exceli
 					insertCapActualResBaselines = append(insertCapActualResBaselines, capActualResBaseline)
 				}
 			}
-			if err := BatchCreateCapActualResBaseline(insertCapActualResBaselines); err != nil {
+			if err = BatchCreateCapActualResBaseline(insertCapActualResBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := UpdateCapActualResBaseline(updateCapActualResBaselines); err != nil {
+			if err = UpdateCapActualResBaseline(updateCapActualResBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -1251,13 +1251,13 @@ func ImportCapActualResBaseline(context *gin.Context, versionId int64, f *exceli
 				for _, originCapActualResBaseline := range originCapActualResMap {
 					deleteCapActualResBaselines = append(deleteCapActualResBaselines, originCapActualResBaseline)
 				}
-				if err := DeleteCapActualResBaseline(deleteCapActualResBaselines); err != nil {
+				if err = DeleteCapActualResBaseline(deleteCapActualResBaselines); err != nil {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
 			}
 		} else {
-			if err := BatchCreateCapActualResBaseline(capActualResBaselines); err != nil {
+			if err = BatchCreateCapActualResBaseline(capActualResBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -1322,11 +1322,11 @@ func ImportCapServerCalcBaseline(context *gin.Context, versionId int64, f *excel
 					insertCapServerCalcBaselines = append(insertCapServerCalcBaselines, capServerCalcBaseline)
 				}
 			}
-			if err := BatchCreateCapServerCalcBaseline(insertCapServerCalcBaselines); err != nil {
+			if err = BatchCreateCapServerCalcBaseline(insertCapServerCalcBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := UpdateCapServerCalcBaseline(updateCapServerCalcBaselines); err != nil {
+			if err = UpdateCapServerCalcBaseline(updateCapServerCalcBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -1335,13 +1335,13 @@ func ImportCapServerCalcBaseline(context *gin.Context, versionId int64, f *excel
 				for _, originCapServerCalcBaseline := range originCapServerCalcMap {
 					deleteCapServerCalcBaselines = append(deleteCapServerCalcBaselines, originCapServerCalcBaseline)
 				}
-				if err := DeleteCapServerCalcBaseline(deleteCapServerCalcBaselines); err != nil {
+				if err = DeleteCapServerCalcBaseline(deleteCapServerCalcBaselines); err != nil {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
 			}
 		} else {
-			if err := BatchCreateCapServerCalcBaseline(capServerCalcBaselines); err != nil {
+			if err = BatchCreateCapServerCalcBaseline(capServerCalcBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -1361,15 +1361,16 @@ func ImportSoftwareBomLicenseBaseline(context *gin.Context, versionId int64, f *
 		var softwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline
 		for _, softwareBomLicenseBaselineExcel := range softwareBomLicenseBaselineExcelList {
 			softwareBomLicenseBaselines = append(softwareBomLicenseBaselines, entity.SoftwareBomLicenseBaseline{
-				VersionId:      versionId,
-				CloudService:   softwareBomLicenseBaselineExcel.CloudService,
-				ServiceCode:    softwareBomLicenseBaselineExcel.ServiceCode,
-				SellSpecs:      softwareBomLicenseBaselineExcel.SellSpecs,
-				AuthorizedUnit: softwareBomLicenseBaselineExcel.AuthorizedUnit,
-				SellType:       softwareBomLicenseBaselineExcel.SellType,
-				HardwareArch:   softwareBomLicenseBaselineExcel.HardwareArch,
-				BomId:          softwareBomLicenseBaselineExcel.BomId,
-				CalcMethod:     softwareBomLicenseBaselineExcel.CalcMethod,
+				VersionId:         versionId,
+				CloudService:      softwareBomLicenseBaselineExcel.CloudService,
+				ServiceCode:       softwareBomLicenseBaselineExcel.ServiceCode,
+				SellSpecs:         softwareBomLicenseBaselineExcel.SellSpecs,
+				ValueAddedService: softwareBomLicenseBaselineExcel.ValueAddedService,
+				AuthorizedUnit:    softwareBomLicenseBaselineExcel.AuthorizedUnit,
+				SellType:          softwareBomLicenseBaselineExcel.SellType,
+				HardwareArch:      softwareBomLicenseBaselineExcel.HardwareArch,
+				BomId:             softwareBomLicenseBaselineExcel.BomId,
+				CalcMethod:        softwareBomLicenseBaselineExcel.CalcMethod,
 			})
 		}
 		originSoftwareBomLicenseBaselines, err := QuerySoftwareBomLicenseBaselineByVersionId(versionId)
@@ -1383,11 +1384,11 @@ func ImportSoftwareBomLicenseBaseline(context *gin.Context, versionId int64, f *
 			var insertSoftwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline
 			var updateSoftwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline
 			for _, originSoftwareBomLicenseBaseline := range originSoftwareBomLicenseBaselines {
-				key := fmt.Sprintf("%s%s%s%s%s", originSoftwareBomLicenseBaseline.ServiceCode, originSoftwareBomLicenseBaseline.SellSpecs, originSoftwareBomLicenseBaseline.AuthorizedUnit, originSoftwareBomLicenseBaseline.SellType, originSoftwareBomLicenseBaseline.HardwareArch)
+				key := fmt.Sprintf("%s-%s-%s-%s-%s-%s", originSoftwareBomLicenseBaseline.ServiceCode, originSoftwareBomLicenseBaseline.SellSpecs, originSoftwareBomLicenseBaseline.ValueAddedService, originSoftwareBomLicenseBaseline.AuthorizedUnit, originSoftwareBomLicenseBaseline.SellType, originSoftwareBomLicenseBaseline.HardwareArch)
 				originSoftwareBomLicenseMap[key] = originSoftwareBomLicenseBaseline
 			}
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselines {
-				key := fmt.Sprintf("%s%s%s%s%s", softwareBomLicenseBaseline.ServiceCode, softwareBomLicenseBaseline.SellSpecs, softwareBomLicenseBaseline.AuthorizedUnit, softwareBomLicenseBaseline.SellType, softwareBomLicenseBaseline.HardwareArch)
+				key := fmt.Sprintf("%s-%s-%s-%s-%s-%s", softwareBomLicenseBaseline.ServiceCode, softwareBomLicenseBaseline.SellSpecs, softwareBomLicenseBaseline.ValueAddedService, softwareBomLicenseBaseline.AuthorizedUnit, softwareBomLicenseBaseline.SellType, softwareBomLicenseBaseline.HardwareArch)
 				originSoftwareBomLicenseBaseline, ok := originSoftwareBomLicenseMap[key]
 				if ok {
 					softwareBomLicenseBaseline.Id = originSoftwareBomLicenseBaseline.Id
@@ -1397,11 +1398,11 @@ func ImportSoftwareBomLicenseBaseline(context *gin.Context, versionId int64, f *
 					insertSoftwareBomLicenseBaselines = append(insertSoftwareBomLicenseBaselines, softwareBomLicenseBaseline)
 				}
 			}
-			if err := BatchCreateSoftwareBomLicenseBaseline(insertSoftwareBomLicenseBaselines); err != nil {
+			if err = BatchCreateSoftwareBomLicenseBaseline(insertSoftwareBomLicenseBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
-			if err := UpdateSoftwareBomLicenseBaseline(updateSoftwareBomLicenseBaselines); err != nil {
+			if err = UpdateSoftwareBomLicenseBaseline(updateSoftwareBomLicenseBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}
@@ -1410,13 +1411,13 @@ func ImportSoftwareBomLicenseBaseline(context *gin.Context, versionId int64, f *
 				for _, originSoftwareBomLicenseBaseline := range originSoftwareBomLicenseMap {
 					deleteSoftwareBomLicenseBaselines = append(deleteSoftwareBomLicenseBaselines, originSoftwareBomLicenseBaseline)
 				}
-				if err := DeleteSoftwareBomLicenseBaseline(deleteSoftwareBomLicenseBaselines); err != nil {
+				if err = DeleteSoftwareBomLicenseBaseline(deleteSoftwareBomLicenseBaselines); err != nil {
 					result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 					return true
 				}
 			}
 		} else {
-			if err := BatchCreateSoftwareBomLicenseBaseline(softwareBomLicenseBaselines); err != nil {
+			if err = BatchCreateSoftwareBomLicenseBaseline(softwareBomLicenseBaselines); err != nil {
 				result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 				return true
 			}

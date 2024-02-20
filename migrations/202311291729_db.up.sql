@@ -186,15 +186,16 @@ INSERT INTO `planning_manage`.`config_item` (`id`, `p_id`, `name`, `code`, `data
 
 CREATE TABLE `cloud_product_baseline`
 (
-    `id`               bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
-    `version_id`       bigint(20) DEFAULT NULL COMMENT '软件版本id',
-    `product_type`     varchar(100) DEFAULT NULL COMMENT '产品类型',
-    `product_name`     varchar(255) DEFAULT NULL COMMENT '产品名称',
-    `product_code`     varchar(100) DEFAULT NULL COMMENT '产品code',
-    `sell_specs`       varchar(255) DEFAULT NULL COMMENT '售卖规格',
-    `authorized_unit`  varchar(255) DEFAULT NULL COMMENT '授权单元',
-    `whether_required` tinyint(4) DEFAULT NULL COMMENT '是否必选，0：否，1：是',
-    `instructions`     varchar(500) DEFAULT NULL COMMENT '说明',
+    `id`                   bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `version_id`           bigint(20) DEFAULT NULL COMMENT '软件版本id',
+    `product_type`         varchar(100) DEFAULT NULL COMMENT '产品类型',
+    `product_name`         varchar(255) DEFAULT NULL COMMENT '产品名称',
+    `product_code`         varchar(100) DEFAULT NULL COMMENT '产品code',
+    `sell_specs`           varchar(255) DEFAULT NULL COMMENT '售卖规格',
+    `value_added_service`  varchar(255) DEFAULT NULL COMMENT '增值服务',
+    `authorized_unit`      varchar(255) DEFAULT NULL COMMENT '授权单元',
+    `whether_required`     tinyint(4) DEFAULT NULL COMMENT '是否必选，0：否，1：是',
+    `instructions`         varchar(500) DEFAULT NULL COMMENT '说明',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品基线';
 
@@ -476,16 +477,17 @@ CREATE TABLE `network_model_role_rel`
 
 CREATE TABLE `cap_convert_baseline`
 (
-    `id`                 bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
-    `version_id`         bigint(20) DEFAULT NULL COMMENT '版本id',
-    `product_name`       varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '产品名称',
-    `product_code`       varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '产品code',
-    `sell_specs`         varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '售卖规格',
-    `cap_planning_input` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '容量规划输入',
-    `unit`               varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位',
-    `features_mode`      varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '特性模式',
-    `features`           varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '特性',
-    `description`        varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '说明',
+    `id`                  bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+    `version_id`          bigint(20) DEFAULT NULL COMMENT '版本id',
+    `product_name`        varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '产品名称',
+    `product_code`        varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '产品code',
+    `sell_specs`          varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '售卖规格',
+    `value_added_service` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '增值服务',
+    `cap_planning_input`  varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '容量规划输入',
+    `unit`                varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '单位',
+    `features_mode`       varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '特性模式',
+    `features`            varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '特性',
+    `description`         varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '说明',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='云服务容量换算基线表';
 

@@ -31,6 +31,7 @@ type CloudProductBaselineExcel struct {
 	ProductName             string   `excel:"name:云服务;" json:"productName"`               // 产品名称
 	ProductCode             string   `excel:"name:服务编码;" json:"productCode"`              // 产品编码
 	SellSpecs               string   `excel:"name:售卖规格;" json:"sellSpecs"`                // 售卖规格
+	ValueAddedService       string   `excel:"name:增值服务;" json:"valueAddedService"`        // 增值服务
 	AuthorizedUnit          string   `excel:"name:授权单元;" json:"authorizedUnit"`           // 授权单元
 	WhetherRequired         string   `excel:"name:是否必选;" json:"whetherRequired"`          // 是否必选，0：否，1：是
 	Instructions            string   `excel:"name:说明;" json:"instructions"`               // 说明
@@ -124,14 +125,15 @@ type IPDemandBaselineExcel struct {
 }
 
 type CapConvertBaselineExcel struct {
-	ProductName      string `excel:"name:云服务;" json:"productName"`         // 产品名称
-	ProductCode      string `excel:"name:服务编码;" json:"productCode"`        // 产品编码
-	SellSpecs        string `excel:"name:售卖规格;" json:"sellSpecs"`          // 售卖规格
-	CapPlanningInput string `excel:"name:容量规划输入;" json:"capPlanningInput"` // 容量规划输入
-	Unit             string `excel:"name:单位;" json:"unit"`                 // 单位
-	FeaturesMode     string `excel:"name:特性模式;" json:"featuresMode"`       // 特性模式
-	Features         string `excel:"name:特性;" json:"features"`             // 特性
-	Description      string `excel:"name:说明;" json:"description"`          // 说明
+	ProductName       string `excel:"name:云服务;" json:"productName"`         // 产品名称
+	ProductCode       string `excel:"name:服务编码;" json:"productCode"`        // 产品编码
+	SellSpecs         string `excel:"name:售卖规格;" json:"sellSpecs"`          // 售卖规格
+	ValueAddedService string `excel:"name:增值服务;" json:"valueAddedService"`  // 增值服务
+	CapPlanningInput  string `excel:"name:容量规划输入;" json:"capPlanningInput"` // 容量规划输入
+	Unit              string `excel:"name:单位;" json:"unit"`                 // 单位
+	FeaturesMode      string `excel:"name:特性模式;" json:"featuresMode"`       // 特性模式
+	Features          string `excel:"name:特性;" json:"features"`             // 特性
+	Description       string `excel:"name:说明;" json:"description"`          // 说明
 }
 
 type CapActualResBaselineExcel struct {
@@ -158,12 +160,13 @@ type CapServerCalcBaselineExcel struct {
 }
 
 type SoftwareBomLicenseBaselineExcel struct {
-	CloudService   string `excel:"name:云服务;" json:"cloudService"`    // 云服务
-	ServiceCode    string `excel:"name:服务编码;" json:"serviceCode"`    // 服务编码
-	SellSpecs      string `excel:"name:售卖规格;" json:"sellSpecs"`      // 售卖规格
-	AuthorizedUnit string `excel:"name:授权单元;" json:"authorizedUnit"` // 授权单元
-	SellType       string `excel:"name:类型;" json:"sellType"`         // 售卖类型
-	HardwareArch   string `excel:"name:硬件架构;" json:"hardwareArch"`   // 硬件架构
-	BomId          string `excel:"name:BOM ID;" json:"bomId"`        // bom id
-	CalcMethod     string `excel:"name:计算方式;"  json:"calcMethod"`    // 计算方式
+	CloudService      string `excel:"name:云服务;" json:"cloudService"`       // 云服务
+	ServiceCode       string `excel:"name:服务编码;" json:"serviceCode"`       // 服务编码
+	SellSpecs         string `excel:"name:售卖规格;" json:"sellSpecs"`         // 售卖规格
+	ValueAddedService string `excel:"name:增值服务;" json:"valueAddedService"` // 增值服务
+	AuthorizedUnit    string `excel:"name:授权单元;" json:"authorizedUnit"`    // 授权单元
+	SellType          string `excel:"name:类型;" json:"sellType"`            // 售卖类型
+	HardwareArch      string `excel:"name:硬件架构;" json:"hardwareArch"`      // 硬件架构
+	BomId             string `excel:"name:BOM ID;" json:"bomId"`           // bom id
+	CalcMethod        string `excel:"name:计算方式;"  json:"calcMethod"`       // 计算方式
 }
