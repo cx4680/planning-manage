@@ -6,11 +6,11 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/computing_formula"
 	"errors"
 	"fmt"
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"gorm.io/gorm"
-	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -352,31 +352,26 @@ func CountCapacity(request *RequestServerCapacityCount) (*ResponseCapCount, erro
 	//计算服务器数量
 	var serverNumber int
 	for _, v := range serverCapPlanningList {
+		//部分产品特殊处理
+		specialCapActualResMap := computing_formula.SpecialCapacityComputing(map[int64]float64{v.CapacityBaselineId: float64(v.Number)}, capConvertBaselineMap)
 		//单独处理ecs容量规划-按规格数量计算
 		if v.Type == 2 && util.IsNotBlank(v.Special) {
 			var ecsCapacity *EcsCapacity
 			util.ToObject(v.Special, &ecsCapacity)
-			var cpuNumber, memoryNumber int
-			for _, ecs := range ecsCapacity.List {
-				for _, capacityId := range ecsCapacity.CapacityIdList {
-					capConvertBaseline := capConvertBaselineMap[capacityId]
-					capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
-					if capConvertBaseline.CapPlanningInput == "vCPU" {
-						cpuNumber += CountServerNumber(ecs.CpuNumber*ecs.Count, v.FeatureNumber, capActualResBaseline, capServerCalcBaselineMap[capActualResBaseline.ExpendResCode], serverBaseline)
-					}
-					if capConvertBaseline.CapPlanningInput == "内存" {
-						memoryTotal := 138 + 8 + 16 + 8*ecs.CpuNumber*ecs.Count + ecs.MemoryNumber*ecs.Count/512
-						if serverBaseline.Arch == "ARM" {
-							memoryTotal += 128
-						}
-						memoryNumber += CountServerNumber(memoryTotal/1024, 1, capActualResBaseline, capServerCalcBaselineMap[capActualResBaseline.ExpendResCode], serverBaseline)
-					}
+			var vCpu, memory, count int
+			for _, capacityId := range ecsCapacity.CapacityIdList {
+				capConvertBaseline := capConvertBaselineMap[capacityId]
+				capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
+				capServerCalcBaseline := capServerCalcBaselineMap[capActualResBaseline.ExpendResCode]
+				for _, ecs := range ecsCapacity.List {
+					vCpu += ecs.CpuNumber
+					memory += ecs.MemoryNumber
+					count += ecs.Count
 				}
-			}
-			if cpuNumber > memoryNumber {
-				serverNumber = cpuNumber
-			} else {
-				serverNumber = memoryNumber
+				number := computing_formula.EcsCapacityComputing(vCpu, memory, count, ecsCapacity.FeatureNumber, capConvertBaseline.CapPlanningInput, serverBaseline.Arch, capActualResBaseline, capServerCalcBaseline, serverBaseline, specialCapActualResMap)
+				if serverNumber < number {
+					serverNumber = number
+				}
 			}
 			continue
 		}
@@ -391,7 +386,7 @@ func CountCapacity(request *RequestServerCapacityCount) (*ResponseCapCount, erro
 		if capServerCalcBaseline == nil {
 			return nil, errors.New("服务器数量计算数据不存在")
 		}
-		num := CountServerNumber(v.Number, v.FeatureNumber, capActualResBaseline, capServerCalcBaseline, serverBaseline)
+		num := computing_formula.CapacityComputing(v.Number, v.FeatureNumber, capActualResBaseline, capServerCalcBaseline, serverBaseline, specialCapActualResMap)
 		if serverNumber < num {
 			serverNumber = num
 		}
@@ -454,53 +449,59 @@ func SaveServerCapacity(request *Request) error {
 	var newServerPlanningList []*entity.ServerPlanning
 	var serverCapPlanningList []*entity.ServerCapPlanning
 	var nodeRoleCapNumberMap = make(map[int64]int)
+	//部分产品特殊处理
+	var serverCapacityMap = make(map[int64]float64)
+	for _, v := range request.ServerCapacityList {
+		serverCapacityMap[v.Id] = float64(v.Number)
+	}
+	specialCapActualResMap := computing_formula.SpecialCapacityComputing(serverCapacityMap, capConvertBaselineMap)
+	for _, v := range request.ServerCapacityList {
+		//处理参数
+		capConvertBaseline, capActualResBaseline, capServerCalcBaseline, nodeRoleBaseline, _, serverBaseline, err := handleCapCapacityParam(v.Id, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, nodeRoleBaselineMap, serverPlanningMap, serverBaselineMap)
+		if err != nil {
+			log.Errorf("handleCapCapacityParam error: %v", err)
+		}
+		//计算服务器数量
+		serverNumber := computing_formula.CapacityComputing(v.Number, v.FeatureNumber, capActualResBaseline, capServerCalcBaseline, serverBaseline, specialCapActualResMap)
+		//保存服务器规划数据
+		if nodeRoleCapNumberMap[nodeRoleBaseline.Id] < serverNumber {
+			nodeRoleCapNumberMap[nodeRoleBaseline.Id] = serverNumber
+		}
+		//构建服务器容量规划
+		serverCapPlanningList = append(serverCapPlanningList, &entity.ServerCapPlanning{
+			PlanId:             request.PlanId,
+			NodeRoleId:         nodeRoleBaseline.Id,
+			Type:               1,
+			CapacityBaselineId: v.Id,
+			Number:             v.Number,
+			FeatureNumber:      v.FeatureNumber,
+			VersionId:          capConvertBaseline.VersionId,
+			ProductName:        capConvertBaseline.ProductName,
+			ProductCode:        capConvertBaseline.ProductCode,
+			SellSpecs:          capConvertBaseline.SellSpecs,
+			CapPlanningInput:   capConvertBaseline.CapPlanningInput,
+			Unit:               capConvertBaseline.Unit,
+			FeaturesMode:       capConvertBaseline.FeaturesMode,
+			Features:           capConvertBaseline.Features,
+			ExpendResCode:      capActualResBaseline.ExpendResCode,
+			Special:            "{}",
+		})
+	}
+	//单独处理ecs容量规划-按规格数量计算
+	if request.EcsCapacity != nil {
+		newServerPlanning, serverCapPlanning, err := handleSpecialData(request, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, nodeRoleBaselineMap, serverPlanningMap, serverBaselineMap, specialCapActualResMap)
+		if err != nil {
+			return err
+		}
+		newServerPlanningList = append(newServerPlanningList, newServerPlanning)
+		serverCapPlanningList = append(serverCapPlanningList, serverCapPlanning)
+	}
+	for k, v := range nodeRoleCapNumberMap {
+		serverPlanning := serverPlanningMap[k]
+		serverPlanning.Number = v
+		newServerPlanningList = append(newServerPlanningList, serverPlanning)
+	}
 	if err = db.Transaction(func(tx *gorm.DB) error {
-		for _, v := range request.ServerCapacityList {
-			//处理参数
-			capConvertBaseline, capActualResBaseline, capServerCalcBaseline, nodeRoleBaseline, _, serverBaseline, err := handleCapCapacityParam(v.Id, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, nodeRoleBaselineMap, serverPlanningMap, serverBaselineMap)
-			if err != nil {
-				log.Errorf("handleCapCapacityParam error: %v", err)
-			}
-			//计算服务器数量
-			serverNumber := CountServerNumber(v.Number, v.FeatureNumber, capActualResBaseline, capServerCalcBaseline, serverBaseline)
-			//保存服务器规划数据
-			if nodeRoleCapNumberMap[nodeRoleBaseline.Id] < serverNumber {
-				nodeRoleCapNumberMap[nodeRoleBaseline.Id] = serverNumber
-			}
-			//构建服务器容量规划
-			serverCapPlanningList = append(serverCapPlanningList, &entity.ServerCapPlanning{
-				PlanId:             request.PlanId,
-				NodeRoleId:         nodeRoleBaseline.Id,
-				Type:               1,
-				CapacityBaselineId: v.Id,
-				Number:             v.Number,
-				FeatureNumber:      v.FeatureNumber,
-				VersionId:          capConvertBaseline.VersionId,
-				ProductName:        capConvertBaseline.ProductName,
-				ProductCode:        capConvertBaseline.ProductCode,
-				SellSpecs:          capConvertBaseline.SellSpecs,
-				CapPlanningInput:   capConvertBaseline.CapPlanningInput,
-				Unit:               capConvertBaseline.Unit,
-				FeaturesMode:       capConvertBaseline.FeaturesMode,
-				Features:           capConvertBaseline.Features,
-				ExpendResCode:      capActualResBaseline.ExpendResCode,
-				Special:            "{}",
-			})
-		}
-		//单独处理ecs容量规划-按规格数量计算
-		if request.EcsCapacity != nil {
-			newServerPlanning, serverCapPlanning, err := handleSpecialData(request, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, nodeRoleBaselineMap, serverPlanningMap, serverBaselineMap)
-			if err != nil {
-				return err
-			}
-			newServerPlanningList = append(newServerPlanningList, newServerPlanning)
-			serverCapPlanningList = append(serverCapPlanningList, serverCapPlanning)
-		}
-		for k, v := range nodeRoleCapNumberMap {
-			serverPlanning := serverPlanningMap[k]
-			serverPlanning.Number = v
-			newServerPlanningList = append(newServerPlanningList, serverPlanning)
-		}
 		//保存服务器规划
 		if err = tx.Save(&newServerPlanningList).Error; err != nil {
 			return err
@@ -542,7 +543,6 @@ func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entit
 	var expendResCodeList []string
 	for _, v := range capActualResBaselineList {
 		capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", v.ProductCode, v.SellSpecs, v.SellUnit, v.Features)] = v
-
 		expendResCodeList = append(expendResCodeList, v.ExpendResCode)
 	}
 	//查询容量服务器数量计算
@@ -555,46 +555,6 @@ func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entit
 		capServerCalcBaselineMap[v.ExpendResCode] = v
 	}
 	return capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, nil
-}
-
-func CountServerNumber(number, featureNumber int, capActualResBaseline *entity.CapActualResBaseline, capServerCalcBaseline *entity.CapServerCalcBaseline, serverBaseline *entity.ServerBaseline) int {
-	if featureNumber <= 0 {
-		featureNumber = 1
-	}
-	numerator, _ := strconv.ParseFloat(capActualResBaseline.OccRatioNumerator, 64)
-	if numerator == 0 {
-		numerator = float64(featureNumber)
-	}
-	denominator, _ := strconv.ParseFloat(capActualResBaseline.OccRatioDenominator, 64)
-	if denominator == 0 {
-		denominator = float64(featureNumber)
-	}
-	//总消耗
-	capacityNumber := float64(number) / numerator * denominator
-	//判断用哪个容量参数
-	var singleCapacity int
-	if strings.Contains(capActualResBaseline.ExpendResCode, "_VCPU") {
-		singleCapacity = serverBaseline.Cpu
-	}
-	if strings.Contains(capActualResBaseline.ExpendResCode, "_MEM") {
-		singleCapacity = serverBaseline.Memory
-	}
-	if strings.Contains(capActualResBaseline.ExpendResCode, "_DISK") {
-		singleCapacity = serverBaseline.StorageDiskNum * serverBaseline.StorageDiskCapacity
-	}
-
-	nodeWastage, _ := strconv.ParseFloat(capServerCalcBaseline.NodeWastage, 64)
-	waterLevel, _ := strconv.ParseFloat(capServerCalcBaseline.WaterLevel, 64)
-	//单个服务器消耗
-	var consumeNumber float64
-	if capServerCalcBaseline.NodeWastageCalcType == 1 {
-		consumeNumber = (float64(singleCapacity) - nodeWastage) * waterLevel
-	} else {
-		consumeNumber = (float64(singleCapacity) * (1 - nodeWastage)) * waterLevel
-	}
-	//总消耗除以单个服务器消耗，等于服务器数量
-	serverNumber := math.Ceil(capacityNumber / consumeNumber)
-	return int(serverNumber)
 }
 
 func handleCapCapacityParam(id int64, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capActualResBaselineMap map[string]*entity.CapActualResBaseline,
@@ -630,9 +590,9 @@ func handleCapCapacityParam(id int64, capConvertBaselineMap map[int64]*entity.Ca
 	return capConvertBaseline, capActualResBaseline, capServerCalcBaseline, nodeRoleBaseline, serverPlanning, serverBaseline, nil
 }
 
-func handleSpecialData(request *Request, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capActualResBaselineMap map[string]*entity.CapActualResBaseline, capServerCalcBaselineMap map[string]*entity.CapServerCalcBaseline,
-	nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline, serverPlanningMap map[int64]*entity.ServerPlanning, serverBaselineMap map[int64]*entity.ServerBaseline) (*entity.ServerPlanning, *entity.ServerCapPlanning, error) {
-	var cpuNumber, memoryNumber int
+func handleSpecialData(request *Request, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capActualResBaselineMap map[string]*entity.CapActualResBaseline,
+	capServerCalcBaselineMap map[string]*entity.CapServerCalcBaseline, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline,
+	serverPlanningMap map[int64]*entity.ServerPlanning, serverBaselineMap map[int64]*entity.ServerBaseline, specialCapActualResMap map[string]float64) (*entity.ServerPlanning, *entity.ServerCapPlanning, error) {
 	var versionId int64
 	var capConvertBaseline *entity.CapConvertBaseline
 	var capActualResBaseline *entity.CapActualResBaseline
@@ -641,6 +601,7 @@ func handleSpecialData(request *Request, capConvertBaselineMap map[int64]*entity
 	var serverPlanning *entity.ServerPlanning
 	var serverBaseline *entity.ServerBaseline
 	var err error
+	var vCpu, memory, count, serverNumber int
 	for _, v := range request.EcsCapacity.CapacityIdList {
 		capConvertBaseline, capActualResBaseline, capServerCalcBaseline, nodeRoleBaseline, serverPlanning, serverBaseline, err = handleCapCapacityParam(v, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, nodeRoleBaselineMap, serverPlanningMap, serverBaselineMap)
 		if err != nil {
@@ -648,23 +609,16 @@ func handleSpecialData(request *Request, capConvertBaselineMap map[int64]*entity
 		}
 		versionId = capConvertBaseline.VersionId
 		for _, ecs := range request.EcsCapacity.List {
-			if capConvertBaseline.CapPlanningInput == "vCPU" {
-				cpuNumber += CountServerNumber(ecs.CpuNumber*ecs.Count, request.EcsCapacity.FeatureNumber, capActualResBaseline, capServerCalcBaseline, serverBaseline)
-			}
-			if capConvertBaseline.CapPlanningInput == "内存" {
-				memoryTotal := 138 + 8 + 16 + 8*ecs.CpuNumber*ecs.Count + ecs.MemoryNumber*ecs.Count/512
-				if serverBaseline.Arch == "ARM" {
-					memoryTotal += 128
-				}
-				memoryNumber += CountServerNumber(memoryTotal/1024, 1, capActualResBaseline, capServerCalcBaseline, serverBaseline)
-			}
+			vCpu += ecs.CpuNumber
+			memory += ecs.MemoryNumber
+			count += ecs.Count
+		}
+		number := computing_formula.EcsCapacityComputing(vCpu, memory, count, request.EcsCapacity.FeatureNumber, capConvertBaseline.CapPlanningInput, serverBaseline.Arch, capActualResBaseline, capServerCalcBaseline, serverBaseline, specialCapActualResMap)
+		if serverNumber < number {
+			serverNumber = number
 		}
 	}
-	if cpuNumber > memoryNumber {
-		serverPlanning.Number = cpuNumber
-	} else {
-		serverPlanning.Number = memoryNumber
-	}
+	serverPlanning.Number = serverNumber
 	return serverPlanning, &entity.ServerCapPlanning{PlanId: request.PlanId, NodeRoleId: nodeRoleBaseline.Id, ProductCode: "ECS", Type: 2, FeatureNumber: request.EcsCapacity.FeatureNumber, VersionId: versionId, Special: util.ToString(request.EcsCapacity)}, nil
 }
 
@@ -836,11 +790,13 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 	var capPlanningNodeRoleIdList []int64
 	var expendResCodeList []string
 	var productCodeList []string
+	var capacityBaselineIdList []int64
 	var ecsCapacity = &EcsCapacity{}
 	for _, v := range serverCapPlanningList {
 		capPlanningNodeRoleIdList = append(capPlanningNodeRoleIdList, v.NodeRoleId)
 		expendResCodeList = append(expendResCodeList, v.ExpendResCode)
 		productCodeList = append(productCodeList, v.ProductCode)
+		capacityBaselineIdList = append(capacityBaselineIdList, v.CapacityBaselineId)
 		//单独处理ecs容量规划-按规格数量计算
 		if v.Type == 2 && util.IsNotBlank(v.Special) {
 			util.ToObject(v.Special, &ecsCapacity)
@@ -851,6 +807,15 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 	var capPlanningNodeRoleRelList []*entity.ServerNodeRoleRel
 	if err := db.Where("node_role_id IN (?)", capPlanningNodeRoleIdList).Find(&capPlanningNodeRoleRelList).Error; err != nil {
 		return nil, err
+	}
+	//查询容量换算表
+	var capConvertBaselineList []*entity.CapConvertBaseline
+	if err := db.Where("id IN (?) AND version_id = ?", capacityBaselineIdList, versionId).Find(&capConvertBaselineList).Error; err != nil {
+		return nil, err
+	}
+	var capConvertBaselineMap = make(map[int64]*entity.CapConvertBaseline)
+	for _, v := range capConvertBaselineList {
+		capConvertBaselineMap[v.Id] = v
 	}
 	//查询容量特性表
 	var capActualResBaselineList []*entity.CapActualResBaseline
@@ -878,28 +843,28 @@ func getNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 			key := fmt.Sprintf("%v-%v", v.ProductCode, v.ExpendResCode)
 			capActualResBaseline := capActualResBaselineMap[key]
 			capServerCalcBaseline := capServerCalcBaselineMap[v.ExpendResCode]
-			var num int
+			//部分产品特殊处理
+			specialCapActualResMap := computing_formula.SpecialCapacityComputing(map[int64]float64{v.CapacityBaselineId: float64(v.Number)}, capConvertBaselineMap)
+			var vCpu, memory, count, serverNumber int
 			if capActualResBaseline != nil || capServerCalcBaseline != nil {
-				num = CountServerNumber(v.Number, v.FeatureNumber, capActualResBaseline, capServerCalcBaseline, &entity.ServerBaseline{Cpu: serverBaseline.Cpu, Memory: serverBaseline.Memory, StorageDiskNum: serverBaseline.StorageDiskNum, StorageDiskCapacity: serverBaseline.StorageDiskCapacity})
+				serverNumber = computing_formula.CapacityComputing(v.Number, v.FeatureNumber, capActualResBaseline, capServerCalcBaseline, &entity.ServerBaseline{Cpu: serverBaseline.Cpu, Memory: serverBaseline.Memory, StorageDiskNum: serverBaseline.StorageDiskNum, StorageDiskCapacity: serverBaseline.StorageDiskCapacity}, specialCapActualResMap)
 			} else {
 				//单独处理ecs容量规划-按规格数量计算
-				var cpuNumber, memoryNumber int
-				for _, ecs := range ecsCapacity.List {
-					cpuNumber += CountServerNumber(ecs.CpuNumber*ecs.Count, ecsCapacity.FeatureNumber, capActualResBaselineMap[fmt.Sprintf("%v-%v", "ECS", "ECS_VCPU")], capServerCalcBaselineMap["ECS_VCPU"], &entity.ServerBaseline{Cpu: serverBaseline.Cpu, Memory: serverBaseline.Memory, StorageDiskNum: serverBaseline.StorageDiskNum, StorageDiskCapacity: serverBaseline.StorageDiskCapacity})
-					memoryTotal := 138 + 8 + 16 + 8*ecs.CpuNumber*ecs.Count + ecs.MemoryNumber*ecs.Count/512
-					if serverBaseline.Arch == "ARM" {
-						memoryTotal += 128
-					}
-					memoryNumber += CountServerNumber(memoryTotal/1024, 1, capActualResBaselineMap[fmt.Sprintf("%v-%v", "ECS", "ECS_VCPU")], capServerCalcBaselineMap["ECS_MEM"], &entity.ServerBaseline{Cpu: serverBaseline.Cpu, Memory: serverBaseline.Memory, StorageDiskNum: serverBaseline.StorageDiskNum, StorageDiskCapacity: serverBaseline.StorageDiskCapacity})
+				for _, ecs := range request.EcsCapacity.List {
+					vCpu += ecs.CpuNumber
+					memory += ecs.MemoryNumber
+					count += ecs.Count
 				}
+				cpuNumber := computing_formula.EcsCapacityComputing(vCpu, memory, count, request.EcsCapacity.FeatureNumber, "vCPU", "", capActualResBaselineMap[fmt.Sprintf("%v-%v", "ECS", "ECS_VCPU")], capServerCalcBaselineMap["ECS_VCPU"], &entity.ServerBaseline{Cpu: serverBaseline.Cpu, Memory: serverBaseline.Memory, StorageDiskNum: serverBaseline.StorageDiskNum, StorageDiskCapacity: serverBaseline.StorageDiskCapacity}, specialCapActualResMap)
+				memoryNumber := computing_formula.EcsCapacityComputing(vCpu, memory, count, request.EcsCapacity.FeatureNumber, "内存", serverBaseline.Arch, capActualResBaselineMap[fmt.Sprintf("%v-%v", "ECS", "ECS_MEM")], capServerCalcBaselineMap["ECS_MEM"], &entity.ServerBaseline{Cpu: serverBaseline.Cpu, Memory: serverBaseline.Memory, StorageDiskNum: serverBaseline.StorageDiskNum, StorageDiskCapacity: serverBaseline.StorageDiskCapacity}, specialCapActualResMap)
 				if cpuNumber > memoryNumber {
-					num = cpuNumber
+					serverNumber = cpuNumber
 				} else {
-					num = memoryNumber
+					serverNumber = memoryNumber
 				}
 			}
-			if nodeRoleCapMap[v.NodeRoleId] < num {
-				nodeRoleCapMap[v.NodeRoleId] = num
+			if nodeRoleCapMap[v.NodeRoleId] < serverNumber {
+				nodeRoleCapMap[v.NodeRoleId] = serverNumber
 			}
 		}
 	}
