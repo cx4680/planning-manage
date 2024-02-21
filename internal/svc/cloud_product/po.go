@@ -7,22 +7,24 @@ type CloudProductPlanningRequest struct {
 	ProductList []ProductList `json:"productList"`
 }
 type ProductList struct {
-	ProductId int64  `json:"productId"`
-	SellSpec  string "sellSpec"
+	ProductId          int64    `json:"productId"`
+	SellSpec           string   "sellSpec"
+	ValueAddedServices []string `json:"valueAddedServices"`
 }
 
 type CloudProductBaselineResponse struct {
-	ID                int64    `json:"id"`
-	VersionId         int64    `json:"versionId"`
-	ProductType       string   `json:"productType"`
-	ProductName       string   `json:"productName"`
-	ProductCode       string   `json:"productCode"`
-	SellSpecs         []string `json:"sellSpecs"`
-	AuthorizedUnit    string   `json:"authorizedUnit"`
-	WhetherRequired   int      `json:"whetherRequired"`
-	Instructions      string   `json:"instructions"`
-	DependProductId   int64    `json:"dependProductId"`
-	DependProductName string   `json:"dependProductName"`
+	ID                 int64    `json:"id"`
+	VersionId          int64    `json:"versionId"`
+	ProductType        string   `json:"productType"`
+	ProductName        string   `json:"productName"`
+	ProductCode        string   `json:"productCode"`
+	SellSpecs          []string `json:"sellSpecs"`
+	ValueAddedServices []string `json:"valueAddedServices"`
+	AuthorizedUnit     string   `json:"authorizedUnit"`
+	WhetherRequired    int      `json:"whetherRequired"`
+	Instructions       string   `json:"instructions"`
+	DependProductId    int64    `json:"dependProductId"`
+	DependProductName  string   `json:"dependProductName"`
 }
 
 type CloudProductBaselineDependResponse struct {
@@ -33,8 +35,9 @@ type CloudProductBaselineDependResponse struct {
 }
 
 type CloudProductPlanningExportResponse struct {
-	ProductType  string `excel:"name:产品类型;" gorm:"column:product_type" json:"productType"`
-	ProductName  string `excel:"name:产品名称;" gorm:"column:product_name" json:"productName"`
-	Instructions string `excel:"name:售卖规格;" gorm:"column:instructions" json:"instructions"`
-	SellSpec     string `excel:"name:说明;" gorm:"column:sell_spec" json:"sellSpec"`
+	ProductType       string `excel:"name:产品类型;" gorm:"column:product_type" json:"productType"`
+	ProductName       string `excel:"name:产品名称;" gorm:"column:product_name" json:"productName"`
+	SellSpec          string `excel:"name:售卖规格;" gorm:"column:sell_spec" json:"sellSpec"`
+	ValueAddedService string `excel:"name:增值服务;" gorm:"column:value_added_service" json:"valueAddedService"`
+	Instructions      string `excel:"name:说明;" gorm:"column:instructions" json:"instructions"`
 }

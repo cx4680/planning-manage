@@ -439,6 +439,7 @@ CREATE TABLE `cloud_product_planning`
     `product_id`   bigint(20) DEFAULT NULL COMMENT '云产品id',
     `version_id`   bigint(20) DEFAULT NULL COMMENT '基线版本id',
     `sell_spec`    varchar(60) DEFAULT NULL COMMENT '售卖规格',
+    `value_added_service`  varchar(255) DEFAULT NULL COMMENT '增值服务',
     `service_year` int(1) DEFAULT NULL COMMENT '维保年限',
     `update_time`  datetime    DEFAULT NULL COMMENT '更新时间',
     `create_time`  datetime    DEFAULT NULL COMMENT '创建时间',

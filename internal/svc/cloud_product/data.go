@@ -42,10 +42,14 @@ func getCloudProductBaseListByVersionId(versionId int64) ([]CloudProductBaseline
 	var responseList []CloudProductBaselineResponse
 	for _, baseline := range baselineList {
 		sellSpecs := make([]string, 1)
-		if strings.Index(baseline.SellSpecs, ",") > 0 {
-			sellSpecs = strings.Split(baseline.SellSpecs, ",")
+		if strings.Index(baseline.SellSpecs, constant.Comma) > 0 {
+			sellSpecs = strings.Split(baseline.SellSpecs, constant.Comma)
 		} else {
 			sellSpecs[0] = baseline.SellSpecs
+		}
+		var valueAddedServices []string
+		if baseline.ValueAddedService != "" {
+			valueAddedServices = strings.Split(baseline.ValueAddedService, constant.Comma)
 		}
 		var dependProductId int64
 		var dependProductName string
@@ -56,17 +60,18 @@ func getCloudProductBaseListByVersionId(versionId int64) ([]CloudProductBaseline
 			}
 		}
 		responseData := CloudProductBaselineResponse{
-			ID:                baseline.Id,
-			VersionId:         baseline.VersionId,
-			ProductType:       baseline.ProductType,
-			ProductName:       baseline.ProductName,
-			ProductCode:       baseline.ProductCode,
-			SellSpecs:         sellSpecs,
-			AuthorizedUnit:    baseline.AuthorizedUnit,
-			WhetherRequired:   baseline.WhetherRequired,
-			Instructions:      baseline.Instructions,
-			DependProductId:   dependProductId,
-			DependProductName: dependProductName,
+			ID:                 baseline.Id,
+			VersionId:          baseline.VersionId,
+			ProductType:        baseline.ProductType,
+			ProductName:        baseline.ProductName,
+			ProductCode:        baseline.ProductCode,
+			SellSpecs:          sellSpecs,
+			ValueAddedServices: valueAddedServices,
+			AuthorizedUnit:     baseline.AuthorizedUnit,
+			WhetherRequired:    baseline.WhetherRequired,
+			Instructions:       baseline.Instructions,
+			DependProductId:    dependProductId,
+			DependProductName:  dependProductName,
 		}
 		responseList = append(responseList, responseData)
 	}
@@ -76,14 +81,19 @@ func getCloudProductBaseListByVersionId(versionId int64) ([]CloudProductBaseline
 func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId string) error {
 	var cloudProductPlanningList []entity.CloudProductPlanning
 	for _, cloudProduct := range request.ProductList {
+		var valueAddedService string
+		if len(cloudProduct.ValueAddedServices) > 0 {
+			valueAddedService = strings.Join(cloudProduct.ValueAddedServices, constant.Comma)
+		}
 		cloudProductPlanning := entity.CloudProductPlanning{
-			PlanId:      request.PlanId,
-			ProductId:   cloudProduct.ProductId,
-			VersionId:   request.VersionId,
-			SellSpec:    cloudProduct.SellSpec,
-			ServiceYear: request.ServiceYear,
-			CreateTime:  time.Now(),
-			UpdateTime:  time.Now(),
+			PlanId:            request.PlanId,
+			ProductId:         cloudProduct.ProductId,
+			VersionId:         request.VersionId,
+			SellSpec:          cloudProduct.SellSpec,
+			ValueAddedService: valueAddedService,
+			ServiceYear:       request.ServiceYear,
+			CreateTime:        time.Now(),
+			UpdateTime:        time.Now(),
 		}
 		cloudProductPlanningList = append(cloudProductPlanningList, cloudProductPlanning)
 	}
@@ -145,7 +155,7 @@ func exportCloudProductPlanningByPlanId(planId int64) (string, []CloudProductPla
 	}
 
 	var response []CloudProductPlanningExportResponse
-	if err := data.DB.Table("cloud_product_planning cpp").Select("cpb.product_type,cpb.product_name, cpb.instructions, cpp.sell_spec").
+	if err := data.DB.Table("cloud_product_planning cpp").Select("cpb.product_type,cpb.product_name, cpp.sell_spec, cpp.value_added_service, cpb.instructions").
 		Joins("LEFT JOIN cloud_product_baseline cpb ON cpb.id = cpp.product_id").
 		Where("cpp.plan_id=?", planId).
 		Find(&response).Error; err != nil {
