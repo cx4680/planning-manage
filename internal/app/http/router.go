@@ -160,7 +160,7 @@ func Router(engine *gin.Engine) {
 		}
 
 		// 服务器规划
-		serverGroup := api.Group("/server_planning")
+		serverGroup := api.Group("/server")
 		{
 			// 查询服务器规划列表
 			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryServerList", middleware.LIST, middleware.INFO)), server_planning.List)
