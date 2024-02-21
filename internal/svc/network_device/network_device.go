@@ -1,6 +1,7 @@
 package network_device
 
 import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/computing_formula"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -305,7 +306,7 @@ func SaveDeviceList(c *gin.Context) {
 		if err = ip_demand.SaveBatch(tx, ipDemandPlannings); err != nil {
 			return err
 		}
-		if err = SaveSoftwareBomPlanning(tx, planId); err != nil {
+		if err = computing_formula.SaveSoftwareBomPlanning(tx, planId); err != nil {
 			return err
 		}
 		return nil
