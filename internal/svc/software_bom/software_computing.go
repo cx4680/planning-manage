@@ -1,4 +1,4 @@
-package computing_formula
+package software_bom
 
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"

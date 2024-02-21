@@ -1,4 +1,4 @@
-package server
+package server_planning
 
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
@@ -20,7 +20,7 @@ import (
 func List(c *gin.Context) {
 	request := &Request{}
 	if err := c.ShouldBindQuery(&request); err != nil {
-		log.Error("list server bind param error: ", err)
+		log.Error("list server_planning bind param error: ", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
@@ -31,7 +31,7 @@ func List(c *gin.Context) {
 	}
 	list, err := ListServer(request)
 	if err != nil {
-		log.Error("list server error: ", err)
+		log.Error("list server_planning error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -41,7 +41,7 @@ func List(c *gin.Context) {
 func Save(c *gin.Context) {
 	request := &Request{}
 	if err := c.ShouldBindJSON(&request); err != nil {
-		log.Error("save server bind param error: ", err)
+		log.Error("save server_planning bind param error: ", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
@@ -51,7 +51,7 @@ func Save(c *gin.Context) {
 	}
 	request.UserId = user.GetUserId(c)
 	if err := SaveServer(request); err != nil {
-		log.Error("save server error: ", err)
+		log.Error("save server_planning error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -60,7 +60,7 @@ func Save(c *gin.Context) {
 func NetworkTypeList(c *gin.Context) {
 	request := &Request{}
 	if err := c.ShouldBindQuery(&request); err != nil {
-		log.Error("list server network bind param error: ", err)
+		log.Error("list server_planning network bind param error: ", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
@@ -70,7 +70,7 @@ func NetworkTypeList(c *gin.Context) {
 	}
 	list, err := ListServerNetworkType(request)
 	if err != nil {
-		log.Error("list server network error: ", err)
+		log.Error("list server_planning network error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -80,7 +80,7 @@ func NetworkTypeList(c *gin.Context) {
 func CpuTypeList(c *gin.Context) {
 	request := &Request{}
 	if err := c.ShouldBindQuery(&request); err != nil {
-		log.Error("list server cpu bind param error: ", err)
+		log.Error("list server_planning cpu bind param error: ", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
@@ -90,68 +90,11 @@ func CpuTypeList(c *gin.Context) {
 	}
 	list, err := ListServerCpuType(request)
 	if err != nil {
-		log.Error("list server cpu error: ", err)
+		log.Error("list server_planning cpu error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	result.Success(c, list)
-}
-
-func CapacityList(c *gin.Context) {
-	request := &Request{}
-	if err := c.ShouldBindQuery(&request); err != nil {
-		log.Error("list server capacity bind param error: ", err)
-		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
-		return
-	}
-	if request.PlanId == 0 {
-		result.Failure(c, "planId参数为空", http.StatusBadRequest)
-		return
-	}
-	list, err := ListServerCapacity(request)
-	if err != nil {
-		log.Error("list server capacity error: ", err)
-		result.Failure(c, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	result.Success(c, list)
-}
-
-func CapacityCount(c *gin.Context) {
-	request := &RequestServerCapacityCount{}
-	if err := c.ShouldBindQuery(&request); err != nil {
-		log.Error("CapacityCount bind param error: ", err)
-		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
-		return
-	}
-	data, err := CountCapacity(request)
-	if err != nil {
-		log.Error("list server capacity error: ", err)
-		result.Failure(c, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	result.Success(c, data)
-}
-
-func SaveCapacity(c *gin.Context) {
-	request := &Request{}
-	if err := c.ShouldBindJSON(&request); err != nil {
-		log.Error("save server capacity bind param error: ", err)
-		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
-		return
-	}
-	if err := checkRequest(request); err != nil {
-		result.Failure(c, err.Error(), http.StatusBadRequest)
-		return
-	}
-	request.UserId = user.GetUserId(c)
-	err := SaveServerCapacity(request)
-	if err != nil {
-		log.Error("save server capacity error: ", err)
-		result.Failure(c, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	result.Success(c, nil)
 }
 
 func Download(c *gin.Context) {
@@ -162,7 +105,7 @@ func Download(c *gin.Context) {
 	}
 	response, fileName, err := DownloadServer(planId)
 	if err != nil {
-		log.Error("download server error: ", err)
+		log.Error("download server_planning error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -175,7 +118,7 @@ func Download(c *gin.Context) {
 func ListServerShelvePlanning(c *gin.Context) {
 	request := &Request{}
 	if err := c.ShouldBindQuery(&request); err != nil {
-		log.Errorf("list server bind param error: ", err)
+		log.Errorf("list server_planning bind param error: ", err)
 	}
 	if request.PlanId == 0 {
 		result.Failure(c, "planId参数为空", http.StatusBadRequest)

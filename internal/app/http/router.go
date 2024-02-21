@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/capacity_planning"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -17,7 +18,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/global_config"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/machine_room"
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server_planning"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/az"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cell"
@@ -159,36 +160,36 @@ func Router(engine *gin.Engine) {
 		}
 
 		// 服务器规划
-		serverGroup := api.Group("/server")
+		serverGroup := api.Group("/server_planning")
 		{
 			// 查询服务器规划列表
-			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryServerList", middleware.LIST, middleware.INFO)), server.List)
+			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryServerList", middleware.LIST, middleware.INFO)), server_planning.List)
 			// 保存服务器规划
-			serverGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "saveServerList", middleware.LIST, middleware.INFO)), server.Save)
+			serverGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "saveServerList", middleware.LIST, middleware.INFO)), server_planning.Save)
 			// 查询网络类型列表
-			serverGroup.GET("/network/list", middleware.OperatorLog(DefaultEventOpInfo("查询网络类型列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.NetworkTypeList)
+			serverGroup.GET("/network/list", middleware.OperatorLog(DefaultEventOpInfo("查询网络类型列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server_planning.NetworkTypeList)
 			// 查询cpu类型列表
-			serverGroup.GET("/cpu/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.CpuTypeList)
+			serverGroup.GET("/cpu/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server_planning.CpuTypeList)
 			// 查询容量规划列表
-			serverGroup.GET("/capacity/list", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "queryServerCapacityList", middleware.LIST, middleware.INFO)), server.CapacityList)
+			serverGroup.GET("/capacity/list", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "queryServerCapacityList", middleware.LIST, middleware.INFO)), capacity_planning.List)
 			// 容量计算
-			serverGroup.GET("/capacity/count", middleware.OperatorLog(DefaultEventOpInfo("容量计算", "countServerCapacityList", middleware.LIST, middleware.INFO)), server.CapacityCount)
+			serverGroup.GET("/capacity/count", middleware.OperatorLog(DefaultEventOpInfo("容量计算", "countServerCapacityList", middleware.LIST, middleware.INFO)), capacity_planning.Computing)
 			// 保存容量规划
-			serverGroup.POST("/capacity/save", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "saveServerCapacityList", middleware.LIST, middleware.INFO)), server.SaveCapacity)
+			serverGroup.POST("/capacity/save", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "saveServerCapacityList", middleware.LIST, middleware.INFO)), capacity_planning.Save)
 			// 下载服务器规划清单
-			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.EXPORT, middleware.INFO)), server.Download)
+			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.EXPORT, middleware.INFO)), server_planning.Download)
 			// 查询服务器上架表
-			serverGroup.GET("/shelve/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器上架表", "getServerShelveList", middleware.LIST, middleware.INFO)), server.ListServerShelvePlanning)
+			serverGroup.GET("/shelve/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器上架表", "getServerShelveList", middleware.LIST, middleware.INFO)), server_planning.ListServerShelvePlanning)
 			// 下载服务器上架表模板
-			serverGroup.GET("/shelve/download/template/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表模板", "downloadServerShelveTemplate", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelveTemplate)
+			serverGroup.GET("/shelve/download/template/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表模板", "downloadServerShelveTemplate", middleware.EXPORT, middleware.INFO)), server_planning.DownloadServerShelveTemplate)
 			// 上传服务器上架表
-			serverGroup.POST("/shelve/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传服务器上架表", "uploadServerShelve", middleware.IMPORT, middleware.INFO)), server.UploadShelve)
+			serverGroup.POST("/shelve/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传服务器上架表", "uploadServerShelve", middleware.IMPORT, middleware.INFO)), server_planning.UploadShelve)
 			// 保存服务器规划表
-			serverGroup.POST("/shelve/planning/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器规划表", "saveServerPlanning", middleware.UPDATE, middleware.INFO)), server.SaveServerPlanning)
+			serverGroup.POST("/shelve/planning/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器规划表", "saveServerPlanning", middleware.UPDATE, middleware.INFO)), server_planning.SaveServerPlanning)
 			// 保存服务器上架表
-			serverGroup.POST("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器上架表", "saveServerShelve", middleware.UPDATE, middleware.INFO)), server.SaveServerShelve)
+			serverGroup.POST("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器上架表", "saveServerShelve", middleware.UPDATE, middleware.INFO)), server_planning.SaveServerShelve)
 			// 下载服务器上架清单
-			serverGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架清单", "downloadServerShelve", middleware.EXPORT, middleware.INFO)), server.DownloadServerShelve)
+			serverGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架清单", "downloadServerShelve", middleware.EXPORT, middleware.INFO)), server_planning.DownloadServerShelve)
 		}
 
 		// 网络规划

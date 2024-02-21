@@ -1,4 +1,4 @@
-package server
+package server_planning
 
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
