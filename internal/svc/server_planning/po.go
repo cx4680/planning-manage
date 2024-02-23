@@ -2,16 +2,17 @@ package server_planning
 
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/capacity_planning"
 )
 
 type Request struct {
 	Id                 int64
-	PlanId             int64                    `form:"planId"`
-	NetworkInterface   string                   `form:"networkInterface"`
-	CpuType            string                   `form:"cpuType"`
-	ServerList         []*RequestServer         `form:"serverList"`
-	ServerCapacityList []*RequestServerCapacity `form:"serverCapacityList"`
-	EcsCapacity        *EcsCapacity             `form:"ecsCapacity"`
+	PlanId             int64                          `form:"planId"`
+	NetworkInterface   string                         `form:"networkInterface"`
+	CpuType            string                         `form:"cpuType"`
+	ServerList         []*RequestServer               `form:"serverList"`
+	ServerCapacityList []*RequestServerCapacity       `form:"serverCapacityList"`
+	EcsCapacity        *capacity_planning.EcsCapacity `form:"ecsCapacity"`
 	UserId             string
 }
 
@@ -79,11 +80,11 @@ type ResponseDownloadServer struct {
 }
 
 type ResponseCapClassification struct {
-	Classification string                `json:"classification"` // 分类
-	ProductName    string                `json:"productName"`    // 产品名称
-	ProductCode    string                `json:"productCode"`    // 产品编码
-	CapConvert     []*ResponseCapConvert `json:"capConvert"`
-	Special        *EcsCapacity          `json:"special"`
+	Classification string                         `json:"classification"` // 分类
+	ProductName    string                         `json:"productName"`    // 产品名称
+	ProductCode    string                         `json:"productCode"`    // 产品编码
+	CapConvert     []*ResponseCapConvert          `json:"capConvert"`
+	Special        *capacity_planning.EcsCapacity `json:"special"`
 }
 
 type ResponseCapCount struct {
@@ -141,14 +142,4 @@ type Cabinet struct {
 	*entity.CabinetInfo
 	CabinetLocation string `json:"cabinetLocation"`
 	IdleSlot        string `json:"idleSlot"`
-}
-
-type EcsCapacity struct {
-	CapacityIdList []int64 `form:"capacityIdList" json:"capacityIdList"`
-	FeatureNumber  int     `form:"featureNumber" json:"featureNumber"`
-	List           []*struct {
-		CpuNumber    int `form:"cpuNumber" json:"cpuNumber"`
-		MemoryNumber int `form:"memoryNumber" json:"memoryNumber"`
-		Count        int `form:"count" json:"count"`
-	} `json:"list"`
 }
