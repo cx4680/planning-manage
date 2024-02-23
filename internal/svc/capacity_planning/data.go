@@ -512,7 +512,7 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 	//计算服务器数量
 	for _, v := range serverCapPlanningList {
 		//特殊产品特殊计算
-		if _, ok := SpecialProduct[capConvertBaselineMap[v.Id].ProductCode]; ok {
+		if _, ok := SpecialProduct[capConvertBaselineMap[v.CapacityBaselineId].ProductCode]; ok {
 			continue
 		}
 		serverBaseline := nodeRoleServerBaselineListMap[v.NodeRoleId]
@@ -536,7 +536,6 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineList
 		if nodeRoleCapMap[v.NodeRoleId] < serverNumber {
 			nodeRoleCapMap[v.NodeRoleId] = serverNumber
 		}
-
 	}
 	return nodeRoleCapMap, nil
 }
@@ -568,6 +567,8 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, capConvertBas
 			memoryCapActualRes := 96*cluster + 32*memory/0.7/29.4
 			capActualResMap["ECS_VCPU"] = cpuCapActualRes
 			capActualResMap["ECS_MEM"] = memoryCapActualRes
+		//case :
+
 		default:
 			//serverNumber = General(number, featureNumber, capActualResBaseline, capServerCalcBaseline, serverBaseline)
 		}
