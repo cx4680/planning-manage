@@ -192,7 +192,7 @@ func SaveServerCapacity(request *Request) error {
 			capServerCalcBaseline := capServerCalcBaselineMap[capActualResBaseline.ExpendResCode]
 			//查询角色节点
 			nodeRoleBaseline = nodeRoleBaselineMap[capServerCalcBaseline.ExpendNodeRoleCode]
-		} else if capConvertBaseline.ProductCode == "ECS" {
+		} else if capConvertBaseline.ProductCode == "CKE" {
 			nodeRoleBaseline = nodeRoleBaselineMap["COMPUTE"]
 		}
 		serverCapPlanning.NodeRoleId = nodeRoleBaseline.Id
