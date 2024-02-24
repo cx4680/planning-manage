@@ -38,7 +38,7 @@ func ListServer(request *Request) ([]*Server, error) {
 		return nil, err
 	}
 	//查询角色服务器基线map
-	serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineMap, err := getNodeRoleServerBaselineMap(db, nodeRoleIdList, request)
+	serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineMap, nodeRoleCodeMap, err := getNodeRoleServerBaselineMap(db, nodeRoleIdList, request)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func ListServer(request *Request) ([]*Server, error) {
 		nodeRoleServerPlanningMap[v.NodeRoleId] = v
 	}
 	// 计算已保存的容量规划指标
-	nodeRoleCapMap, err := capacity_planning.GetNodeRoleCapMap(db, &capacity_planning.Request{PlanId: request.PlanId, EcsCapacity: request.EcsCapacity}, screenNodeRoleServerBaselineMap)
+	nodeRoleCapMap, err := capacity_planning.GetNodeRoleCapMap(db, &capacity_planning.Request{PlanId: request.PlanId, EcsCapacity: request.EcsCapacity}, screenNodeRoleServerBaselineMap, nodeRoleCodeMap)
 	if err != nil {
 		return nil, err
 	}
@@ -321,11 +321,20 @@ func getMixedNodeRoleMap(db *gorm.DB, nodeRoleIdList []int64) (map[int64][]*Mixe
 	return mixedNodeRoleMap, nil
 }
 
-func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *Request) (map[int64]*entity.ServerBaseline, map[int64][]*Baseline, map[int64]*entity.ServerBaseline, error) {
+func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *Request) (map[int64]*entity.ServerBaseline, map[int64][]*Baseline, map[int64]*entity.ServerBaseline, map[string]*entity.NodeRoleBaseline, error) {
+	//查询节点角色表
+	var nodeRoleBaselineList []*entity.NodeRoleBaseline
+	if err := db.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleBaselineList).Error; err != nil {
+		return nil, nil, nil, nil, err
+	}
+	var nodeRoleBaselineMap = make(map[int64]*entity.NodeRoleBaseline)
+	for _, v := range nodeRoleBaselineList {
+		nodeRoleBaselineMap[v.Id] = v
+	}
 	//查询服务器和角色关联表
 	var serverNodeRoleRelList []*entity.ServerNodeRoleRel
 	if err := db.Where("node_role_id IN (?)", nodeRoleIdList).Find(&serverNodeRoleRelList).Error; err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	var nodeRoleServerRelMap = make(map[int64][]int64)
 	var serverBaselineIdList []int64
@@ -336,7 +345,7 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 	//查询服务器基线表
 	var serverBaselineList []*entity.ServerBaseline
 	if err := db.Where("id IN (?)", serverBaselineIdList).Find(&serverBaselineList).Error; err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 	var serverBaselineMap = make(map[int64]*entity.ServerBaseline)
 	for _, v := range serverBaselineList {
@@ -345,6 +354,7 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 	//查询服务器基线表
 	var nodeRoleServerBaselineListMap = make(map[int64][]*Baseline)
 	var screenNodeRoleServerBaselineMap = make(map[int64]*entity.ServerBaseline)
+	var nodeRoleCodeServerBaselineMap = make(map[string]*entity.NodeRoleBaseline)
 	for k, serverIdList := range nodeRoleServerRelMap {
 		for _, serverId := range serverIdList {
 			serverBaseline := serverBaselineMap[serverId]
@@ -365,13 +375,15 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 			})
 			if request.NetworkInterface == serverBaseline.NetworkInterface && serverBaseline.CpuType == request.CpuType {
 				screenNodeRoleServerBaselineMap[k] = serverBaseline
+				nodeRoleCodeServerBaselineMap[nodeRoleBaselineMap[k].NodeRoleCode] = nodeRoleBaselineMap[k]
 			}
 			if screenNodeRoleServerBaselineMap[k] == nil {
 				screenNodeRoleServerBaselineMap[k] = serverBaseline
+				nodeRoleCodeServerBaselineMap[nodeRoleBaselineMap[k].NodeRoleCode] = nodeRoleBaselineMap[k]
 			}
 		}
 	}
-	return serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineMap, nil
+	return serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineMap, nodeRoleCodeServerBaselineMap, nil
 }
 
 func getServerShelveDownloadTemplate(planId int64) ([]ShelveDownload, string, error) {
