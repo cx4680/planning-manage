@@ -315,17 +315,23 @@ func CountCapacity(request *RequestServerCapacityCount) (*ResponseCapCount, erro
 	var serverNumber int
 	var expendResCodeMap = make(map[string]float64)
 	for _, v := range serverCapPlanningList {
-		//查询容量换算表
-		capConvertBaseline := capConvertBaselineMap[v.CapacityBaselineId]
-		//特殊产品特殊计算
-		if _, ok := SpecialProduct[capConvertBaseline.ProductCode]; ok {
-			continue
+		if v.CapacityBaselineId != 0 {
+			//查询容量换算表
+			capConvertBaseline := capConvertBaselineMap[v.CapacityBaselineId]
+			//特殊产品特殊计算
+			if _, ok := SpecialProduct[capConvertBaseline.ProductCode]; ok {
+				continue
+			}
+			//查询容量实际资源消耗表
+			capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
+			//总消耗
+			capActualResNumber := capActualRes(v.Number, v.FeatureNumber, capActualResBaseline, capActualResBaseline.ExpendResCode, specialCapActualResMap)
+			expendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
+		} else if v.Type == 2 && util.IsNotBlank(v.Special) {
+			var ecsCapacity *EcsCapacity
+			util.ToObject(v.Special, &ecsCapacity)
+			serverNumber = handleSpecialData(ecsCapacity, serverBaseline, specialCapActualResMap)
 		}
-		//查询容量实际资源消耗表
-		capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
-		//总消耗
-		capActualResNumber := capActualRes(v.Number, v.FeatureNumber, capActualResBaseline, capActualResBaseline.ExpendResCode, specialCapActualResMap)
-		expendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
 	}
 	//计算服务器数量
 	for k, capActualResNumber := range expendResCodeMap {
@@ -487,17 +493,21 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineMap 
 	//计算各角色节点的总消耗
 	var expendResCodeMap = make(map[string]float64)
 	for _, v := range serverCapPlanningList {
-		//查询容量换算表
-		capConvertBaseline := capConvertBaselineMap[v.CapacityBaselineId]
-		//特殊产品特殊计算
-		if _, ok := SpecialProduct[capConvertBaseline.ProductCode]; ok {
-			continue
+		if v.CapacityBaselineId != 0 {
+			//查询容量换算表
+			capConvertBaseline := capConvertBaselineMap[v.CapacityBaselineId]
+			//特殊产品特殊计算
+			if _, ok := SpecialProduct[capConvertBaseline.ProductCode]; ok {
+				continue
+			}
+			//查询容量实际资源消耗表
+			capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
+			//总消耗
+			capActualResNumber := capActualRes(v.Number, v.FeatureNumber, capActualResBaseline, capActualResBaseline.ExpendResCode, specialCapActualResMap)
+			expendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
+		} else if v.Type == 2 && util.IsNotBlank(v.Special) {
+			nodeRoleCapNumberMap[v.NodeRoleId] = handleSpecialData(request.EcsCapacity, nodeRoleServerBaselineMap[v.NodeRoleId], specialCapActualResMap)
 		}
-		//查询容量实际资源消耗表
-		capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
-		//总消耗
-		capActualResNumber := capActualRes(v.Number, v.FeatureNumber, capActualResBaseline, capActualResBaseline.ExpendResCode, specialCapActualResMap)
-		expendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
 	}
 	//计算服务器数量
 	for k, capActualResNumber := range expendResCodeMap {
@@ -547,16 +557,6 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, capConvertBas
 		}
 	}
 	return capActualResMap
-}
-
-func CapacityComputing(number, featureNumber int, capActualResBaseline *entity.CapActualResBaseline, capServerCalcBaseline *entity.CapServerCalcBaseline, serverBaseline *entity.ServerBaseline, specialCapActualResMap map[string]float64) int {
-	//总消耗
-	capActualResNumber := capActualRes(number, featureNumber, capActualResBaseline, capServerCalcBaseline.ExpendNodeRoleCode, specialCapActualResMap)
-	//单个服务器消耗
-	capServerCalcNumber := capServerCalc(capActualResBaseline.ExpendResCode, capServerCalcBaseline, serverBaseline)
-	//总消耗除以单个服务器消耗，等于服务器数量
-	serverNumber := math.Ceil(capActualResNumber / capServerCalcNumber)
-	return int(serverNumber)
 }
 
 func capActualRes(number, featureNumber int, capActualResBaseline *entity.CapActualResBaseline, expendNodeRoleCode string, specialCapActualResMap map[string]float64) float64 {
