@@ -148,4 +148,16 @@ const (
 
 	CpuTypeIntel = "intel"
 	CpuTypeHygon = "hygon"
+
+	ProductCodeCKE = "CKE"
+	ProductCodeECS = "ECS"
+
+	CapPlanningInputVCpu             = "vCPU"
+	CapPlanningInputMemory           = "内存"
+	CapPlanningInputContainerCluster = "容器集群数"
+
+	ExpendResCodeECSVCpu   = "ECS_VCPU"
+	ExpendResCodeECSMemory = "ECS_MEM"
+
+	NodeRoleCodeCompute = "COMPUTE"
 )
