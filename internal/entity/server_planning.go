@@ -36,7 +36,7 @@ type ServerCapPlanning struct {
 	Id                 int64  `gorm:"column:id" json:"id"`                                   // 容量规划id
 	PlanId             int64  `gorm:"column:plan_id" json:"planId"`                          // 方案id
 	NodeRoleId         int64  `gorm:"column:node_role_id" json:"nodeRoleId"`                 // 节点角色id
-	Type               int    `gorm:"column:type" json:"type"`                               // 类型
+	Type               int    `gorm:"column:type" json:"type"`                               // 类型，1:按总量计算，2：按规格数量计算
 	CapacityBaselineId int64  `gorm:"column:capacity_baseline_id" json:"capacityBaselineId"` // 容量指标id
 	Number             int    `gorm:"column:number" json:"number"`                           // 数量
 	FeatureNumber      int    `gorm:"column:feature_number" json:"featureNumber"`            // 特性数量

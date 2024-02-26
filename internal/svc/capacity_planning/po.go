@@ -38,6 +38,7 @@ type ResponseCapClassification struct {
 	Classification string                `json:"classification"` // 分类
 	ProductName    string                `json:"productName"`    // 产品名称
 	ProductCode    string                `json:"productCode"`    // 产品编码
+	ProductType    string                `json:"productType"`    // 产品类型
 	CapConvert     []*ResponseCapConvert `json:"capConvert"`
 	Special        *EcsCapacity          `json:"special"`
 }

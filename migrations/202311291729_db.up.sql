@@ -228,7 +228,7 @@ CREATE TABLE `server_cap_planning`
     `id`                   bigint(20) NOT NULL AUTO_INCREMENT COMMENT '容量规划id',
     `plan_id`              bigint(20) NOT NULL COMMENT '方案id',
     `node_role_id`         bigint(20) NOT NULL COMMENT '节点角色id',
-    `type`                 tinyint(2) DEFAULT NULL COMMENT '类型',
+    `type`                 tinyint(2) DEFAULT NULL COMMENT '类型，1:按总量计算，2：按规格数量计算',
     `capacity_baseline_id` bigint(20) NULL DEFAULT NULL COMMENT '容量指标id',
     `number`               int          DEFAULT NULL COMMENT '数量',
     `feature_number`       int NULL DEFAULT NULL COMMENT '特性数量',

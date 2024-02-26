@@ -28,9 +28,9 @@ const (
 
 	UserSecretPrivateKeyPath = "/app/secret/userSecretPrivateKey"
 
-	SeparationOfTwoNetworks   = 2      // 两网分离
-	TripleNetworkSeparation   = 3      // 三网分离
-	TriplePlay                = 1      // 三网合一
+	SeparationOfTwoNetworks   = 2          // 两网分离
+	TripleNetworkSeparation   = 3          // 三网分离
+	TriplePlay                = 1          // 三网合一
 	SeparationOfTwoNetworksCn = "两网分离" // 两网分离
 	TripleNetworkSeparationCn = "三网分离" // 三网分离
 	TriplePlayCn              = "三网合一" // 三网合一
@@ -149,8 +149,10 @@ const (
 	CpuTypeIntel = "intel"
 	CpuTypeHygon = "hygon"
 
-	ProductCodeCKE = "CKE"
-	ProductCodeECS = "ECS"
+	ProductCodeCKE  = "CKE"
+	ProductCodeECS  = "ECS"
+	ProductCodeCNBH = "CNBH"
+	ProductCodeCNFW = "CNFW"
 
 	CapPlanningInputVCpu             = "vCPU"
 	CapPlanningInputMemory           = "内存"
