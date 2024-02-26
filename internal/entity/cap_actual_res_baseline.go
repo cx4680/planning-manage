@@ -7,6 +7,7 @@ type CapActualResBaseline struct {
 	VersionId           int64  `gorm:"column:version_id" json:"versionId"`                      // 版本id
 	ProductCode         string `gorm:"column:product_code" json:"productCode"`                  // 产品编码
 	SellSpecs           string `gorm:"column:sell_specs" json:"sellSpecs"`                      // 售卖规格
+	ValueAddedService   string `gorm:"column:value_added_service" json:"valueAddedService"`     // 增值服务
 	SellUnit            string `gorm:"column:sell_unit" json:"sellUnit"`                        // 售卖单元
 	ExpendRes           string `gorm:"column:expend_res" json:"expendRes"`                      // 消耗资源
 	ExpendResCode       string `gorm:"column:expend_res_code" json:"expendResCode"`             // 消耗资源编码

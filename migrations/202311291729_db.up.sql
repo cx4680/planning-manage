@@ -499,6 +499,7 @@ CREATE TABLE `cap_actual_res_baseline`
     `version_id`            bigint(20) DEFAULT NULL COMMENT '版本id',
     `product_code`          varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '产品code',
     `sell_specs`            varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '售卖规格',
+    `value_added_service`   varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '增值服务',
     `sell_unit`             varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '售卖单元',
     `expend_res`            varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '消耗资源',
     `expend_res_code`       varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '消耗资源编码',

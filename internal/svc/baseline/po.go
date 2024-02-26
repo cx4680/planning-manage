@@ -137,15 +137,16 @@ type CapConvertBaselineExcel struct {
 }
 
 type CapActualResBaselineExcel struct {
-	ProductCode   string `excel:"name:服务编码;" json:"productCode"`     // 产品编码
-	SellSpecs     string `excel:"name:售卖规格;" json:"sellSpecs"`       // 售卖规格
-	SellUnit      string `excel:"name:售卖单元;" json:"sellUnit"`        // 售卖单元
-	ExpendRes     string `excel:"name:消耗资源;" json:"expendRes"`       // 消耗资源
-	ExpendResCode string `excel:"name:消耗资源编码;" json:"expendResCode"` // 消耗资源编码
-	Features      string `excel:"name:特性;" json:"features"`          // 特性
-	OccRatio      string `excel:"name:占用比例;" json:"occRatio"`        // 占用比例
-	ActualConsume string `excel:"name:实际消耗;" json:"actualConsume"`   // 实际消耗
-	Remarks       string `excel:"name:备注;" json:"remarks"`           // 备注
+	ProductCode       string `excel:"name:服务编码;" json:"productCode"`       // 产品编码
+	SellSpecs         string `excel:"name:售卖规格;" json:"sellSpecs"`         // 售卖规格
+	ValueAddedService string `excel:"name:增值服务;" json:"valueAddedService"` // 增值服务
+	SellUnit          string `excel:"name:售卖单元;" json:"sellUnit"`          // 售卖单元
+	ExpendRes         string `excel:"name:消耗资源;" json:"expendRes"`         // 消耗资源
+	ExpendResCode     string `excel:"name:消耗资源编码;" json:"expendResCode"`   // 消耗资源编码
+	Features          string `excel:"name:特性;" json:"features"`            // 特性
+	OccRatio          string `excel:"name:占用比例;" json:"occRatio"`          // 占用比例
+	ActualConsume     string `excel:"name:实际消耗;" json:"actualConsume"`     // 实际消耗
+	Remarks           string `excel:"name:备注;" json:"remarks"`             // 备注
 }
 
 type CapServerCalcBaselineExcel struct {

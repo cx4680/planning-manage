@@ -1203,6 +1203,7 @@ func ImportCapActualResBaseline(context *gin.Context, versionId int64, f *exceli
 				VersionId:           versionId,
 				ProductCode:         capActualResBaselineExcel.ProductCode,
 				SellSpecs:           capActualResBaselineExcel.SellSpecs,
+				ValueAddedService:   capActualResBaselineExcel.ValueAddedService,
 				SellUnit:            capActualResBaselineExcel.SellUnit,
 				ExpendRes:           capActualResBaselineExcel.ExpendRes,
 				ExpendResCode:       capActualResBaselineExcel.ExpendResCode,
@@ -1224,11 +1225,11 @@ func ImportCapActualResBaseline(context *gin.Context, versionId int64, f *exceli
 			var insertCapActualResBaselines []entity.CapActualResBaseline
 			var updateCapActualResBaselines []entity.CapActualResBaseline
 			for _, originCapActualResBaseline := range originCapActualResBaselines {
-				key := originCapActualResBaseline.ProductCode + originCapActualResBaseline.SellSpecs + originCapActualResBaseline.SellUnit + originCapActualResBaseline.Features
+				key := fmt.Sprintf("%s-%s-%s-%s-%s", originCapActualResBaseline.ProductCode, originCapActualResBaseline.SellSpecs, originCapActualResBaseline.ValueAddedService, originCapActualResBaseline.SellUnit, originCapActualResBaseline.Features)
 				originCapActualResMap[key] = originCapActualResBaseline
 			}
 			for _, capActualResBaseline := range capActualResBaselines {
-				key := capActualResBaseline.ProductCode + capActualResBaseline.SellSpecs + capActualResBaseline.SellUnit + capActualResBaseline.Features
+				key := fmt.Sprintf("%s-%s-%s-%s-%s", capActualResBaseline.ProductCode, capActualResBaseline.SellSpecs, capActualResBaseline.ValueAddedService, capActualResBaseline.SellUnit, capActualResBaseline.Features)
 				originCapActualResBaseline, ok := originCapActualResMap[key]
 				if ok {
 					capActualResBaseline.Id = originCapActualResBaseline.Id
