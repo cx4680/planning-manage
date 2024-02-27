@@ -204,6 +204,8 @@ func SaveServerCapacity(request *Request) error {
 			capServerCalcBaseline := capServerCalcBaselineMap[capActualResBaseline.ExpendResCode]
 			// 查询角色节点
 			nodeRoleBaseline = nodeRoleBaselineMap[capServerCalcBaseline.ExpendNodeRoleCode]
+		} else {
+			continue
 		}
 		// 为了计算CKE的容器集群数的容量规划输入
 		if capConvertBaseline.ProductCode == constant.ProductCodeCKE {
