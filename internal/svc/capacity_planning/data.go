@@ -100,10 +100,13 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 				SellSpecs:        v.SellSpecs,
 				CapPlanningInput: v.CapPlanningInput,
 				Unit:             v.Unit,
+				FeatureId:        v.Id,
 				FeatureMode:      v.FeaturesMode,
 				Description:      v.Description,
 			}
-			responseCapConvert.FeatureId = v.Id
+			if serverCapPlanningMap[v.Id] != nil {
+				responseCapConvert.Number = serverCapPlanningMap[v.Id].Number
+			}
 			responseCapConvertList = append(responseCapConvertList, responseCapConvert)
 		}
 		if util.IsNotBlank(v.Features) {
@@ -120,6 +123,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		for _, feature := range capConvertBaselineMap[key] {
 			if serverCapPlanningMap[feature.Id] != nil {
 				responseCapConvertList[i].FeatureId = feature.Id
+				//处理特性的输入值
 				responseCapConvertList[i].Number = serverCapPlanningMap[feature.Id].Number
 				responseCapConvertList[i].FeatureNumber = serverCapPlanningMap[feature.Id].FeatureNumber
 			}
