@@ -212,7 +212,9 @@ func SaveServerCapacity(request *Request) error {
 			nodeRoleBaseline = nodeRoleBaselineMap[constant.NodeRoleCodeCompute]
 		}
 		// TODO 缺少安全产品增值服务的处理逻辑，查询容量规划列表也要加判断是否选择了增值服务
-		serverCapPlanning.NodeRoleId = nodeRoleBaseline.Id
+		if nodeRoleBaseline != nil {
+			serverCapPlanning.NodeRoleId = nodeRoleBaseline.Id
+		}
 		serverCapPlanningList = append(serverCapPlanningList, serverCapPlanning)
 	}
 	//部分产品特殊处理
@@ -233,6 +235,9 @@ func SaveServerCapacity(request *Request) error {
 		capConvertBaseline := capConvertBaselineMap[v.Id]
 		// 查询容量实际资源消耗表
 		capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
+		if capActualResBaseline == nil {
+			continue
+		}
 		//如果ecs容量规划-按规格数量计算，则将CKE、ECS_VCPU和ECS_MEN的容量输入信息放入
 		if request.EcsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
 			ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], v)
