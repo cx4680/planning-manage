@@ -32,9 +32,30 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		cloudProductIdList = append(cloudProductIdList, v.ProductId)
 	}
 	// 查询云产品基线表
-	var cloudProductCodeList []string
-	if err := db.Model(&entity.CloudProductBaseline{}).Select("product_code").Where("id IN (?)", cloudProductIdList).Find(&cloudProductCodeList).Error; err != nil {
+	var cloudProductBaselineList []*entity.CloudProductBaseline
+	if err := db.Where("id IN (?)", cloudProductIdList).Find(&cloudProductBaselineList).Error; err != nil {
 		return nil, err
+	}
+	var cloudProductCodeList []string
+	var cloudProductIdCodeMap = make(map[int64]string)
+	for _, v := range cloudProductBaselineList {
+		cloudProductCodeList = append(cloudProductCodeList, v.ProductCode)
+		cloudProductIdCodeMap[v.Id] = v.ProductCode
+	}
+	//根据产品编码-售卖规格、产品编码-增值服务筛选容量输入列表
+	var screenCloudProductSellSpecMap = make(map[string]interface{})
+	var screenCloudProductValueAddedServiceMap = make(map[string]interface{})
+	for _, v := range cloudProductPlanningList {
+		//根据产品编码-售卖规格
+		if util.IsNotBlank(v.SellSpec) {
+			screenCloudProductSellSpecMap[fmt.Sprintf("%s-%s", cloudProductIdCodeMap[v.ProductId], v.SellSpec)] = nil
+		}
+		//产品编码-增值服务
+		if util.IsNotBlank(v.ValueAddedService) {
+			for _, valueAddedService := range strings.Split(v.ValueAddedService, ",") {
+				screenCloudProductValueAddedServiceMap[fmt.Sprintf("%s-%s", cloudProductIdCodeMap[v.ProductId], valueAddedService)] = nil
+			}
+		}
 	}
 	// 查询容量换算表
 	var capConvertBaselineList []*entity.CapConvertBaseline
@@ -59,7 +80,18 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	var capConvertBaselineMap = make(map[string][]*ResponseFeatures)
 	var responseCapConvertList []*ResponseCapConvert
 	for _, v := range capConvertBaselineList {
-		key := fmt.Sprintf("%v-%v-%v", v.ProductCode, v.SellSpecs, v.CapPlanningInput)
+		//根据产品编码-售卖规格、产品编码-增值服务筛选容量输入列表
+		if util.IsNotBlank(v.SellSpecs) {
+			if _, ok := screenCloudProductSellSpecMap[fmt.Sprintf("%s-%s", v.ProductCode, v.SellSpecs)]; !ok {
+				continue
+			}
+		}
+		if util.IsNotBlank(v.ValueAddedService) {
+			if _, ok := screenCloudProductValueAddedServiceMap[fmt.Sprintf("%s-%s", v.ProductCode, v.ValueAddedService)]; !ok {
+				continue
+			}
+		}
+		key := fmt.Sprintf("%v-%v", v.ProductCode, v.CapPlanningInput)
 		if _, ok := capConvertBaselineMap[key]; !ok {
 			responseCapConvert := &ResponseCapConvert{
 				VersionId:        v.VersionId,
@@ -74,13 +106,15 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 			responseCapConvert.FeatureId = v.Id
 			responseCapConvertList = append(responseCapConvertList, responseCapConvert)
 		}
-		capConvertBaselineMap[key] = append(capConvertBaselineMap[key], &ResponseFeatures{Id: v.Id, Name: v.Features})
+		if util.IsNotBlank(v.Features) {
+			capConvertBaselineMap[key] = append(capConvertBaselineMap[key], &ResponseFeatures{Id: v.Id, Name: v.Features})
+		}
 	}
 	// 整理容量指标的特性
-	var classificationMap = make(map[string][]*ResponseCapConvert)
+	var productCapConvertMap = make(map[string][]*ResponseCapConvert)
 	var specialMap = make(map[string]*EcsCapacity)
 	for i, v := range responseCapConvertList {
-		key := fmt.Sprintf("%v-%v-%v", v.ProductCode, v.SellSpecs, v.CapPlanningInput)
+		key := fmt.Sprintf("%v-%v", v.ProductCode, v.CapPlanningInput)
 		responseCapConvertList[i].Features = capConvertBaselineMap[key]
 		// 回显容量规划数据
 		for _, feature := range capConvertBaselineMap[key] {
@@ -90,18 +124,18 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 				responseCapConvertList[i].FeatureNumber = serverCapPlanningMap[feature.Id].FeatureNumber
 			}
 		}
-		classification := fmt.Sprintf("%s-%s", v.ProductName, v.SellSpecs)
-		classificationMap[classification] = append(classificationMap[classification], v)
+		productCapConvertMap[v.ProductCode] = append(productCapConvertMap[v.ProductCode], v)
 		// 单独处理ecs产品指标
-		if v.ProductCode == "ECS" {
-			specialMap[classification] = ecsCapacity
+		if v.ProductCode == constant.ProductCodeECS {
+			specialMap[constant.ProductCodeECS] = ecsCapacity
 		}
 	}
 	// 按产品分类
 	var response []*ResponseCapClassification
-	for k, v := range classificationMap {
+	for k, v := range productCapConvertMap {
+		classification := fmt.Sprintf("%v-%v", v[0].ProductName, v[0].SellSpecs)
 		response = append(response, &ResponseCapClassification{
-			Classification: k,
+			Classification: classification,
 			ProductName:    v[0].ProductName,
 			ProductCode:    v[0].ProductCode,
 			ProductType:    v[0].ProductCode,
