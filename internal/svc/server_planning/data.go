@@ -49,7 +49,7 @@ func ListServer(request *Request) ([]*Server, error) {
 	}
 	//查询已保存的服务器规划表
 	var serverPlanningList []*Server
-	if err = db.Model(&entity.ServerPlanning{}).Where("plan_id = ?", request.PlanId).Find(&serverPlanningList).Error; err != nil {
+	if err = db.Model(&entity.ServerPlanning{}).Where("plan_id = ? AND node_role_id IN (?)", request.PlanId, nodeRoleIdList).Find(&serverPlanningList).Error; err != nil {
 		return nil, err
 	}
 	var nodeRoleServerPlanningMap = make(map[int64]*Server)
@@ -59,7 +59,7 @@ func ListServer(request *Request) ([]*Server, error) {
 		serverPlanningMap[v.NodeRoleId] = &v.ServerPlanning
 	}
 	// 计算已保存的容量规划指标
-	nodeRoleCapMap, err := capacity_planning.GetNodeRoleCapMap(db, &capacity_planning.Request{PlanId: request.PlanId}, serverPlanningMap, nodeRoleCodeBaselineMap, serverBaselineMap)
+	nodeRoleCapMap, err := capacity_planning.GetNodeRoleCapMap(db, &capacity_planning.Request{PlanId: request.PlanId}, nodeRoleIdList, serverPlanningMap, nodeRoleCodeBaselineMap, serverBaselineMap)
 	if err != nil {
 		return nil, err
 	}

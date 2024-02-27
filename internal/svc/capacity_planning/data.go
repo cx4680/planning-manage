@@ -203,19 +203,19 @@ func SaveServerCapacity(request *Request) error {
 		// 查询容量实际资源消耗表
 		capConvertBaselineKey := fmt.Sprintf("%v-%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.ValueAddedService, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)
 		capActualResBaselineList := capActualResBaselineMap[capConvertBaselineKey]
+		var nodeRoleBaseline *entity.NodeRoleBaseline
 		for _, capActualResBaseline := range capActualResBaselineList {
-			var nodeRoleBaseline *entity.NodeRoleBaseline
 			// 查询容量服务器数量计算
 			capServerCalcBaseline := capServerCalcBaselineMap[capActualResBaseline.ExpendResCode]
 			// 查询角色节点
 			nodeRoleBaseline = nodeRoleBaselineMap[capServerCalcBaseline.ExpendNodeRoleCode]
-			// 为了计算CKE的容器集群数的容量规划输入
-			if capConvertBaseline.ProductCode == constant.ProductCodeCKE {
-				nodeRoleBaseline = nodeRoleBaselineMap[constant.NodeRoleCodeCompute]
-			}
 			if nodeRoleBaseline != nil {
 				serverCapPlanning.NodeRoleId = nodeRoleBaseline.Id
 			}
+		}
+		// 为了计算CKE的容器集群数的容量规划输入
+		if capConvertBaseline.ProductCode == constant.ProductCodeCKE {
+			nodeRoleBaseline = nodeRoleBaselineMap[constant.NodeRoleCodeCompute]
 		}
 		serverCapPlanningList = append(serverCapPlanningList, serverCapPlanning)
 	}
@@ -301,9 +301,9 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 	return &ResponseCapCount{Number: nodeRoleCapNumberMap[serverPlanning.NodeRoleId]}, nil
 }
 
-func GetNodeRoleCapMap(db *gorm.DB, request *Request, serverPlanningMap map[int64]*entity.ServerPlanning, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline, serverBaselineMap map[int64]*entity.ServerBaseline) (map[int64]int, error) {
+func GetNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleIdList []int64, serverPlanningMap map[int64]*entity.ServerPlanning, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline, serverBaselineMap map[int64]*entity.ServerBaseline) (map[int64]int, error) {
 	var serverCapPlanningList []*entity.ServerCapPlanning
-	if err := db.Where("plan_id = ?", request.PlanId).Find(&serverCapPlanningList).Error; err != nil {
+	if err := db.Where("plan_id = ? AND node_role_id IN (?)", request.PlanId, nodeRoleIdList).Find(&serverCapPlanningList).Error; err != nil {
 		return nil, err
 	}
 	if serverCapPlanningList == nil || len(serverCapPlanningList) == 0 {
