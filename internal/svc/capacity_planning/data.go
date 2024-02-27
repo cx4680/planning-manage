@@ -178,6 +178,7 @@ func SaveServerCapacity(request *Request) error {
 	}
 	var newServerPlanningList []*entity.ServerPlanning
 	var serverCapPlanningList []*entity.ServerCapPlanning
+	var productCodeNodeRoleIdMap = make(map[string]int64)
 	// 保存容量规划数据
 	for _, v := range request.ServerCapacityList {
 		// 查询容量换算表
@@ -210,7 +211,7 @@ func SaveServerCapacity(request *Request) error {
 			// 查询角色节点
 			nodeRoleBaseline = nodeRoleBaselineMap[capServerCalcBaseline.ExpendNodeRoleCode]
 			if nodeRoleBaseline != nil {
-				serverCapPlanning.NodeRoleId = nodeRoleBaseline.Id
+				productCodeNodeRoleIdMap[capActualResBaseline.ProductCode] = nodeRoleBaseline.Id
 			}
 		}
 		// 为了计算CKE的容器集群数的容量规划输入
@@ -218,6 +219,9 @@ func SaveServerCapacity(request *Request) error {
 			nodeRoleBaseline = nodeRoleBaselineMap[constant.NodeRoleCodeCompute]
 		}
 		serverCapPlanningList = append(serverCapPlanningList, serverCapPlanning)
+	}
+	for i, v := range serverCapPlanningList {
+		serverCapPlanningList[i].NodeRoleId = productCodeNodeRoleIdMap[v.ProductCode]
 	}
 	//计算个节点角色的服务器数量
 	nodeRoleCapNumberMap, ecsServerPlanning, ecsServerCapPlanning := computing(request, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
