@@ -198,7 +198,7 @@ func SaveServerCapacity(request *Request) error {
 		// 查询容量实际资源消耗表
 		capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
 		//如果ecs容量规划-按规格数量计算，则将CKE、ECS_VCPU和ECS_MEN的容量输入信息放入
-		if request.EcsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeECS || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
+		if request.EcsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
 			ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], v)
 			continue
 		}
@@ -242,7 +242,7 @@ func SaveServerCapacity(request *Request) error {
 			}
 		}
 		serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
-		number := handleSpecialData(request.EcsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap)
+		number := handleEcsData(request.EcsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap)
 		if err != nil {
 			return err
 		}
@@ -336,6 +336,9 @@ func CountCapacity(request *RequestServerCapacityCount) (*ResponseCapCount, erro
 	//ecs超分比
 	var ecsOverallocation float64
 	for _, v := range serverCapPlanningList {
+		if v.CapacityBaselineId == 0 {
+			continue
+		}
 		// 查询容量换算表
 		capConvertBaseline := capConvertBaselineMap[v.CapacityBaselineId]
 		// 特殊产品特殊计算
@@ -344,7 +347,7 @@ func CountCapacity(request *RequestServerCapacityCount) (*ResponseCapCount, erro
 		}
 		// 查询容量实际资源消耗表
 		capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
-		if ecsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeECS || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
+		if ecsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
 			ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], &RequestServerCapacity{
 				Id:     v.CapacityBaselineId,
 				Number: v.Number,
@@ -377,7 +380,7 @@ func CountCapacity(request *RequestServerCapacityCount) (*ResponseCapCount, erro
 	}
 	// 单独处理ecs容量规划-按规格数量计算
 	if ecsCapacity != nil {
-		serverNumber = handleSpecialData(ecsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap)
+		serverNumber = handleEcsData(ecsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap)
 	}
 	return &ResponseCapCount{Number: serverNumber}, nil
 }
@@ -438,12 +441,15 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineMap 
 	//ecs超分比
 	var ecsOverallocation float64
 	for _, v := range serverCapPlanningList {
+		if v.CapacityBaselineId == 0 {
+			continue
+		}
 		// 查询容量换算表
 		capConvertBaseline := capConvertBaselineMap[v.CapacityBaselineId]
 		// 查询容量实际资源消耗表
 		capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
 		//如果ecs容量规划-按规格数量计算，则将CKE、ECS_VCPU和ECS_MEN的容量输入信息放入
-		if ecsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeECS || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
+		if ecsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
 			ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], &RequestServerCapacity{
 				Id:     v.CapacityBaselineId,
 				Number: v.Number,
@@ -486,7 +492,7 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineMap 
 		for _, v := range nodeRoleCodeMap {
 			if v.NodeRoleCode == constant.NodeRoleCodeCompute {
 				serverBaseline := nodeRoleServerBaselineMap[v.Id]
-				nodeRoleCapNumberMap[v.Id] = handleSpecialData(ecsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap)
+				nodeRoleCapNumberMap[v.Id] = handleEcsData(ecsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap)
 			}
 		}
 	}
@@ -533,7 +539,7 @@ func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entit
 	return capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, nil
 }
 
-func handleSpecialData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseline, ecsResourceProductMap map[string][]*RequestServerCapacity, capConvertBaselineMap map[int64]*entity.CapConvertBaseline) int {
+func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseline, ecsResourceProductMap map[string][]*RequestServerCapacity, capConvertBaselineMap map[int64]*entity.CapConvertBaseline) int {
 	var items []util.Item
 	//计算ecs小箱子
 	for _, v := range ecsCapacity.List {
