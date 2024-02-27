@@ -194,24 +194,25 @@ func SaveServerCapacity(request *Request) error {
 			Unit:               capConvertBaseline.Unit,
 			FeaturesMode:       capConvertBaseline.FeaturesMode,
 			Features:           capConvertBaseline.Features,
+			ValueAddedService:  capConvertBaseline.ValueAddedService,
 			Special:            "{}",
 		}
 		// 查询容量实际资源消耗表
-		capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
-		var nodeRoleBaseline *entity.NodeRoleBaseline
-		if capActualResBaseline != nil {
+		capConvertBaselineKey := fmt.Sprintf("%v-%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.ValueAddedService, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)
+		capActualResBaselineList := capActualResBaselineMap[capConvertBaselineKey]
+		for _, capActualResBaseline := range capActualResBaselineList {
+			var nodeRoleBaseline *entity.NodeRoleBaseline
 			// 查询容量服务器数量计算
 			capServerCalcBaseline := capServerCalcBaselineMap[capActualResBaseline.ExpendResCode]
 			// 查询角色节点
 			nodeRoleBaseline = nodeRoleBaselineMap[capServerCalcBaseline.ExpendNodeRoleCode]
-		}
-		// 为了计算CKE的容器集群数的容量规划输入
-		if capConvertBaseline.ProductCode == constant.ProductCodeCKE {
-			nodeRoleBaseline = nodeRoleBaselineMap[constant.NodeRoleCodeCompute]
-		}
-		// TODO 缺少安全产品增值服务的处理逻辑，查询容量规划列表也要加判断是否选择了增值服务
-		if nodeRoleBaseline != nil {
-			serverCapPlanning.NodeRoleId = nodeRoleBaseline.Id
+			// 为了计算CKE的容器集群数的容量规划输入
+			if capConvertBaseline.ProductCode == constant.ProductCodeCKE {
+				nodeRoleBaseline = nodeRoleBaselineMap[constant.NodeRoleCodeCompute]
+			}
+			if nodeRoleBaseline != nil {
+				serverCapPlanning.NodeRoleId = nodeRoleBaseline.Id
+			}
 		}
 		serverCapPlanningList = append(serverCapPlanningList, serverCapPlanning)
 	}
@@ -232,22 +233,25 @@ func SaveServerCapacity(request *Request) error {
 		// 查询容量换算表
 		capConvertBaseline := capConvertBaselineMap[v.Id]
 		// 查询容量实际资源消耗表
-		capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
-		if capActualResBaseline == nil {
+		capConvertBaselineKey := fmt.Sprintf("%v-%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.ValueAddedService, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)
+		capActualResBaselineList := capActualResBaselineMap[capConvertBaselineKey]
+		if len(capActualResBaselineList) == 0 {
 			continue
 		}
-		//如果ecs容量规划-按规格数量计算，则将CKE、ECS_VCPU和ECS_MEN的容量输入信息放入
-		if request.EcsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
-			ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], v)
-			continue
+		for _, capActualResBaseline := range capActualResBaselineList {
+			//如果ecs容量规划-按规格数量计算，则将CKE、ECS_VCPU和ECS_MEN的容量输入信息放入
+			if request.EcsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
+				ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], v)
+				continue
+			}
+			// 过滤特殊产品特殊计算
+			if _, ok := SpecialProduct[capConvertBaseline.ProductCode]; ok {
+				continue
+			}
+			// 总消耗
+			capActualResNumber := capActualRes(v.Number, v.FeatureNumber, capConvertBaseline.ProductCode, capActualResBaseline)
+			expendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
 		}
-		// 过滤特殊产品特殊计算
-		if _, ok := SpecialProduct[capConvertBaseline.ProductCode]; ok {
-			continue
-		}
-		// 总消耗
-		capActualResNumber := capActualRes(v.Number, v.FeatureNumber, capConvertBaseline.ProductCode, capActualResBaseline)
-		expendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
 		if capConvertBaseline.ProductCode == constant.ProductCodeECS {
 			ecsOverallocation = float64(v.FeatureNumber)
 		}
@@ -274,14 +278,16 @@ func SaveServerCapacity(request *Request) error {
 	}
 	// 单独处理ecs容量规划-按规格数量计算
 	if request.EcsCapacity != nil {
+		//根据计算节点角色id查询服务器规划数据
 		var serverPlanning *entity.ServerPlanning
 		for _, v := range nodeRoleBaselineMap {
 			if v.NodeRoleCode == constant.NodeRoleCodeCompute {
 				serverPlanning = serverPlanningMap[v.Id]
 			}
 		}
+		//查询计算节点的服务器基线配置
 		serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
-		number := handleEcsData(request.EcsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap)
+		number := handleEcsData(request.EcsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap, capServerCalcBaselineMap)
 		if err != nil {
 			return err
 		}
@@ -385,17 +391,20 @@ func CountCapacity(request *RequestServerCapacityCount) (*ResponseCapCount, erro
 			continue
 		}
 		// 查询容量实际资源消耗表
-		capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
-		if ecsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
-			ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], &RequestServerCapacity{
-				Id:     v.CapacityBaselineId,
-				Number: v.Number,
-			})
-			continue
+		capConvertBaselineKey := fmt.Sprintf("%v-%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.ValueAddedService, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)
+		capActualResBaselineList := capActualResBaselineMap[capConvertBaselineKey]
+		for _, capActualResBaseline := range capActualResBaselineList {
+			if ecsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
+				ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], &RequestServerCapacity{
+					Id:     v.CapacityBaselineId,
+					Number: v.Number,
+				})
+				continue
+			}
+			// 总消耗
+			capActualResNumber := capActualRes(v.Number, v.FeatureNumber, capConvertBaseline.ProductCode, capActualResBaseline)
+			expendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
 		}
-		// 总消耗
-		capActualResNumber := capActualRes(v.Number, v.FeatureNumber, capConvertBaseline.ProductCode, capActualResBaseline)
-		expendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
 		if capConvertBaseline.ProductCode == constant.ProductCodeECS {
 			ecsOverallocation = float64(v.FeatureNumber)
 		}
@@ -419,7 +428,7 @@ func CountCapacity(request *RequestServerCapacityCount) (*ResponseCapCount, erro
 	}
 	// 单独处理ecs容量规划-按规格数量计算
 	if ecsCapacity != nil {
-		serverNumber = handleEcsData(ecsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap)
+		serverNumber = handleEcsData(ecsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap, capServerCalcBaselineMap)
 	}
 	return &ResponseCapCount{Number: serverNumber}, nil
 }
@@ -486,22 +495,25 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineMap 
 		// 查询容量换算表
 		capConvertBaseline := capConvertBaselineMap[v.CapacityBaselineId]
 		// 查询容量实际资源消耗表
-		capActualResBaseline := capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)]
-		//如果ecs容量规划-按规格数量计算，则将CKE、ECS_VCPU和ECS_MEN的容量输入信息放入
-		if ecsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
-			ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], &RequestServerCapacity{
-				Id:     v.CapacityBaselineId,
-				Number: v.Number,
-			})
-			continue
+		capConvertBaselineKey := fmt.Sprintf("%v-%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.ValueAddedService, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)
+		capActualResBaselineList := capActualResBaselineMap[capConvertBaselineKey]
+		for _, capActualResBaseline := range capActualResBaselineList {
+			//如果ecs容量规划-按规格数量计算，则将CKE、ECS_VCPU和ECS_MEN的容量输入信息放入
+			if ecsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
+				ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], &RequestServerCapacity{
+					Id:     v.CapacityBaselineId,
+					Number: v.Number,
+				})
+				continue
+			}
+			// 特殊产品特殊计算
+			if _, ok := SpecialProduct[capConvertBaseline.ProductCode]; ok {
+				continue
+			}
+			// 总消耗
+			capActualResNumber := capActualRes(v.Number, v.FeatureNumber, capConvertBaseline.ProductCode, capActualResBaseline)
+			expendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
 		}
-		// 特殊产品特殊计算
-		if _, ok := SpecialProduct[capConvertBaseline.ProductCode]; ok {
-			continue
-		}
-		// 总消耗
-		capActualResNumber := capActualRes(v.Number, v.FeatureNumber, capConvertBaseline.ProductCode, capActualResBaseline)
-		expendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
 		if capConvertBaseline.ProductCode == constant.ProductCodeECS {
 			ecsOverallocation = float64(v.FeatureNumber)
 		}
@@ -531,14 +543,14 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, nodeRoleServerBaselineMap 
 		for _, v := range nodeRoleCodeMap {
 			if v.NodeRoleCode == constant.NodeRoleCodeCompute {
 				serverBaseline := nodeRoleServerBaselineMap[v.Id]
-				nodeRoleCapNumberMap[v.Id] = handleEcsData(ecsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap)
+				nodeRoleCapNumberMap[v.Id] = handleEcsData(ecsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap, capServerCalcBaselineMap)
 			}
 		}
 	}
 	return nodeRoleCapNumberMap, nil
 }
 
-func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entity.CapConvertBaseline, map[string]*entity.CapActualResBaseline, map[string]*entity.CapServerCalcBaseline, error) {
+func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entity.CapConvertBaseline, map[string][]*entity.CapActualResBaseline, map[string]*entity.CapServerCalcBaseline, error) {
 	var capConvertBaselineList []*entity.CapConvertBaseline
 	if err := db.Where("id IN (?)", serverCapacityIdList).Find(&capConvertBaselineList).Error; err != nil {
 		return nil, nil, nil, err
@@ -559,10 +571,11 @@ func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entit
 		return nil, nil, nil, err
 	}
 	//产品编码-售卖规格-消耗资源-特性为key
-	var capActualResBaselineMap = make(map[string]*entity.CapActualResBaseline)
+	var capActualResBaselineListMap = make(map[string][]*entity.CapActualResBaseline)
 	var expendResCodeList []string
 	for _, v := range capActualResBaselineList {
-		capActualResBaselineMap[fmt.Sprintf("%v-%v-%v-%v", v.ProductCode, v.SellSpecs, v.SellUnit, v.Features)] = v
+		key := fmt.Sprintf("%v-%v-%v-%v-%v", v.ProductCode, v.SellSpecs, v.ValueAddedService, v.SellUnit, v.Features)
+		capActualResBaselineListMap[key] = append(capActualResBaselineListMap[key], v)
 		expendResCodeList = append(expendResCodeList, v.ExpendResCode)
 	}
 	//查询容量服务器数量计算
@@ -575,10 +588,10 @@ func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entit
 	for _, v := range capServerCalcBaselineList {
 		capServerCalcBaselineMap[v.ExpendResCode] = v
 	}
-	return capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, nil
+	return capConvertBaselineMap, capActualResBaselineListMap, capServerCalcBaselineMap, nil
 }
 
-func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseline, ecsResourceProductMap map[string][]*RequestServerCapacity, capConvertBaselineMap map[int64]*entity.CapConvertBaseline) int {
+func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseline, ecsResourceProductMap map[string][]*RequestServerCapacity, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capServerCalcBaselineMap map[string]*entity.CapServerCalcBaseline) int {
 	var items []util.Item
 	//计算ecs小箱子
 	for _, v := range ecsCapacity.List {
@@ -594,19 +607,39 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 	for k, v := range ecsResourceProductMap {
 		switch k {
 		case constant.ProductCodeCKE:
-			var vCpu, count float64
+			var vCpu, cluster float64
 			for _, requestCapacity := range v {
 				switch capConvertBaselineMap[requestCapacity.Id].CapPlanningInput {
 				case constant.CapPlanningInputVCpu:
 					vCpu = float64(requestCapacity.Number)
 				case constant.CapPlanningInputContainerCluster:
-					count = float64(requestCapacity.Number)
+					cluster = float64(requestCapacity.Number)
 				}
 			}
-			items = append(items, util.Item{Size: util.Rectangle{Width: 16, Height: 32}, Number: int(math.Ceil(vCpu/0.7/14.6 + count*3))})
+			waterLevel, _ := strconv.ParseFloat(capServerCalcBaselineMap[constant.ExpendResCodeECSVCpu].WaterLevel, 64)
+			items = append(items, util.Item{Size: util.Rectangle{Width: 16, Height: 32}, Number: int(math.Ceil(vCpu/waterLevel/14.6 + cluster*3))})
 		case constant.ProductCodeCNBH:
+			var assetsNumber float64
+			for _, requestCapacity := range v {
+				switch capConvertBaselineMap[requestCapacity.Id].CapPlanningInput {
+				case constant.CapPlanningInputOneHundred:
+					assetsNumber += float64(requestCapacity.Number * constant.CapPlanningInputOneHundredInt)
+				case constant.CapPlanningInputFiveHundred:
+					assetsNumber += float64(requestCapacity.Number * constant.CapPlanningInputFiveHundredInt)
+				case constant.CapPlanningInputOneThousand:
+					assetsNumber += float64(requestCapacity.Number * constant.CapPlanningInputOneThousandInt)
+				}
+			}
+			items = append(items, util.Item{Size: util.Rectangle{Width: 2, Height: 4}, Number: int(math.Ceil(assetsNumber / 50))})
 		case constant.ProductCodeCNFW:
-
+			for _, requestCapacity := range v {
+				if capConvertBaselineMap[requestCapacity.Id].SellSpecs == constant.SellSpecsStandardEdition {
+					items = append(items, util.Item{Size: util.Rectangle{Width: 4, Height: 8}, Number: requestCapacity.Number})
+				}
+				if capConvertBaselineMap[requestCapacity.Id].SellSpecs == constant.SellSpecsUltimateEdition {
+					items = append(items, util.Item{Size: util.Rectangle{Width: 8, Height: 16}, Number: requestCapacity.Number})
+				}
+			}
 		}
 	}
 	//节点固定开销5C8G，则单节点可用vCPU=(节点总vCPU*-5）*70%*超分系数N；单节点可用内存=(节点总内存*-8）*70%，为大箱子的长宽

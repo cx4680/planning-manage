@@ -241,7 +241,8 @@ CREATE TABLE `server_cap_planning`
     `features_mode`        varchar(255) DEFAULT NULL COMMENT '特性模式',
     `features`             varchar(255) DEFAULT NULL COMMENT '特性',
     `expend_res_code`      varchar(255) DEFAULT NULL COMMENT '消耗资源编码',
-    `special`              json NULL,
+    `value_added_service`  varchar(255) DEFAULT NULL COMMENT '增值服务',
+    `special`              json NULL COMMENT '特殊数据：ECS规格数据',
     PRIMARY KEY (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET=utf8mb4 COMMENT = '服务器容量规划表';
 
