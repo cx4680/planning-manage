@@ -158,8 +158,18 @@ const (
 	CapPlanningInputMemory           = "内存"
 	CapPlanningInputContainerCluster = "容器集群数"
 
+	CapPlanningInputOneHundred     = "100"
+	CapPlanningInputOneHundredInt  = 100
+	CapPlanningInputFiveHundred    = "500"
+	CapPlanningInputFiveHundredInt = 500
+	CapPlanningInputOneThousand    = "1000"
+	CapPlanningInputOneThousandInt = 1000
+
 	ExpendResCodeECSVCpu   = "ECS_VCPU"
 	ExpendResCodeECSMemory = "ECS_MEM"
 
 	NodeRoleCodeCompute = "COMPUTE"
+
+	SellSpecsStandardEdition = "标准版"
+	SellSpecsUltimateEdition = "旗舰版"
 )

@@ -38,7 +38,7 @@ func ListServer(request *Request) ([]*Server, error) {
 		return nil, err
 	}
 	//查询角色服务器基线map
-	serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineMap, nodeRoleCodeMap, err := getNodeRoleServerBaselineMap(db, nodeRoleIdList, request)
+	serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineMap, nodeRoleCodeBaselineMap, err := getNodeRoleServerBaselineMap(db, nodeRoleIdList, request)
 	if err != nil {
 		return nil, err
 	}
@@ -49,15 +49,17 @@ func ListServer(request *Request) ([]*Server, error) {
 	}
 	//查询已保存的服务器规划表
 	var serverPlanningList []*Server
-	if err = db.Model(&entity.ServerPlanning{}).Where("plan_id = ?", request.PlanId).Find(&serverPlanningList).Error; err != nil {
+	if err = db.Model(&entity.ServerPlanning{}).Where("plan_id = ? AND node_role_id IN (?)", request.PlanId, nodeRoleIdList).Find(&serverPlanningList).Error; err != nil {
 		return nil, err
 	}
 	var nodeRoleServerPlanningMap = make(map[int64]*Server)
+	var serverPlanningMap = make(map[int64]*entity.ServerPlanning)
 	for _, v := range serverPlanningList {
 		nodeRoleServerPlanningMap[v.NodeRoleId] = v
+		serverPlanningMap[v.NodeRoleId] = &v.ServerPlanning
 	}
 	// 计算已保存的容量规划指标
-	nodeRoleCapMap, err := capacity_planning.GetNodeRoleCapMap(db, &capacity_planning.Request{PlanId: request.PlanId, EcsCapacity: request.EcsCapacity}, screenNodeRoleServerBaselineMap, nodeRoleCodeMap)
+	nodeRoleCapMap, err := capacity_planning.GetNodeRoleCapMap(db, &capacity_planning.Request{PlanId: request.PlanId}, nodeRoleIdList, serverPlanningMap, nodeRoleCodeBaselineMap, serverBaselineMap)
 	if err != nil {
 		return nil, err
 	}
@@ -354,7 +356,7 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 	//查询服务器基线表
 	var nodeRoleServerBaselineListMap = make(map[int64][]*Baseline)
 	var screenNodeRoleServerBaselineMap = make(map[int64]*entity.ServerBaseline)
-	var nodeRoleCodeServerBaselineMap = make(map[string]*entity.NodeRoleBaseline)
+	var nodeRoleCodeBaselineMap = make(map[string]*entity.NodeRoleBaseline)
 	for k, serverIdList := range nodeRoleServerRelMap {
 		for _, serverId := range serverIdList {
 			serverBaseline := serverBaselineMap[serverId]
@@ -375,15 +377,15 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 			})
 			if request.NetworkInterface == serverBaseline.NetworkInterface && serverBaseline.CpuType == request.CpuType {
 				screenNodeRoleServerBaselineMap[k] = serverBaseline
-				nodeRoleCodeServerBaselineMap[nodeRoleBaselineMap[k].NodeRoleCode] = nodeRoleBaselineMap[k]
+				nodeRoleCodeBaselineMap[nodeRoleBaselineMap[k].NodeRoleCode] = nodeRoleBaselineMap[k]
 			}
 			if screenNodeRoleServerBaselineMap[k] == nil {
 				screenNodeRoleServerBaselineMap[k] = serverBaseline
-				nodeRoleCodeServerBaselineMap[nodeRoleBaselineMap[k].NodeRoleCode] = nodeRoleBaselineMap[k]
+				nodeRoleCodeBaselineMap[nodeRoleBaselineMap[k].NodeRoleCode] = nodeRoleBaselineMap[k]
 			}
 		}
 	}
-	return serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineMap, nodeRoleCodeServerBaselineMap, nil
+	return serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineMap, nodeRoleCodeBaselineMap, nil
 }
 
 func getServerShelveDownloadTemplate(planId int64) ([]ShelveDownload, string, error) {

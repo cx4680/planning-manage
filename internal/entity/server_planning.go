@@ -49,7 +49,8 @@ type ServerCapPlanning struct {
 	FeaturesMode       string `gorm:"column:features_mode" json:"featuresMode"`              // 特性模式
 	Features           string `gorm:"column:features" json:"features"`                       // 特性
 	ExpendResCode      string `gorm:"column:expend_res_code" json:"expendResCode"`           // 消耗资源编码
-	Special            string `gorm:"column:special" json:"special"`                         // 特殊数据
+	ValueAddedService  string `gorm:"column:value_added_service" json:"valueAddedService"`   // 增值服务
+	Special            string `gorm:"column:special" json:"special"`                         // 特殊数据：ECS规格数据
 }
 
 func (entity *ServerCapPlanning) TableName() string {

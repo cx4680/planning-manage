@@ -36,7 +36,7 @@ func Computing(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	data, err := CountCapacity(request)
+	data, err := SingleComputing(request)
 	if err != nil {
 		log.Error("list server_planning capacity error: ", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
