@@ -1,25 +1,27 @@
 package server_planning
 
 import (
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/capacity_planning"
-	"errors"
-	"fmt"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"gorm.io/gorm"
-	"strconv"
-	"strings"
-	"time"
 )
 
 func ListServer(request *Request) ([]*Server, error) {
-	//缓存预编译 会话模式
+	// 缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
-	//查询云产品规划表
+	// 查询云产品规划表
 	var productIdList []int64
 	if err := db.Model(&entity.CloudProductPlanning{}).Select("product_id").Where("plan_id = ?", request.PlanId).Find(&productIdList).Error; err != nil {
 		return nil, err
@@ -27,27 +29,27 @@ func ListServer(request *Request) ([]*Server, error) {
 	if len(productIdList) == 0 {
 		return nil, errors.New("该方案未找到关联产品")
 	}
-	//查询云产品和角色关联表
+	// 查询云产品和角色关联表
 	var nodeRoleIdList []int64
 	if err := db.Model(&entity.CloudProductNodeRoleRel{}).Select("node_role_id").Where("product_id IN (?)", productIdList).Find(&nodeRoleIdList).Error; err != nil {
 		return nil, err
 	}
-	//查询角色表
+	// 查询角色表
 	var nodeRoleBaselineList []*entity.NodeRoleBaseline
 	if err := db.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleBaselineList).Error; err != nil {
 		return nil, err
 	}
-	//查询角色服务器基线map
+	// 查询角色服务器基线map
 	serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineMap, nodeRoleCodeBaselineMap, err := getNodeRoleServerBaselineMap(db, nodeRoleIdList, request)
 	if err != nil {
 		return nil, err
 	}
-	//查询混合部署方式map
+	// 查询混合部署方式map
 	mixedNodeRoleMap, err := getMixedNodeRoleMap(db, nodeRoleIdList)
 	if err != nil {
 		return nil, err
 	}
-	//查询已保存的服务器规划表
+	// 查询已保存的服务器规划表
 	var serverPlanningList []*Server
 	if err = db.Model(&entity.ServerPlanning{}).Where("plan_id = ? AND node_role_id IN (?)", request.PlanId, nodeRoleIdList).Find(&serverPlanningList).Error; err != nil {
 		return nil, err
@@ -59,15 +61,15 @@ func ListServer(request *Request) ([]*Server, error) {
 		serverPlanningMap[v.NodeRoleId] = &v.ServerPlanning
 	}
 	// 计算已保存的容量规划指标
-	nodeRoleCapMap, err := capacity_planning.GetNodeRoleCapMap(db, &capacity_planning.Request{PlanId: request.PlanId}, nodeRoleIdList, serverPlanningMap, nodeRoleCodeBaselineMap, serverBaselineMap)
+	nodeRoleCapMap, err := capacity_planning.GetNodeRoleCapMap(db, &capacity_planning.Request{PlanId: request.PlanId}, serverPlanningMap, nodeRoleCodeBaselineMap, serverBaselineMap)
 	if err != nil {
 		return nil, err
 	}
-	//构建返回体
+	// 构建返回体
 	var list []*Server
 	for _, v := range nodeRoleBaselineList {
 		serverPlanning := &Server{}
-		//若服务器规划有保存过，则加载已保存的数据
+		// 若服务器规划有保存过，则加载已保存的数据
 		if nodeRoleServerPlanningMap[v.Id] != nil && util.IsBlank(request.NetworkInterface) && util.IsBlank(request.CpuType) {
 			serverPlanning = nodeRoleServerPlanningMap[v.Id]
 			serverPlanning.ServerBomCode = serverBaselineMap[serverPlanning.ServerBaselineId].BomCode
@@ -79,7 +81,7 @@ func ListServer(request *Request) ([]*Server, error) {
 			if nodeRoleCapMap[v.Id] != 0 {
 				serverPlanning.Number = nodeRoleCapMap[v.Id]
 			}
-			//列表加载机型
+			// 列表加载机型
 			serverBaseline := screenNodeRoleServerBaselineMap[v.Id]
 			serverPlanning.ServerBaselineId = serverBaseline.Id
 			serverPlanning.ServerBomCode = serverBaseline.BomCode
@@ -149,7 +151,7 @@ func CreateServerPlanning(db *gorm.DB, request *Request) error {
 }
 
 func ListServerNetworkType(request *Request) ([]string, error) {
-	//缓存预编译 会话模式
+	// 缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	serverBaselineList, serverPlanning, err := getServerType(db, request)
 	if err != nil {
@@ -171,7 +173,7 @@ func ListServerNetworkType(request *Request) ([]string, error) {
 }
 
 func ListServerCpuType(request *Request) ([]string, error) {
-	//缓存预编译 会话模式
+	// 缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	serverBaselineList, serverPlanning, err := getServerType(db, request)
 	if err != nil {
@@ -193,7 +195,7 @@ func ListServerCpuType(request *Request) ([]string, error) {
 }
 
 func getServerType(db *gorm.DB, request *Request) ([]*entity.ServerBaseline, *entity.ServerPlanning, error) {
-	//查询云产品规划表
+	// 查询云产品规划表
 	var cloudProductPlanning = &entity.CloudProductPlanning{}
 	if err := data.DB.Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanning).Error; err != nil {
 		return nil, nil, err
@@ -201,7 +203,7 @@ func getServerType(db *gorm.DB, request *Request) ([]*entity.ServerBaseline, *en
 	if cloudProductPlanning.Id == 0 {
 		return nil, nil, errors.New("云产品规划不存在")
 	}
-	//查询云产品基线表
+	// 查询云产品基线表
 	var cloudProductBaseline = &entity.CloudProductBaseline{}
 	if err := data.DB.Where("id = ?", cloudProductPlanning.ProductId).Find(&cloudProductBaseline).Error; err != nil {
 		return nil, nil, err
@@ -209,12 +211,12 @@ func getServerType(db *gorm.DB, request *Request) ([]*entity.ServerBaseline, *en
 	if cloudProductBaseline.Id == 0 {
 		return nil, nil, errors.New("云产品基线不存在")
 	}
-	//查询服务器基线表
+	// 查询服务器基线表
 	var serverBaselineList []*entity.ServerBaseline
 	if err := data.DB.Where("version_id = ?", cloudProductBaseline.VersionId).Find(&serverBaselineList).Error; err != nil {
 		return nil, nil, err
 	}
-	//查询是否有已保存的方案
+	// 查询是否有已保存的方案
 	var serverPlanning = &entity.ServerPlanning{}
 	if err := db.Where("plan_id = ?", request.PlanId).Find(&serverPlanning).Error; err != nil {
 		return nil, nil, err
@@ -223,12 +225,12 @@ func getServerType(db *gorm.DB, request *Request) ([]*entity.ServerBaseline, *en
 }
 
 func DownloadServer(planId int64) ([]ResponseDownloadServer, string, error) {
-	//查询服务器规划列表
+	// 查询服务器规划列表
 	var serverList []*entity.ServerPlanning
 	if err := data.DB.Where("plan_id = ?", planId).Find(&serverList).Error; err != nil {
 		return nil, "", err
 	}
-	//查询关联的角色和设备，封装成map
+	// 查询关联的角色和设备，封装成map
 	var nodeRoleIdList, serverBaselineIdList []int64
 	for _, v := range serverList {
 		nodeRoleIdList = append(nodeRoleIdList, v.NodeRoleId)
@@ -250,7 +252,7 @@ func DownloadServer(planId int64) ([]ResponseDownloadServer, string, error) {
 	for _, v := range serverBaselineList {
 		serverBaselineMap[v.Id] = v
 	}
-	//构建返回体
+	// 构建返回体
 	var response []ResponseDownloadServer
 	var total int
 	for _, v := range serverList {
@@ -266,7 +268,7 @@ func DownloadServer(planId int64) ([]ResponseDownloadServer, string, error) {
 	response = append(response, ResponseDownloadServer{
 		Number: "总计：" + strconv.Itoa(total) + "台",
 	})
-	//构建文件名称
+	// 构建文件名称
 	var planManage = &entity.PlanManage{}
 	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManage).Error; err != nil {
 		return nil, "", err
@@ -324,7 +326,7 @@ func getMixedNodeRoleMap(db *gorm.DB, nodeRoleIdList []int64) (map[int64][]*Mixe
 }
 
 func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *Request) (map[int64]*entity.ServerBaseline, map[int64][]*Baseline, map[int64]*entity.ServerBaseline, map[string]*entity.NodeRoleBaseline, error) {
-	//查询节点角色表
+	// 查询节点角色表
 	var nodeRoleBaselineList []*entity.NodeRoleBaseline
 	if err := db.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleBaselineList).Error; err != nil {
 		return nil, nil, nil, nil, err
@@ -333,7 +335,7 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 	for _, v := range nodeRoleBaselineList {
 		nodeRoleBaselineMap[v.Id] = v
 	}
-	//查询服务器和角色关联表
+	// 查询服务器和角色关联表
 	var serverNodeRoleRelList []*entity.ServerNodeRoleRel
 	if err := db.Where("node_role_id IN (?)", nodeRoleIdList).Find(&serverNodeRoleRelList).Error; err != nil {
 		return nil, nil, nil, nil, err
@@ -344,7 +346,7 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 		nodeRoleServerRelMap[v.NodeRoleId] = append(nodeRoleServerRelMap[v.NodeRoleId], v.ServerId)
 		serverBaselineIdList = append(serverBaselineIdList, v.ServerId)
 	}
-	//查询服务器基线表
+	// 查询服务器基线表
 	var serverBaselineList []*entity.ServerBaseline
 	if err := db.Where("id IN (?)", serverBaselineIdList).Find(&serverBaselineList).Error; err != nil {
 		return nil, nil, nil, nil, err
@@ -353,7 +355,7 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 	for _, v := range serverBaselineList {
 		serverBaselineMap[v.Id] = v
 	}
-	//查询服务器基线表
+	// 查询服务器基线表
 	var nodeRoleServerBaselineListMap = make(map[int64][]*Baseline)
 	var screenNodeRoleServerBaselineMap = make(map[int64]*entity.ServerBaseline)
 	var nodeRoleCodeBaselineMap = make(map[string]*entity.NodeRoleBaseline)
@@ -389,7 +391,7 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *
 }
 
 func getServerShelveDownloadTemplate(planId int64) ([]ShelveDownload, string, error) {
-	//查询服务器规划表
+	// 查询服务器规划表
 	serverPlanningList, err := getServerShelvePlanningList(planId)
 	if err != nil {
 		return nil, "", err
@@ -397,12 +399,12 @@ func getServerShelveDownloadTemplate(planId int64) ([]ShelveDownload, string, er
 	if len(serverPlanningList) == 0 {
 		return nil, "", errors.New("服务器未规划")
 	}
-	//查询机柜
+	// 查询机柜
 	cabinetIdleSlotList, err := getCabinetInfo(planId)
 	if err != nil {
 		return nil, "", err
 	}
-	//构建返回体
+	// 构建返回体
 	var response []ShelveDownload
 	var sortNumber = 0
 	for _, v := range serverPlanningList {
@@ -427,7 +429,7 @@ func getServerShelveDownloadTemplate(planId int64) ([]ShelveDownload, string, er
 			sortNumber++
 		}
 	}
-	//构建文件名称
+	// 构建文件名称
 	var planManage = &entity.PlanManage{}
 	if err = data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManage).Error; err != nil {
 		return nil, "", err
@@ -444,7 +446,7 @@ func getServerShelveDownloadTemplate(planId int64) ([]ShelveDownload, string, er
 }
 
 func getServerShelvePlanningList(planId int64) ([]*Server, error) {
-	//查询服务器规划表
+	// 查询服务器规划表
 	var serverPlanning []*Server
 	if err := data.DB.Model(&entity.ServerPlanning{}).Where("plan_id = ?", planId).Order("shelve_priority ASC").Find(&serverPlanning).Error; err != nil {
 		return nil, err
@@ -455,7 +457,7 @@ func getServerShelvePlanningList(planId int64) ([]*Server, error) {
 		nodeRoleIdList = append(nodeRoleIdList, v.NodeRoleId)
 		serverBaselineIdList = append(serverBaselineIdList, v.ServerBaselineId)
 	}
-	//查询节点角色表
+	// 查询节点角色表
 	var nodeRoleList []*entity.NodeRoleBaseline
 	if err := data.DB.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
 		return nil, err
@@ -464,7 +466,7 @@ func getServerShelvePlanningList(planId int64) ([]*Server, error) {
 	for _, v := range nodeRoleList {
 		nodeRoleNameMap[v.Id] = v.NodeRoleName
 	}
-	//查询服务器基线表
+	// 查询服务器基线表
 	var serverBaseline []*entity.ServerBaseline
 	if err := data.DB.Where("id IN (?)", serverBaselineIdList).Find(&serverBaseline).Error; err != nil {
 		return nil, err
@@ -473,7 +475,7 @@ func getServerShelvePlanningList(planId int64) ([]*Server, error) {
 	for _, v := range serverBaseline {
 		serverBaselineMap[v.Id] = v.BomCode
 	}
-	//查询服务器上架表
+	// 查询服务器上架表
 	var serverShelveCount int64
 	if err := data.DB.Model(&entity.ServerShelve{}).Where("plan_id = ?", planId).Count(&serverShelveCount).Error; err != nil {
 		return nil, err
@@ -497,15 +499,15 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 	}
 	var cabinetMap = make(map[int64]*entity.CabinetInfo)
 	var cabinetIdList []int64
-	var cabinetResidualRackServerNumMap = make(map[int64]int)    //剩余上架服务器数
-	var networkDeviceShelveCabinetIdMap = make(map[string]int64) //网络设备与机柜的关联信息
+	var cabinetResidualRackServerNumMap = make(map[int64]int)    // 剩余上架服务器数
+	var networkDeviceShelveCabinetIdMap = make(map[string]int64) // 网络设备与机柜的关联信息
 	for _, v := range cabinetInfoList {
 		cabinetMap[v.Id] = v
 		cabinetIdList = append(cabinetIdList, v.Id)
 		cabinetResidualRackServerNumMap[v.Id] = v.ResidualRackServerNum
 		networkDeviceShelveCabinetIdMap[fmt.Sprintf("%v-%v-%v-%v", v.CabinetAsw, v.MachineRoomAbbr, v.MachineRoomNum, v.CabinetNum)] = v.Id
 	}
-	//查询机柜槽位
+	// 查询机柜槽位
 	var cabinetIdleSlotRelList []*entity.CabinetIdleSlotRel
 	if err := data.DB.Where("cabinet_id IN (?)", cabinetIdList).Order("cabinet_id ASC, idle_slot_number ASC").Find(&cabinetIdleSlotRelList).Error; err != nil {
 		return nil, err
@@ -513,7 +515,7 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 	if len(cabinetIdleSlotRelList) == 0 {
 		return nil, errors.New("机柜槽位为空，请检查机房勘察表是否填写错误")
 	}
-	//查询网络设备占用槽位
+	// 查询网络设备占用槽位
 	var networkDeviceShelveList []*entity.NetworkDeviceShelve
 	if err := data.DB.Where("plan_id = ?", planId).Find(&networkDeviceShelveList).Error; err != nil {
 		return nil, err
@@ -534,11 +536,11 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 	var cabinetIdleSlotNumberMap = make(map[int64]int)
 	var cabinetIdleSlotListMap = make(map[int64][]*Cabinet)
 	for _, v := range cabinetIdleSlotRelList {
-		//1号槽位不上架
+		// 1号槽位不上架
 		if v.IdleSlotNumber == 1 {
 			continue
 		}
-		//过滤网络设备占用的槽位
+		// 过滤网络设备占用的槽位
 		if networkDeviceShelveSlotPositionMap[v.CabinetId] != nil {
 			if _, ok := networkDeviceShelveSlotPositionMap[v.CabinetId][v.IdleSlotNumber]; ok {
 				continue
@@ -547,7 +549,7 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 		if cabinetIdleSlotNumberMap[v.CabinetId] == 0 {
 			cabinetIdleSlotNumberMap[v.CabinetId] = v.IdleSlotNumber
 		} else {
-			//两个槽位相邻，且不超过机柜的剩余上架服务器数
+			// 两个槽位相邻，且不超过机柜的剩余上架服务器数
 			if v.IdleSlotNumber-cabinetIdleSlotNumberMap[v.CabinetId] == 1 && len(cabinetIdleSlotListMap) <= cabinetResidualRackServerNumMap[v.CabinetId] {
 				cabinetIdleSlotListMap[v.CabinetId] = append(cabinetIdleSlotListMap[v.CabinetId],
 					&Cabinet{
@@ -561,10 +563,10 @@ func getCabinetInfo(planId int64) ([]*Cabinet, error) {
 			}
 		}
 	}
-	//跨机柜上架，将所有机柜槽位列表纵向排布，然后从低到高横向上架
+	// 跨机柜上架，将所有机柜槽位列表纵向排布，然后从低到高横向上架
 	var cabinetIdleSlotList []*Cabinet
-	var maxLength = 1 //槽位最多的机柜的槽位数量
-	var index = 0     //下标
+	var maxLength = 1 // 槽位最多的机柜的槽位数量
+	var index = 0     // 下标
 	for index < maxLength {
 		for _, v := range cabinetInfoList {
 			idleSlotList := cabinetIdleSlotListMap[v.Id]
@@ -585,7 +587,7 @@ func UploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 		return errors.New("数据为空")
 	}
 	now := datetime.GetNow()
-	//查询服务器规划表
+	// 查询服务器规划表
 	var serverPlanning []*entity.ServerPlanning
 	if err := data.DB.Where("plan_id = ?", planId).Find(&serverPlanning).Error; err != nil {
 		return err
@@ -594,7 +596,7 @@ func UploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 	for _, v := range serverPlanning {
 		NodeRoleIdList = append(NodeRoleIdList, v.NodeRoleId)
 	}
-	//查询节点角色表
+	// 查询节点角色表
 	var nodeRoleList []*entity.NodeRoleBaseline
 	if err := data.DB.Where("id IN (?)", NodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
 		return err
@@ -603,7 +605,7 @@ func UploadServerShelve(planId int64, serverShelveDownload []ShelveDownload, use
 	for _, v := range nodeRoleList {
 		nodeRoleNameMap[v.NodeRoleName] = v.Id
 	}
-	//查询机柜信息
+	// 查询机柜信息
 	var cabinetInfoList []*entity.CabinetInfo
 	if err := data.DB.Where("plan_id = ?", planId).Find(&cabinetInfoList).Error; err != nil {
 		return err
@@ -677,7 +679,7 @@ func saveServerPlanning(request *Request) error {
 }
 
 func saveServerShelve(request *Request) error {
-	//查询服务器上架表
+	// 查询服务器上架表
 	var cabinetIdList []int64
 	if err := data.DB.Model(&entity.ServerShelve{}).Select("cabinet_id").Where("plan_id = ?", request.PlanId).Group("cabinet_id").Find(&cabinetIdList).Error; err != nil {
 		return err
@@ -685,7 +687,7 @@ func saveServerShelve(request *Request) error {
 	if len(cabinetIdList) == 0 {
 		return errors.New("服务器未上架")
 	}
-	//查询机柜信息
+	// 查询机柜信息
 	var cabinetCount int64
 	if err := data.DB.Model(&entity.CabinetInfo{}).Where("id IN (?)", cabinetIdList).Count(&cabinetCount).Error; err != nil {
 		return err
@@ -704,7 +706,7 @@ func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 	if err := data.DB.Where("plan_id = ?", planId).Find(&serverShelveList).Error; err != nil {
 		return nil, "", err
 	}
-	//查询节点角色表
+	// 查询节点角色表
 	var nodeRoleIdList []int64
 	for _, v := range serverShelveList {
 		nodeRoleIdList = append(nodeRoleIdList, v.NodeRoleId)
@@ -741,7 +743,7 @@ func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 			Gateway:               v.Gateway,
 		})
 	}
-	//构建文件名称
+	// 构建文件名称
 	var planManage = &entity.PlanManage{}
 	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManage).Error; err != nil {
 		return nil, "", err
@@ -758,7 +760,7 @@ func getServerShelveDownload(planId int64) ([]ShelveDownload, string, error) {
 }
 
 func checkBusiness(db *gorm.DB, request *Request) error {
-	//校验planId
+	// 校验planId
 	var planCount int64
 	if err := db.Model(&entity.PlanManage{}).Where("id = ? AND delete_state = ?", request.PlanId, 0).Count(&planCount).Error; err != nil {
 		return err

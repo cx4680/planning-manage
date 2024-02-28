@@ -172,4 +172,6 @@ const (
 
 	SellSpecsStandardEdition = "标准版"
 	SellSpecsUltimateEdition = "旗舰版"
+
+	FeaturesNameOverallocation = "超分比"
 )
