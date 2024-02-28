@@ -40,7 +40,7 @@ func ListServer(request *Request) ([]*Server, error) {
 		return nil, err
 	}
 	// 查询角色服务器基线map
-	serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineMap, nodeRoleCodeBaselineMap, err := getNodeRoleServerBaselineMap(db, nodeRoleIdList, request)
+	serverBaselineMap, nodeRoleServerBaselineListMap, screenNodeRoleServerBaselineMap, nodeRoleCodeBaselineMap, err := getNodeRoleServerBaselineMap(db, nodeRoleIdList, nodeRoleBaselineList, request)
 	if err != nil {
 		return nil, err
 	}
@@ -55,16 +55,11 @@ func ListServer(request *Request) ([]*Server, error) {
 		return nil, err
 	}
 	var nodeRoleServerPlanningMap = make(map[int64]*Server)
-	var serverPlanningMap = make(map[int64]*entity.ServerPlanning)
 	for _, v := range serverPlanningList {
 		nodeRoleServerPlanningMap[v.NodeRoleId] = v
-		serverPlanningMap[v.NodeRoleId] = &v.ServerPlanning
+		// serverPlanningMap[v.NodeRoleId] = &v.ServerPlanning
 	}
-	// 计算已保存的容量规划指标
-	nodeRoleCapMap, err := capacity_planning.GetNodeRoleCapMap(db, &capacity_planning.Request{PlanId: request.PlanId}, serverPlanningMap, nodeRoleCodeBaselineMap, serverBaselineMap)
-	if err != nil {
-		return nil, err
-	}
+	var serverPlanningMap = make(map[int64]*entity.ServerPlanning)
 	// 构建返回体
 	var list []*Server
 	for _, v := range nodeRoleBaselineList {
@@ -78,9 +73,9 @@ func ListServer(request *Request) ([]*Server, error) {
 			serverPlanning.PlanId = request.PlanId
 			serverPlanning.NodeRoleId = v.Id
 			serverPlanning.Number = v.MinimumNum
-			if nodeRoleCapMap[v.Id] != 0 {
-				serverPlanning.Number = nodeRoleCapMap[v.Id]
-			}
+			// if nodeRoleCapMap[v.Id] != 0 {
+			// 	serverPlanning.Number = nodeRoleCapMap[v.Id]
+			// }
 			// 列表加载机型
 			serverBaseline := screenNodeRoleServerBaselineMap[v.Id]
 			serverPlanning.ServerBaselineId = serverBaseline.Id
@@ -94,7 +89,26 @@ func ListServer(request *Request) ([]*Server, error) {
 		serverPlanning.SupportDpdk = v.SupportDPDK
 		serverPlanning.ServerBaselineList = nodeRoleServerBaselineListMap[v.Id]
 		serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[v.Id]
+		serverPlanningMap[v.Id] = &entity.ServerPlanning{
+			PlanId:           serverPlanning.PlanId,
+			NodeRoleId:       serverPlanning.NodeRoleId,
+			ServerBaselineId: serverPlanning.ServerBaselineId,
+			MixedNodeRoleId:  serverPlanning.MixedNodeRoleId,
+			Number:           serverPlanning.Number,
+			OpenDpdk:         serverPlanning.OpenDpdk,
+		}
 		list = append(list, serverPlanning)
+	}
+	// 计算已保存的容量规划指标
+	nodeRoleCapMap, err := capacity_planning.GetNodeRoleCapMap(db, &capacity_planning.Request{PlanId: request.PlanId}, serverPlanningMap, nodeRoleCodeBaselineMap, serverBaselineMap)
+	if err != nil {
+		return nil, err
+	}
+	for i := range list {
+		number := nodeRoleCapMap[list[i].NodeRoleId]
+		if number != 0 {
+			list[i].Number = number
+		}
 	}
 	return list, nil
 }
@@ -325,12 +339,7 @@ func getMixedNodeRoleMap(db *gorm.DB, nodeRoleIdList []int64) (map[int64][]*Mixe
 	return mixedNodeRoleMap, nil
 }
 
-func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, request *Request) (map[int64]*entity.ServerBaseline, map[int64][]*Baseline, map[int64]*entity.ServerBaseline, map[string]*entity.NodeRoleBaseline, error) {
-	// 查询节点角色表
-	var nodeRoleBaselineList []*entity.NodeRoleBaseline
-	if err := db.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleBaselineList).Error; err != nil {
-		return nil, nil, nil, nil, err
-	}
+func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, nodeRoleBaselineList []*entity.NodeRoleBaseline, request *Request) (map[int64]*entity.ServerBaseline, map[int64][]*Baseline, map[int64]*entity.ServerBaseline, map[string]*entity.NodeRoleBaseline, error) {
 	var nodeRoleBaselineMap = make(map[int64]*entity.NodeRoleBaseline)
 	for _, v := range nodeRoleBaselineList {
 		nodeRoleBaselineMap[v.Id] = v
