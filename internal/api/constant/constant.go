@@ -153,6 +153,7 @@ const (
 	ProductCodeECS  = "ECS"
 	ProductCodeCNBH = "CNBH"
 	ProductCodeCNFW = "CNFW"
+	ProductCodeCWAF = "CWAF"
 
 	CapPlanningInputVCpu             = "vCPU"
 	CapPlanningInputMemory           = "内存"

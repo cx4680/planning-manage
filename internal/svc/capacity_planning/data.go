@@ -594,6 +594,12 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 					items = append(items, util.Item{Size: util.Rectangle{Width: 8, Height: 16}, Number: requestCapacity.Number})
 				}
 			}
+		case constant.ProductCodeCWAF:
+			var firewallNumber float64
+			for _, requestCapacity := range v {
+				firewallNumber += float64(requestCapacity.Number)
+			}
+			items = append(items, util.Item{Size: util.Rectangle{Width: 1, Height: 2}, Number: int(firewallNumber)})
 		}
 	}
 	// 节点固定开销5C8G，则单节点可用vCPU=(节点总vCPU*-5）*70%*超分系数N；单节点可用内存=(节点总内存*-8）*70%，为大箱子的长宽
