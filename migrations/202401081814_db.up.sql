@@ -275,6 +275,7 @@ CREATE TABLE `software_bom_planning`
     `authorized_unit`      varchar(255) DEFAULT NULL COMMENT '授权单元',
     `sell_type`            varchar(255) DEFAULT NULL COMMENT '售卖类型',
     `hardware_arch`        varchar(255) DEFAULT NULL COMMENT '硬件架构',
+    `value_added_service`  varchar(255) DEFAULT NULL COMMENT '增值服务',
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='云产品规划bom表';
 

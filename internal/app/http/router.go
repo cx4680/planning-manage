@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/capacity_planning"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/software_bom"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -274,7 +275,11 @@ func Router(engine *gin.Engine) {
 		{
 			configGroup.GET("/:code", middleware.OperatorLog(DefaultEventOpInfo("查询枚举配置表", "queryConfig", middleware.LIST, middleware.INFO)), config_item.List)
 		}
-
+		// 软件bom
+		bomGroup := api.Group("/bom")
+		{
+			bomGroup.POST("save/:planId", middleware.OperatorLog(DefaultEventOpInfo("bom计算保存", "bomSave", middleware.CREATE, middleware.INFO)), software_bom.Save)
+		}
 	}
 
 	innerApi := engine.Group(innerPrefix)

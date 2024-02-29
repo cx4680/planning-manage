@@ -14,6 +14,7 @@ type SoftwareBomPlanning struct {
 	AuthorizedUnit     string `gorm:"column:authorized_unit" json:"authorizedUnit"`          // 授权单元
 	SellType           string `gorm:"column:sell_type" json:"sellType"`                      // 售卖类型
 	HardwareArch       string `gorm:"column:hardware_arch" json:"hardwareArch"`              // 硬件架构
+	ValueAddedService  string `gorm:"column:value_added_service" json:"valueAddedService"`   // 增值服务
 }
 
 func (entity *SoftwareBomPlanning) TableName() string {
