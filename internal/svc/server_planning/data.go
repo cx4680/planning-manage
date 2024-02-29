@@ -73,9 +73,6 @@ func ListServer(request *Request) ([]*Server, error) {
 			serverPlanning.PlanId = request.PlanId
 			serverPlanning.NodeRoleId = v.Id
 			serverPlanning.Number = v.MinimumNum
-			// if nodeRoleCapMap[v.Id] != 0 {
-			// 	serverPlanning.Number = nodeRoleCapMap[v.Id]
-			// }
 			// 列表加载机型
 			serverBaseline := screenNodeRoleServerBaselineMap[v.Id]
 			serverPlanning.ServerBaselineId = serverBaseline.Id
@@ -106,7 +103,7 @@ func ListServer(request *Request) ([]*Server, error) {
 	}
 	for i := range list {
 		number := nodeRoleCapMap[list[i].NodeRoleId]
-		if number != 0 {
+		if number > list[i].Number {
 			list[i].Number = number
 		}
 	}

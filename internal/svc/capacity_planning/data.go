@@ -528,7 +528,7 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 		}
 		serverPlanning := serverPlanningMap[nodeRoleBaseline.Id]
 		// 计算各角色节点单个服务器消耗
-		capServerCalcNumber := capServerCalc(k, capServerCalcBaselineMap[k], serverBaselineMap[serverPlanning.ServerBaselineId])
+		capServerCalcNumber := capServerCalc(k, capServerCalcBaselineMap[k], serverBaselineMap[serverPlanning.ServerBaselineId], float64(nodeRoleBaseline.MinimumNum))
 		// 总消耗除以单个服务器消耗，等于服务器数量
 		serverNumber := math.Ceil(capActualResNumber / capServerCalcNumber)
 		if nodeRoleCapNumberMap[nodeRoleBaseline.Id] < int(serverNumber) {
@@ -539,15 +539,17 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 	var ecsServerCapPlanning *entity.ServerCapPlanning
 	// 单独处理ecs容量规划-按规格数量计算
 	if request.EcsCapacity != nil {
+		var minimumNum int
 		// 根据计算节点角色id查询服务器规划数据
 		for _, v := range nodeRoleBaselineMap {
 			if v.NodeRoleCode == constant.NodeRoleCodeCompute {
 				ecsServerPlanning = serverPlanningMap[v.Id]
+				minimumNum = v.MinimumNum
 			}
 		}
 		// 查询计算节点的服务器基线配置
 		serverBaseline := serverBaselineMap[ecsServerPlanning.ServerBaselineId]
-		number := handleEcsData(request.EcsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap, capServerCalcBaselineMap)
+		number := handleEcsData(request.EcsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap, capServerCalcBaselineMap, minimumNum)
 		ecsServerPlanning.Number = number
 		ecsServerCapPlanning = &entity.ServerCapPlanning{
 			PlanId:        request.PlanId,
@@ -601,7 +603,7 @@ func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entit
 	return capConvertBaselineMap, capActualResBaselineListMap, capServerCalcBaselineMap, nil
 }
 
-func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseline, ecsResourceProductMap map[string][]*RequestServerCapacity, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capServerCalcBaselineMap map[string]*entity.CapServerCalcBaseline) int {
+func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseline, ecsResourceProductMap map[string][]*RequestServerCapacity, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capServerCalcBaselineMap map[string]*entity.CapServerCalcBaseline, minimumNumber int) int {
 	var items []util.Item
 	// 计算ecs小箱子
 	for _, v := range ecsCapacity.List {
@@ -624,7 +626,6 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 				case constant.CapPlanningInputVCpu:
 					vCpu = float64(requestCapacity.Number)
 				case constant.CapPlanningInputContainerCluster:
-					// TODO 没有放入cluster数量
 					cluster = float64(requestCapacity.Number)
 				}
 			}
@@ -657,6 +658,10 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 	// 节点固定开销5C8G，则单节点可用vCPU=(节点总vCPU*-5）*70%*超分系数N；单节点可用内存=(节点总内存*-8）*70%，为大箱子的长宽
 	var boxSize = util.Rectangle{Width: float64((serverBaseline.Cpu-5)*ecsCapacity.FeatureNumber) * 0.7, Height: float64(serverBaseline.Memory-8) * 0.7}
 	boxes := util.Pack(items, boxSize)
+	// TODO 如果不是单独部署，则不能使用最小数量
+	if minimumNumber > len(boxes) {
+		return minimumNumber
+	}
 	return len(boxes)
 }
 
@@ -771,7 +776,7 @@ func capActualRes(number, featureNumber int, productCode string, capActualResBas
 	return float64(number) / numerator * denominator
 }
 
-func capServerCalc(expendResCode string, capServerCalcBaseline *entity.CapServerCalcBaseline, serverBaseline *entity.ServerBaseline) float64 {
+func capServerCalc(expendResCode string, capServerCalcBaseline *entity.CapServerCalcBaseline, serverBaseline *entity.ServerBaseline, minimumNumber float64) float64 {
 	// 判断用哪个容量参数
 	var singleCapacity int
 	if strings.Contains(expendResCode, "_VCPU") {
@@ -786,10 +791,16 @@ func capServerCalc(expendResCode string, capServerCalcBaseline *entity.CapServer
 
 	nodeWastage, _ := strconv.ParseFloat(capServerCalcBaseline.NodeWastage, 64)
 	waterLevel, _ := strconv.ParseFloat(capServerCalcBaseline.WaterLevel, 64)
+	var calcResult float64
 	// 单个服务器消耗
 	if capServerCalcBaseline.NodeWastageCalcType == 1 {
-		return (float64(singleCapacity) - nodeWastage) * waterLevel
+		calcResult = (float64(singleCapacity) - nodeWastage) * waterLevel
 	} else {
-		return (float64(singleCapacity) * (1 - nodeWastage)) * waterLevel
+		calcResult = (float64(singleCapacity) * (1 - nodeWastage)) * waterLevel
 	}
+	// TODO 如果不是单独部署，则不能使用最小数量
+	if calcResult < minimumNumber {
+		return minimumNumber
+	}
+	return calcResult
 }
