@@ -355,7 +355,10 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 	var serverPlanningMap = map[int64]*entity.ServerPlanning{serverPlanning.NodeRoleId: serverPlanning}
 	var nodeRoleBaselineMap = map[string]*entity.NodeRoleBaseline{nodeRoleBaseline.NodeRoleCode: nodeRoleBaseline}
 	var serverBaselineMap = map[int64]*entity.ServerBaseline{serverBaseline.Id: serverBaseline}
-	nodeRoleCapNumberMap, _, _ := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	nodeRoleCapNumberMap, ecsServerPlanning, _ := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	if ecsServerPlanning != nil {
+		nodeRoleCapNumberMap[ecsServerPlanning.NodeRoleId] += ecsServerPlanning.Number
+	}
 	return &ResponseCapCount{Number: nodeRoleCapNumberMap[nodeRoleBaseline.Id]}, nil
 }
 
@@ -391,7 +394,10 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, serverPlanningMap map[int6
 		return nil, err
 	}
 	// 计算各角色节点服务器数量
-	nodeRoleCapNumberMap, _, _ = computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	nodeRoleCapNumberMap, ecsServerPlanning, _ := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	if ecsServerPlanning != nil {
+		nodeRoleCapNumberMap[ecsServerPlanning.NodeRoleId] += ecsServerPlanning.Number
+	}
 	return nodeRoleCapNumberMap, nil
 }
 
@@ -477,10 +483,16 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 			}
 		}
 		for _, capActualResBaseline := range capActualResBaselineList {
-			// 如果ecs容量规划-按规格数量计算，则将CKE、ECS_VCPU的容量输入信息放入，不判断ECS_MEM的目的是为了不造成数据重复
-			if request.EcsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu) {
-				ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], v)
-				continue
+			if request.EcsCapacity != nil {
+				// 如果ecs容量规划-按规格数量计算，则将CKE、ECS_VCPU的容量输入信息放入，不判断ECS_MEM的目的是为了不造成数据重复
+				if capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu {
+					ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], v)
+					continue
+				}
+				// 过滤ecs内存，以免下面会计算节点消耗
+				if capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory {
+					continue
+				}
 			}
 			// 过滤特殊产品特殊计算
 			if _, ok := SpecialProduct[capConvertBaseline.ProductCode]; ok {
@@ -500,11 +512,17 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 		if k == constant.ExpendResCodeECSVCpu {
 			capActualResNumber = (capActualResNumber + specialCapActualResMap[k]) / ecsOverallocation
 		} else {
-			// 加上特殊产品计算的总消耗
-			capActualResNumber += specialCapActualResMap[k]
+			specialCapActualResNum := specialCapActualResMap[k]
+			if specialCapActualResNum != 0 {
+				// 加上特殊产品计算的总消耗
+				capActualResNumber += specialCapActualResMap[k]
+			}
 		}
-		nodeRoleCode := capServerCalcBaselineMap[k].ExpendNodeRoleCode
-		nodeRoleBaseline := nodeRoleBaselineMap[nodeRoleCode]
+		capServerCalcBaseline := capServerCalcBaselineMap[k]
+		if capServerCalcBaseline == nil {
+			continue
+		}
+		nodeRoleBaseline := nodeRoleBaselineMap[capServerCalcBaseline.ExpendNodeRoleCode]
 		if nodeRoleBaseline == nil {
 			continue
 		}
