@@ -196,6 +196,9 @@ func getSoftwareBomPlanningData(db *gorm.DB, planId int64) (*SoftwareData, error
 				continue
 			}
 		}
+		if util.IsBlank(v.BomId) {
+			continue
+		}
 		softwareBomLicenseBaselineListMap[v.ServiceCode] = append(softwareBomLicenseBaselineListMap[v.ServiceCode], v)
 		softwareBomLicenseBaselineMap[v.BomId] = v
 	}
