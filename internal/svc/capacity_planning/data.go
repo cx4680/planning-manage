@@ -232,7 +232,7 @@ func SaveServerCapacity(request *Request) error {
 	// 	serverCapPlanningList[i].NodeRoleId = productCodeNodeRoleIdMap[v.ProductCode]
 	// }
 	// 计算个节点角色的服务器数量
-	nodeRoleCapNumberMap, ecsServerPlanning, ecsServerCapPlanning := computing(request, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	nodeRoleCapNumberMap, ecsServerPlanning, ecsServerCapPlanning := computing(db, request, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
 	if ecsServerPlanning != nil {
 		newServerPlanningList = append(newServerPlanningList, ecsServerPlanning)
 	}
@@ -287,7 +287,7 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 	for _, capServerCalcBaseline := range capServerCalcBaselines {
 		expendResCodes = append(expendResCodes, capServerCalcBaseline.ExpendResCode)
 	}
-	var computingRequest = &Request{}
+	var computingRequest = &Request{PlanId: request.PlanId}
 	var capConvertBaselines []*entity.CapConvertBaseline
 	if err := db.Table(entity.CapConvertBaselineTable+" ccb").Select("DISTINCT ccb.*").
 		Joins("LEFT JOIN cap_actual_res_baseline carb ON ccb.product_code = carb.product_code and ccb.sell_specs = carb.sell_specs and ccb.value_added_service = carb.value_added_service and ccb.cap_planning_input = carb.sell_unit").
@@ -355,7 +355,7 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 	var serverPlanningMap = map[int64]*entity.ServerPlanning{serverPlanning.NodeRoleId: serverPlanning}
 	var nodeRoleBaselineMap = map[string]*entity.NodeRoleBaseline{nodeRoleBaseline.NodeRoleCode: nodeRoleBaseline}
 	var serverBaselineMap = map[int64]*entity.ServerBaseline{serverBaseline.Id: serverBaseline}
-	nodeRoleCapNumberMap, _, _ := computing(computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	nodeRoleCapNumberMap, _, _ := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
 	return &ResponseCapCount{Number: nodeRoleCapNumberMap[nodeRoleBaseline.Id]}, nil
 }
 
@@ -373,7 +373,7 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, serverPlanningMap map[int6
 	}
 	var productCodeList []string
 	var capacityBaselineIdList []int64
-	var computingRequest = &Request{}
+	var computingRequest = &Request{PlanId: request.PlanId}
 	for _, v := range serverCapPlanningList {
 		productCodeList = append(productCodeList, v.ProductCode)
 		capacityBaselineIdList = append(capacityBaselineIdList, v.CapacityBaselineId)
@@ -391,11 +391,11 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, serverPlanningMap map[int6
 		return nil, err
 	}
 	// 计算各角色节点服务器数量
-	nodeRoleCapNumberMap, _, _ = computing(computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	nodeRoleCapNumberMap, _, _ = computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
 	return nodeRoleCapNumberMap, nil
 }
 
-func computing(request *Request, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capActualResBaselineMap map[string][]*entity.CapActualResBaseline, capServerCalcBaselineMap map[string]*entity.CapServerCalcBaseline,
+func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capActualResBaselineMap map[string][]*entity.CapActualResBaseline, capServerCalcBaselineMap map[string]*entity.CapServerCalcBaseline,
 	serverPlanningMap map[int64]*entity.ServerPlanning, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline, serverBaselineMap map[int64]*entity.ServerBaseline) (map[int64]int, *entity.ServerPlanning, *entity.ServerCapPlanning) {
 
 	// 角色节点id为key，服务器数量为value
@@ -408,6 +408,41 @@ func computing(request *Request, capConvertBaselineMap map[int64]*entity.CapConv
 	specialCapActualResMap := SpecialCapacityComputing(serverCapacityMap, capConvertBaselineMap)
 	// 计算各角色节点的总消耗map，消耗资源编码为key，总消耗为value
 	var expendResCodeMap = make(map[string]float64)
+
+	// 处理没有输入，按照固定数量计算的数据，DSP、CWP、DES，查询云产品规划表，看看是否包含了这3个云产品
+	extraCalcProductCodes := []string{constant.ProductCodeDSP, constant.ProductCodeCWP, constant.ProductCodeDES}
+	var extraProductCodes []string
+	if err := db.Table(entity.CloudProductPlanningTable+" cpp").Select("DISTINCT cpb.product_code").
+		Joins("LEFT JOIN cloud_product_baseline cpb on cpp.product_id = cpb.id").
+		Where("cpb.product_code in (?) and cpp.plan_id = ?", extraCalcProductCodes, request.PlanId).
+		Find(&extraProductCodes).Error; err != nil && err != gorm.ErrRecordNotFound {
+		return nil, nil, nil
+	}
+	if len(extraProductCodes) > 0 {
+		var versionId int64
+		for _, capConvertBaseline := range capConvertBaselineMap {
+			versionId = capConvertBaseline.VersionId
+			break
+		}
+		// 查询容量实际资源消耗表
+		var capActualResBaselineList []*entity.CapActualResBaseline
+		if err := db.Where("version_id = ? AND product_code IN (?)", versionId, extraProductCodes).Find(&capActualResBaselineList).Error; err != nil {
+			return nil, nil, nil
+		}
+		extraCapActualResBaselineMap := make(map[string][]*entity.CapActualResBaseline)
+		for _, capActualResBaseline := range capActualResBaselineList {
+			extraCapActualResBaselineMap[capActualResBaseline.ProductCode] = append(extraCapActualResBaselineMap[capActualResBaseline.ProductCode], capActualResBaseline)
+		}
+		for _, extraProductCode := range extraProductCodes {
+			capActualResBaselines := extraCapActualResBaselineMap[extraProductCode]
+			for _, capActualResBaseline := range capActualResBaselines {
+				// 总消耗
+				capActualResNumber := capActualRes(1, 0, extraProductCode, capActualResBaseline)
+				expendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
+			}
+		}
+	}
+
 	// 产品编码为key，容量输入列表为value
 	var ecsResourceProductMap = make(map[string][]*RequestServerCapacity)
 	// ecs超分比
@@ -420,27 +455,30 @@ func computing(request *Request, capConvertBaselineMap map[int64]*entity.CapConv
 		capConvertBaselineKey := fmt.Sprintf("%v-%v-%v-%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs, capConvertBaseline.ValueAddedService, capConvertBaseline.CapPlanningInput, capConvertBaseline.Features)
 		capActualResBaselineList := capActualResBaselineMap[capConvertBaselineKey]
 		if len(capActualResBaselineList) == 0 {
+			if capConvertBaseline.ProductCode == constant.ProductCodeCKE {
+				// 放入CKE容量规划表1有的但是表2没有的数据
+				ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], v)
+			}
 			// 判断是否是CNBH产品
-			if capConvertBaseline.ProductCode != constant.ProductCodeCNBH {
-				continue
-			}
-			switch capConvertBaseline.CapPlanningInput {
-			case constant.CapPlanningInputOneHundred:
-				v.Number = int(serverCapacityMap[capConvertBaseline.Id] * constant.CapPlanningInputOneHundredInt)
-			case constant.CapPlanningInputFiveHundred:
-				v.Number = int(serverCapacityMap[capConvertBaseline.Id] * constant.CapPlanningInputFiveHundredInt)
-			case constant.CapPlanningInputOneThousand:
-				v.Number = int(serverCapacityMap[capConvertBaseline.Id] * constant.CapPlanningInputOneThousandInt)
-			}
-			for key, capActualResBaselines := range capActualResBaselineMap {
-				if strings.Contains(key, constant.ProductCodeCNBH) {
-					capActualResBaselineList = capActualResBaselines
+			if capConvertBaseline.ProductCode == constant.ProductCodeCNBH {
+				switch capConvertBaseline.CapPlanningInput {
+				case constant.CapPlanningInputOneHundred:
+					v.Number = int(serverCapacityMap[capConvertBaseline.Id] * constant.CapPlanningInputOneHundredInt)
+				case constant.CapPlanningInputFiveHundred:
+					v.Number = int(serverCapacityMap[capConvertBaseline.Id] * constant.CapPlanningInputFiveHundredInt)
+				case constant.CapPlanningInputOneThousand:
+					v.Number = int(serverCapacityMap[capConvertBaseline.Id] * constant.CapPlanningInputOneThousandInt)
+				}
+				for key, capActualResBaselines := range capActualResBaselineMap {
+					if strings.Contains(key, constant.ProductCodeCNBH) {
+						capActualResBaselineList = capActualResBaselines
+					}
 				}
 			}
 		}
 		for _, capActualResBaseline := range capActualResBaselineList {
-			// 如果ecs容量规划-按规格数量计算，则将CKE、ECS_VCPU和ECS_MEN的容量输入信息放入
-			if request.EcsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSMemory) {
+			// 如果ecs容量规划-按规格数量计算，则将CKE、ECS_VCPU的容量输入信息放入，不判断ECS_MEM的目的是为了不造成数据重复
+			if request.EcsCapacity != nil && (capConvertBaseline.ProductCode == constant.ProductCodeCKE || capActualResBaseline.ExpendResCode == constant.ExpendResCodeECSVCpu) {
 				ecsResourceProductMap[capConvertBaseline.ProductCode] = append(ecsResourceProductMap[capConvertBaseline.ProductCode], v)
 				continue
 			}
@@ -551,10 +589,11 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 	for _, v := range ecsCapacity.List {
 		width := float64(v.CpuNumber)
 		// 每个实例额外消耗内存（单位：M）=138M(libvirt)+8M(IO)+16M(GPU)+8M*vCPU+内存(M)/512，ARM额外128M
-		height := float64(138 + 8 + 16 + 8*v.CpuNumber + v.MemoryNumber/512)
-		if serverBaseline.Arch == "ARM" {
-			height = 128
+		extraMemorySpent := float64(138 + 8 + 16 + 8*v.CpuNumber + v.MemoryNumber*1024/512)
+		if serverBaseline.Arch == constant.CpuArchARM {
+			extraMemorySpent += 128
 		}
+		height := float64(v.MemoryNumber) + extraMemorySpent/1024
 		items = append(items, util.Item{Size: util.Rectangle{Width: width, Height: height}, Number: v.Count})
 	}
 	// 计算其它计算节点相关的产品小箱子
@@ -567,22 +606,17 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 				case constant.CapPlanningInputVCpu:
 					vCpu = float64(requestCapacity.Number)
 				case constant.CapPlanningInputContainerCluster:
+					// TODO 没有放入cluster数量
 					cluster = float64(requestCapacity.Number)
 				}
 			}
 			waterLevel, _ := strconv.ParseFloat(capServerCalcBaselineMap[constant.ExpendResCodeECSVCpu].WaterLevel, 64)
 			items = append(items, util.Item{Size: util.Rectangle{Width: 16, Height: 32}, Number: int(math.Ceil(vCpu/waterLevel/14.6 + cluster*3))})
 		case constant.ProductCodeCNBH:
+			// 前面已经算好了CNBH每个资产类型的数量，这里不需要计算了
 			var assetsNumber float64
 			for _, requestCapacity := range v {
-				switch capConvertBaselineMap[requestCapacity.Id].CapPlanningInput {
-				case constant.CapPlanningInputOneHundred:
-					assetsNumber += float64(requestCapacity.Number * constant.CapPlanningInputOneHundredInt)
-				case constant.CapPlanningInputFiveHundred:
-					assetsNumber += float64(requestCapacity.Number * constant.CapPlanningInputFiveHundredInt)
-				case constant.CapPlanningInputOneThousand:
-					assetsNumber += float64(requestCapacity.Number * constant.CapPlanningInputOneThousandInt)
-				}
+				assetsNumber += float64(requestCapacity.Number)
 			}
 			items = append(items, util.Item{Size: util.Rectangle{Width: 2, Height: 4}, Number: int(math.Ceil(assetsNumber / 50))})
 		case constant.ProductCodeCNFW:

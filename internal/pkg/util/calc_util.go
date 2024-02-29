@@ -7,6 +7,8 @@ import (
 )
 
 func Pack(items []Item, boxSize Rectangle) []Box {
+	log.Infof("pack items: %v", items)
+	log.Infof("pack boxSize: %v", boxSize)
 	sort.Sort(ByArea(items)) // 按照面积从大到小排序物品
 	var boxes []Box
 	for i := 0; i < 10000; i++ {
@@ -18,7 +20,6 @@ func Pack(items []Item, boxSize Rectangle) []Box {
 		}
 		boxes = append(boxes, box)
 	}
-	log.Infof("pack result: %v", boxes)
 	return boxes
 }
 

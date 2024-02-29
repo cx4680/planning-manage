@@ -146,6 +146,8 @@ const (
 	KernelArchArm = "aarch64"
 	KernelArchX86 = "x86_64"
 
+	CpuArchARM = "ARM"
+
 	CpuTypeIntel = "intel"
 	CpuTypeHygon = "hygon"
 
@@ -154,6 +156,9 @@ const (
 	ProductCodeCNBH = "CNBH"
 	ProductCodeCNFW = "CNFW"
 	ProductCodeCWAF = "CWAF"
+	ProductCodeDSP  = "DSP"
+	ProductCodeCWP  = "CWP"
+	ProductCodeDES  = "DES"
 
 	CapPlanningInputVCpu             = "vCPU"
 	CapPlanningInputMemory           = "内存"
