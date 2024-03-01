@@ -309,7 +309,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				serverBaselineNetwork = serverBaselineMap[serverPlanningNetwork.ServerBaselineId]
 			}
 			serverPlanningNFV := serverPlanningMap[constant.NodeRoleCodeNFV]
-			if serverPlanningNetwork != nil {
+			if serverPlanningNFV != nil {
 				serverBaselineNFV = serverBaselineMap[serverPlanningNFV.ServerBaselineId]
 			}
 			serverPlanningBMSGW := serverPlanningMap[constant.NodeRoleCodeBMSGW]
