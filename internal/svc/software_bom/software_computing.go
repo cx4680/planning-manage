@@ -300,13 +300,13 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			number := serverPlanningNETWORK.Number*serverBaselineNETWORK.CpuNum + serverPlanningNFV.Number*serverBaselineNFV.CpuNum + serverPlanningBMSGW.Number*serverBaselineBMSGW.CpuNum
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.HardwareArch == serverBaselineNETWORK.Arch {
-					bomMap[softwareBom.BomId] = number
+					bomMap[softwareBom.BomId] += number
 				}
-				if softwareBom.HardwareArch == serverBaselineNETWORK.Arch {
-					bomMap[softwareBom.BomId] = number
+				if softwareBom.HardwareArch == serverBaselineNFV.Arch {
+					bomMap[softwareBom.BomId] += number
 				}
-				if softwareBom.HardwareArch == serverBaselineNETWORK.Arch {
-					bomMap[softwareBom.BomId] = number
+				if softwareBom.HardwareArch == serverBaselineBMSGW.Arch {
+					bomMap[softwareBom.BomId] += number
 				}
 			}
 		case constant.ProductCodeCNFW, constant.ProductCodeCWAF:
