@@ -297,16 +297,15 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			serverBaselineNFV := serverBaselineMap[serverPlanningNFV.ServerBaselineId]
 			serverPlanningBMSGW := serverPlanningMap[constant.NodeRoleCodeBMSGW]
 			serverBaselineBMSGW := serverBaselineMap[serverPlanningBMSGW.ServerBaselineId]
-			number := serverPlanningNETWORK.Number*serverBaselineNETWORK.CpuNum + serverPlanningNFV.Number*serverBaselineNFV.CpuNum + serverPlanningBMSGW.Number*serverBaselineBMSGW.CpuNum
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.HardwareArch == serverBaselineNETWORK.Arch {
-					bomMap[softwareBom.BomId] += number
+					bomMap[softwareBom.BomId] += serverPlanningNETWORK.Number * serverBaselineNETWORK.CpuNum
 				}
 				if softwareBom.HardwareArch == serverBaselineNFV.Arch {
-					bomMap[softwareBom.BomId] += number
+					bomMap[softwareBom.BomId] += serverPlanningNFV.Number * serverBaselineNFV.CpuNum
 				}
 				if softwareBom.HardwareArch == serverBaselineBMSGW.Arch {
-					bomMap[softwareBom.BomId] += number
+					bomMap[softwareBom.BomId] += serverPlanningBMSGW.Number * serverBaselineBMSGW.CpuNum
 				}
 			}
 		case constant.ProductCodeCNFW, constant.ProductCodeCWAF:
