@@ -231,6 +231,9 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 		case constant.ProductCodeECS:
 			//COMPUTE节点的CPU数量
 			serverPlanning := serverPlanningMap[constant.NodeRoleCodeCompute]
+			if serverPlanning == nil {
+				continue
+			}
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			number := serverPlanning.Number * serverBaseline.CpuNum
 			for _, softwareBom := range softwareBomLicenseBaselineList {
@@ -241,6 +244,9 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 		case constant.ProductCodeBMS:
 			//BMS节点的CPU数量
 			serverPlanning := serverPlanningMap[constant.NodeRoleCodeBMS]
+			if serverPlanning == nil {
+				continue
+			}
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			number := serverPlanning.Number * serverBaseline.CpuNum
 			for _, softwareBom := range softwareBomLicenseBaselineList {
@@ -250,6 +256,9 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			//CKE容量vCPU数量/100
 			number := 1
 			serverPlanning := serverPlanningMap[constant.NodeRoleCodeCompute]
+			if serverPlanning == nil {
+				continue
+			}
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputVCpu)]
 			if serverCapPlanning != nil {
@@ -276,6 +285,9 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			} else if productCode == constant.ProductCodeOSS {
 				serverPlanning = serverPlanningMap[constant.NodeRoleCodeOSS]
 			}
+			if serverPlanning == nil {
+				continue
+			}
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStorageCapacity)]
 			if serverCapPlanning != nil {
@@ -291,20 +303,27 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 		case constant.ProductCodeVPC:
 			//NETWORK、NFV、BMSGW的CPU总数
-			serverPlanningNETWORK := serverPlanningMap[constant.NodeRoleCodeNETWORK]
-			serverBaselineNETWORK := serverBaselineMap[serverPlanningNETWORK.ServerBaselineId]
+			var serverBaselineNetwork, serverBaselineNFV, serverBaselineBMSGW *entity.ServerBaseline
+			serverPlanningNetwork := serverPlanningMap[constant.NodeRoleCodeNETWORK]
+			if serverPlanningNetwork != nil {
+				serverBaselineNetwork = serverBaselineMap[serverPlanningNetwork.ServerBaselineId]
+			}
 			serverPlanningNFV := serverPlanningMap[constant.NodeRoleCodeNFV]
-			serverBaselineNFV := serverBaselineMap[serverPlanningNFV.ServerBaselineId]
+			if serverPlanningNetwork != nil {
+				serverBaselineNFV = serverBaselineMap[serverPlanningNFV.ServerBaselineId]
+			}
 			serverPlanningBMSGW := serverPlanningMap[constant.NodeRoleCodeBMSGW]
-			serverBaselineBMSGW := serverBaselineMap[serverPlanningBMSGW.ServerBaselineId]
+			if serverPlanningBMSGW != nil {
+				serverBaselineBMSGW = serverBaselineMap[serverPlanningBMSGW.ServerBaselineId]
+			}
 			for _, softwareBom := range softwareBomLicenseBaselineList {
-				if softwareBom.HardwareArch == serverBaselineNETWORK.Arch {
-					bomMap[softwareBom.BomId] += serverPlanningNETWORK.Number * serverBaselineNETWORK.CpuNum
+				if serverPlanningNetwork != nil && softwareBom.HardwareArch == serverBaselineNetwork.Arch {
+					bomMap[softwareBom.BomId] += serverPlanningNetwork.Number * serverBaselineNetwork.CpuNum
 				}
-				if softwareBom.HardwareArch == serverBaselineNFV.Arch {
+				if serverPlanningNFV != nil && softwareBom.HardwareArch == serverBaselineNFV.Arch {
 					bomMap[softwareBom.BomId] += serverPlanningNFV.Number * serverBaselineNFV.CpuNum
 				}
-				if softwareBom.HardwareArch == serverBaselineBMSGW.Arch {
+				if serverPlanningBMSGW != nil && softwareBom.HardwareArch == serverBaselineBMSGW.Arch {
 					bomMap[softwareBom.BomId] += serverPlanningBMSGW.Number * serverBaselineBMSGW.CpuNum
 				}
 			}
@@ -331,7 +350,6 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				assetAccessNumber = assetAccess.Number
 			}
 			for _, softwareBom := range softwareBomLicenseBaselineList {
-
 				if softwareBom.SellType == constant.SoftwareBomLicense {
 					if softwareBom.AuthorizedUnit == constant.SoftwareBomAuthorizedUnitAssetAccess {
 						bomMap[softwareBom.BomId] = assetAccessNumber
@@ -452,6 +470,9 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 		case constant.ProductCodeCEASQLTX, constant.ProductCodeMYSQL, constant.ProductCodeCEASQLDW, constant.ProductCodeCEASQLCK, constant.ProductCodeREDIS, constant.ProductCodePOSTGRESQL:
 			number := 1
 			serverPlanning := serverPlanningMap[constant.NodeRoleCodeDATABASE]
+			if serverPlanning == nil {
+				continue
+			}
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputBusinessDataVolume)]
 			if serverCapPlanning != nil {
