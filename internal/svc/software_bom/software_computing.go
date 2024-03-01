@@ -228,8 +228,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			continue
 		}
 		switch productCode {
-		case constant.ProductCodeECS, constant.ProductCodeBMS:
-			//COMPUTE节点的CPU数量，BMS节点的CPU数量
+		case constant.ProductCodeECS:
+			//COMPUTE节点的CPU数量
 			serverPlanning := serverPlanningMap[constant.NodeRoleCodeCompute]
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			number := serverPlanning.Number * serverBaseline.CpuNum
@@ -237,6 +237,14 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				if softwareBom.HardwareArch == serverBaseline.Arch {
 					bomMap[softwareBom.BomId] = number
 				}
+			}
+		case constant.ProductCodeBMS:
+			//BMS节点的CPU数量
+			serverPlanning := serverPlanningMap[constant.NodeRoleCodeBMS]
+			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
+			number := serverPlanning.Number * serverBaseline.CpuNum
+			for _, softwareBom := range softwareBomLicenseBaselineList {
+				bomMap[softwareBom.BomId] = number
 			}
 		case constant.ProductCodeCKE:
 			//CKE容量vCPU数量/100

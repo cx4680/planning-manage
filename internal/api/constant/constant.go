@@ -217,6 +217,7 @@ const (
 	ExpendResCodeECSMemory = "ECS_MEM"
 
 	NodeRoleCodeCompute  = "COMPUTE"
+	NodeRoleCodeBMS      = "BMS"
 	NodeRoleCodeEBS      = "EBS"
 	NodeRoleCodeEFS      = "EFS"
 	NodeRoleCodeOSS      = "OSS"
