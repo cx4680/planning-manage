@@ -220,6 +220,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 	serverPlanningMap := softwareData.ServerPlanningMap
 	serverBaselineMap := softwareData.ServerBaselineMap
 	serverCapPlanningMap := softwareData.ServerCapPlanningMap
+	//升级维保 = 实例数 * 年限
 	for _, v := range softwareData.CloudProductBaselineList {
 		productCode := v.ProductCode
 		softwareBomLicenseBaselineList := softwareData.SoftwareBomLicenseBaselineListMap[productCode]
@@ -227,28 +228,36 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			continue
 		}
 		switch productCode {
-		case constant.ProductCodeECS, constant.ProductCodeBMS:
-			//COMPUTE节点的CPU数量，BMS节点的CPU数量
+		case constant.ProductCodeECS:
+			//COMPUTE节点的CPU数量
 			serverPlanning := serverPlanningMap[constant.NodeRoleCodeCompute]
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			number := serverPlanning.Number * serverBaseline.CpuNum
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.HardwareArch == serverBaseline.Arch {
-					bomMap[softwareBom.BomId] += number
+					bomMap[softwareBom.BomId] = number
 				}
+			}
+		case constant.ProductCodeBMS:
+			//BMS节点的CPU数量
+			serverPlanning := serverPlanningMap[constant.NodeRoleCodeBMS]
+			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
+			number := serverPlanning.Number * serverBaseline.CpuNum
+			for _, softwareBom := range softwareBomLicenseBaselineList {
+				bomMap[softwareBom.BomId] = number
 			}
 		case constant.ProductCodeCKE:
 			//CKE容量vCPU数量/100
+			number := 1
 			serverPlanning := serverPlanningMap[constant.NodeRoleCodeCompute]
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputVCpu)]
-			if serverCapPlanning == nil {
-				continue
+			if serverCapPlanning != nil {
+				number = int(math.Ceil(float64(serverCapPlanning.Number) / 100))
 			}
-			number := int(math.Ceil(float64(serverCapPlanning.Number) / 100))
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.HardwareArch == serverBaseline.Arch {
-					bomMap[softwareBom.BomId] += number
+					bomMap[softwareBom.BomId] = number
 				}
 			}
 		case constant.ProductCodeCBR:
@@ -258,6 +267,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 		case constant.ProductCodeEBS, constant.ProductCodeEFS, constant.ProductCodeOSS:
 			//TB，可用容量
+			number := 1
 			var serverPlanning *entity.ServerPlanning
 			if productCode == constant.ProductCodeEBS {
 				serverPlanning = serverPlanningMap[constant.NodeRoleCodeEBS]
@@ -268,18 +278,16 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStorageCapacity)]
-			if serverCapPlanning == nil {
-				continue
-			}
-			var number int
-			if serverCapPlanning.Features == constant.FeaturesNameThreeCopies {
-				number = int(math.Ceil(float64(serverPlanning.Number*serverBaseline.StorageDiskNum*serverBaseline.StorageDiskCapacity) / 1024 * 0.9 * 0.91 * 1 / 3))
-			}
-			if serverCapPlanning.Features == constant.FeaturesNameEC {
-				number = int(math.Ceil(float64(serverPlanning.Number*serverBaseline.StorageDiskNum*serverBaseline.StorageDiskCapacity) / 1024 * 0.9 * 0.91 * 2 / 3))
+			if serverCapPlanning != nil {
+				if serverCapPlanning.Features == constant.FeaturesNameThreeCopies {
+					number = int(math.Ceil(float64(serverPlanning.Number*serverBaseline.StorageDiskNum*serverBaseline.StorageDiskCapacity) / 1024 * 0.9 * 0.91 * 1 / 3))
+				}
+				if serverCapPlanning.Features == constant.FeaturesNameEC {
+					number = int(math.Ceil(float64(serverPlanning.Number*serverBaseline.StorageDiskNum*serverBaseline.StorageDiskCapacity) / 1024 * 0.9 * 0.91 * 2 / 3))
+				}
 			}
 			for _, softwareBom := range softwareBomLicenseBaselineList {
-				bomMap[softwareBom.BomId] += number
+				bomMap[softwareBom.BomId] = number
 			}
 		case constant.ProductCodeVPC:
 			//NETWORK、NFV、BMSGW的CPU总数
@@ -292,170 +300,183 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			number := serverPlanningNETWORK.Number*serverBaselineNETWORK.CpuNum + serverPlanningNFV.Number*serverBaselineNFV.CpuNum + serverPlanningBMSGW.Number*serverBaselineBMSGW.CpuNum
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.HardwareArch == serverBaselineNETWORK.Arch {
-					bomMap[softwareBom.BomId] += number
+					bomMap[softwareBom.BomId] = number
 				}
 				if softwareBom.HardwareArch == serverBaselineNETWORK.Arch {
-					bomMap[softwareBom.BomId] += number
+					bomMap[softwareBom.BomId] = number
 				}
 				if softwareBom.HardwareArch == serverBaselineNETWORK.Arch {
-					bomMap[softwareBom.BomId] += number
+					bomMap[softwareBom.BomId] = number
 				}
 			}
 		case constant.ProductCodeCNFW, constant.ProductCodeCWAF:
-			//根据选择的容量数量计算；
+			//根据选择的容量数量计算
+			number := 1
+			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputFirewall)]
+			if serverCapPlanning != nil {
+				number = serverCapPlanning.Number
+			}
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.SellType == constant.SoftwareBomLicense {
-					serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputFirewall)]
-					if serverCapPlanning != nil {
-						bomMap[softwareBom.BomId] += serverCapPlanning.Number
-					}
+					bomMap[softwareBom.BomId] = number
 				}
 				if softwareBom.SellType == constant.SoftwareBomMaintenance {
-					bomMap[softwareBom.BomId] = serviceYear
+					bomMap[softwareBom.BomId] = number * serviceYear
 				}
 			}
 		case constant.ProductCodeCSOC:
 			//是3个容量输入对应3个bom，日志存储空间不足500G的为第一档，每G一个bom，超过500G的为第二档，每500G一个bom
+			assetAccessNumber := 1
+			assetAccess := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputAssetAccess)]
+			if assetAccess != nil {
+				assetAccessNumber = assetAccess.Number
+			}
 			for _, softwareBom := range softwareBomLicenseBaselineList {
+
 				if softwareBom.SellType == constant.SoftwareBomLicense {
 					if softwareBom.AuthorizedUnit == constant.SoftwareBomAuthorizedUnitAssetAccess {
-						serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputAssetAccess)]
-						if serverCapPlanning != nil {
-							bomMap[softwareBom.BomId] += serverCapPlanning.Number
-						}
+						bomMap[softwareBom.BomId] = assetAccessNumber
 					}
 					if softwareBom.AuthorizedUnit == constant.SoftwareBomAuthorizedUnitLogStorage {
+						number := 1
 						serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputLogStorage)]
 						if serverCapPlanning != nil {
-							if softwareBom.CalcMethod == constant.CSOCSoftwareBomCalcMethod500GPackage {
-								number := serverCapPlanning.Number / 500
-								if number > 0 {
-									bomMap[softwareBom.BomId] += number
-								}
-							} else {
-								number := serverCapPlanning.Number % 500
-								if number > 0 {
-									bomMap[softwareBom.BomId] += number
-								}
+							number = serverCapPlanning.Number
+						}
+						if softwareBom.CalcMethod == constant.CSOCSoftwareBomCalcMethod500GPackage {
+							number = number / 500
+							if number > 0 {
+								bomMap[softwareBom.BomId] = number
+							}
+						} else {
+							number = number % 500
+							if number > 0 {
+								bomMap[softwareBom.BomId] = number
 							}
 						}
 					}
 					if softwareBom.ValueAddedService == constant.SoftwareBomValueAddedServiceVulnerabilityScanning {
 						serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputVulnerabilityScanning)]
 						if serverCapPlanning != nil {
-							bomMap[softwareBom.BomId] += serverCapPlanning.Number
+							bomMap[softwareBom.BomId] = serverCapPlanning.Number
 						}
 					}
 				}
 				if softwareBom.SellType == constant.SoftwareBomMaintenance {
-					bomMap[softwareBom.BomId] = serviceYear
+					bomMap[softwareBom.BomId] = assetAccessNumber * serviceYear
 				}
 			}
 		case constant.ProductCodeDSP:
 			//根据数量匹配1-5，6-30以及30以上，三个阶梯的bom，再根据数据库个数，输出bom的数量，例如有26个数据库实例，则需要输出26个6-30bom
+			number := 1
 			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputDatabaseAudit)]
-			if serverCapPlanning == nil {
-				continue
+			if serverCapPlanning != nil {
+				number = serverCapPlanning.Number
 			}
 			for _, softwareBom := range softwareBomLicenseBaselineList {
-				if softwareBom.CalcMethod == constant.DSPSoftwareBomCalcMethod1To5Instances && serverCapPlanning.Number >= 1 && serverCapPlanning.Number <= 5 {
+				if softwareBom.CalcMethod == constant.DSPSoftwareBomCalcMethod1To5Instances && number >= 1 && number <= 5 {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
-						bomMap[softwareBom.BomId] += serverCapPlanning.Number
+						bomMap[softwareBom.BomId] = number
 					}
 					if softwareBom.SellType == constant.SoftwareBomMaintenance {
-						bomMap[softwareBom.BomId] = serviceYear
+						bomMap[softwareBom.BomId] = number * serviceYear
 					}
 				}
-				if softwareBom.CalcMethod == constant.DSPSoftwareBomCalcMethod6To30Instances && serverCapPlanning.Number >= 6 && serverCapPlanning.Number <= 30 {
+				if softwareBom.CalcMethod == constant.DSPSoftwareBomCalcMethod6To30Instances && number >= 6 && number <= 30 {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
-						bomMap[softwareBom.BomId] += serverCapPlanning.Number
+						bomMap[softwareBom.BomId] += number
 					}
 					if softwareBom.SellType == constant.SoftwareBomMaintenance {
-						bomMap[softwareBom.BomId] = serviceYear
+						bomMap[softwareBom.BomId] = number * serviceYear
 					}
 				}
-				if softwareBom.CalcMethod == constant.DSPSoftwareBomCalcMethodOver30Instances && serverCapPlanning.Number > 30 {
+				if softwareBom.CalcMethod == constant.DSPSoftwareBomCalcMethodOver30Instances && number > 30 {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
-						bomMap[softwareBom.BomId] += serverCapPlanning.Number
+						bomMap[softwareBom.BomId] += number
 					}
 					if softwareBom.SellType == constant.SoftwareBomMaintenance {
-						bomMap[softwareBom.BomId] = serviceYear
+						bomMap[softwareBom.BomId] = number * serviceYear
 					}
 				}
 			}
 		case constant.ProductCodeCNBH:
 			//根据包数量直接转换为bom数量
 			for _, softwareBom := range softwareBomLicenseBaselineList {
+				number := 1
 				if softwareBom.SellSpecs == constant.CapPlanningInputOneHundred {
 					serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputOneHundred)]
-					if serverCapPlanning != nil && softwareBom.SellType == constant.SoftwareBomLicense {
-						bomMap[softwareBom.BomId] += serverCapPlanning.Number
-					}
-					if softwareBom.SellType == constant.SoftwareBomMaintenance {
-						bomMap[softwareBom.BomId] = serviceYear
+					if serverCapPlanning != nil {
+						number = serverCapPlanning.Number
 					}
 				}
 				if softwareBom.SellSpecs == constant.CapPlanningInputFiveHundred {
 					serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputFiveHundred)]
-					if serverCapPlanning != nil && softwareBom.SellType == constant.SoftwareBomLicense {
-						bomMap[softwareBom.BomId] += serverCapPlanning.Number
-					}
-					if softwareBom.SellType == constant.SoftwareBomMaintenance {
-						bomMap[softwareBom.BomId] = serviceYear
+					if serverCapPlanning != nil {
+						number = serverCapPlanning.Number
 					}
 				}
 				if softwareBom.SellSpecs == constant.CapPlanningInputOneThousand {
 					serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputOneThousand)]
-					if serverCapPlanning != nil && softwareBom.SellType == constant.SoftwareBomLicense {
-						bomMap[softwareBom.BomId] += serverCapPlanning.Number
+					if serverCapPlanning != nil {
+						number = serverCapPlanning.Number
 					}
-					if softwareBom.SellType == constant.SoftwareBomMaintenance {
-						bomMap[softwareBom.BomId] = serviceYear
-					}
+				}
+				if softwareBom.SellType == constant.SoftwareBomLicense {
+					bomMap[softwareBom.BomId] = number
+				}
+				if softwareBom.SellType == constant.SoftwareBomMaintenance {
+					bomMap[softwareBom.BomId] = number * serviceYear
 				}
 			}
 		case constant.ProductCodeCWP:
 			//还没给数据，默认先输出1
+			number := 1
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.SellType == constant.SoftwareBomLicense {
-					bomMap[softwareBom.BomId] = 1
+					bomMap[softwareBom.BomId] = number
 				}
 				if softwareBom.SellType == constant.SoftwareBomMaintenance {
-					bomMap[softwareBom.BomId] = serviceYear
+					bomMap[softwareBom.BomId] = number * serviceYear
 				}
 			}
 		case constant.ProductCodeDES:
 			//没有输入，输出1
+			number := 1
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.SellType == constant.SoftwareBomLicense {
-					bomMap[softwareBom.BomId] = 1
+					bomMap[softwareBom.BomId] = number
 				}
 				if softwareBom.SellType == constant.SoftwareBomMaintenance {
-					bomMap[softwareBom.BomId] = serviceYear
+					bomMap[softwareBom.BomId] = number * serviceYear
 				}
 			}
 		case constant.ProductCodeCEASQLTX, constant.ProductCodeMYSQL, constant.ProductCodeCEASQLDW, constant.ProductCodeCEASQLCK, constant.ProductCodeREDIS, constant.ProductCodePOSTGRESQL:
+			number := 1
 			serverPlanning := serverPlanningMap[constant.NodeRoleCodeDATABASE]
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputBusinessDataVolume)]
+			if serverCapPlanning != nil {
+				number = serverCapPlanning.Number
+			}
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				bomMap[DatabaseManagementBom] = 1
-				if serverCapPlanning != nil {
-					if serverBaseline.Arch == constant.CpuArchX86 {
-						bomMap[softwareBom.BomId] += serverCapPlanning.Number / 2
-					}
-					if serverBaseline.Arch == constant.CpuArchXC {
-						bomMap[softwareBom.BomId] += serverCapPlanning.Number
-					}
+				if serverBaseline.Arch == constant.CpuArchX86 {
+					bomMap[softwareBom.BomId] = int(math.Ceil(float64(number) / 2))
+
+				}
+				if serverBaseline.Arch == constant.CpuArchXC {
+					bomMap[softwareBom.BomId] = number
 				}
 			}
 		case constant.ProductCodeDTS:
+			number := 1
 			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputLinks)]
+			if serverCapPlanning != nil {
+				number = serverCapPlanning.Number
+			}
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				bomMap[DatabaseManagementBom] = 1
-				if serverCapPlanning != nil {
-					bomMap[softwareBom.BomId] += serverCapPlanning.Number
-				}
+				bomMap[softwareBom.BomId] = number
 			}
 			//case constant.ProductCodeKAFKA, constant.ProductCodeRABBITMQ:
 			//	broker := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputBroker)]
