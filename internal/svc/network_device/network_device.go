@@ -306,6 +306,7 @@ func SaveDeviceList(c *gin.Context) {
 		if err = ip_demand.SaveBatch(tx, ipDemandPlannings); err != nil {
 			return err
 		}
+		//软件bom计算并保存
 		if err = software_bom.SaveSoftwareBomPlanning(tx, planId); err != nil {
 			return err
 		}
