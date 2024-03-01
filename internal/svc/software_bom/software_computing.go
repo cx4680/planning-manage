@@ -258,7 +258,14 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 		case constant.ProductCodeEBS, constant.ProductCodeEFS, constant.ProductCodeOSS:
 			//TB，可用容量
-			serverPlanning := serverPlanningMap[constant.NodeRoleCodeCompute]
+			var serverPlanning *entity.ServerPlanning
+			if productCode == constant.ProductCodeEBS {
+				serverPlanning = serverPlanningMap[constant.NodeRoleCodeEBS]
+			} else if productCode == constant.ProductCodeEFS {
+				serverPlanning = serverPlanningMap[constant.NodeRoleCodeEFS]
+			} else if productCode == constant.ProductCodeOSS {
+				serverPlanning = serverPlanningMap[constant.NodeRoleCodeOSS]
+			}
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStorageCapacity)]
 			if serverCapPlanning == nil {
@@ -320,7 +327,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					if softwareBom.AuthorizedUnit == constant.SoftwareBomAuthorizedUnitLogStorage {
 						serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputLogStorage)]
 						if serverCapPlanning != nil {
-							if softwareBom.CalcMethod == constant.SoftwareBomAuthorizedUnit500G {
+							if softwareBom.CalcMethod == constant.CSOCSoftwareBomCalcMethod500GPackage {
 								number := serverCapPlanning.Number / 500
 								if number > 0 {
 									bomMap[softwareBom.BomId] += number
@@ -351,7 +358,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				continue
 			}
 			for _, softwareBom := range softwareBomLicenseBaselineList {
-				if softwareBom.CalcMethod == "1-5实例" && serverCapPlanning.Number >= 1 && serverCapPlanning.Number <= 5 {
+				if softwareBom.CalcMethod == constant.DSPSoftwareBomCalcMethod1To5Instances && serverCapPlanning.Number >= 1 && serverCapPlanning.Number <= 5 {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
 						bomMap[softwareBom.BomId] += serverCapPlanning.Number
 					}
@@ -359,7 +366,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 						bomMap[softwareBom.BomId] = serviceYear
 					}
 				}
-				if softwareBom.CalcMethod == "6-30实例" && serverCapPlanning.Number >= 6 && serverCapPlanning.Number <= 30 {
+				if softwareBom.CalcMethod == constant.DSPSoftwareBomCalcMethod6To30Instances && serverCapPlanning.Number >= 6 && serverCapPlanning.Number <= 30 {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
 						bomMap[softwareBom.BomId] += serverCapPlanning.Number
 					}
@@ -367,7 +374,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 						bomMap[softwareBom.BomId] = serviceYear
 					}
 				}
-				if softwareBom.CalcMethod == "30实例以上" && serverCapPlanning.Number > 30 {
+				if softwareBom.CalcMethod == constant.DSPSoftwareBomCalcMethodOver30Instances && serverCapPlanning.Number > 30 {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
 						bomMap[softwareBom.BomId] += serverCapPlanning.Number
 					}
@@ -450,137 +457,137 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					bomMap[softwareBom.BomId] += serverCapPlanning.Number
 				}
 			}
-		case constant.ProductCodeKAFKA, constant.ProductCodeRABBITMQ:
-			broker := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputBroker)]
-			if broker == nil {
-				continue
-			}
-			var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber int
-			standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
-			if standardEdition != nil {
-				standardEditionNumber = standardEdition.Number
-			}
-			professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
-			if professionalEdition != nil {
-				professionalEditionNumber = professionalEdition.Number
-			}
-			enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
-			if enterpriseEdition != nil {
-				enterpriseEditionNumber = enterpriseEdition.Number
-			}
-			platinumEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputPlatinumEdition)]
-			if enterpriseEdition != nil {
-				platinumEditionNumber = platinumEdition.Number
-			}
-			number := (standardEditionNumber*2 + professionalEditionNumber*4 + enterpriseEditionNumber*8 + platinumEditionNumber*16) * broker.Number
-			for _, softwareBom := range softwareBomLicenseBaselineList {
-				if softwareBom.CalcMethod == "基础包，200vCPU" {
-					bomMap[softwareBom.BomId] = 1
-				}
-				if softwareBom.CalcMethod == "扩展包，100vCPU" {
-					if number-200 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
-					}
-				}
-			}
-		case constant.ProductCodeCSP:
-			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputMicroservice)]
-			if serverCapPlanning == nil {
-				continue
-			}
-			number := serverCapPlanning.Number
-			for _, softwareBom := range softwareBomLicenseBaselineList {
-				if softwareBom.CalcMethod == "基础包，500个微服务实例" {
-					bomMap[softwareBom.BomId] = 1
-				}
-				if softwareBom.CalcMethod == "扩展包，100个微服务实例" {
-					if number-500 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
-					}
-				}
-			}
-		case constant.ProductCodeROCKETMQ:
-			var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber int
-			standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
-			if standardEdition != nil {
-				standardEditionNumber = standardEdition.Number
-			}
-			professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
-			if professionalEdition != nil {
-				professionalEditionNumber = professionalEdition.Number
-			}
-			enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
-			if enterpriseEdition != nil {
-				enterpriseEditionNumber = enterpriseEdition.Number
-			}
-			platinumEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputPlatinumEdition)]
-			if enterpriseEdition != nil {
-				platinumEditionNumber = platinumEdition.Number
-			}
-			number := standardEditionNumber*12 + professionalEditionNumber*24 + enterpriseEditionNumber*36 + platinumEditionNumber*48
-			for _, softwareBom := range softwareBomLicenseBaselineList {
-				if softwareBom.CalcMethod == "基础包，200vCPU" {
-					bomMap[softwareBom.BomId] = 1
-				}
-				if softwareBom.CalcMethod == "扩展包，100vCPU" {
-					if number-200 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
-					}
-				}
-			}
-		case constant.ProductCodeAPIM:
-			var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber int
-			standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
-			if standardEdition != nil {
-				standardEditionNumber = standardEdition.Number
-			}
-			professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
-			if professionalEdition != nil {
-				professionalEditionNumber = professionalEdition.Number
-			}
-			enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
-			if enterpriseEdition != nil {
-				enterpriseEditionNumber = enterpriseEdition.Number
-			}
-			number := standardEditionNumber*3 + professionalEditionNumber*6 + enterpriseEditionNumber*12
-			for _, softwareBom := range softwareBomLicenseBaselineList {
-				if softwareBom.CalcMethod == "基础包，200vCPU" {
-					bomMap[softwareBom.BomId] = 1
-				}
-				if softwareBom.CalcMethod == "扩展包，100vCPU" {
-					if number-200 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
-					}
-				}
-			}
-		case constant.ProductCodeCONNECT:
-			var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber int
-			standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
-			if standardEdition != nil {
-				standardEditionNumber = standardEdition.Number
-			}
-			professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
-			if professionalEdition != nil {
-				professionalEditionNumber = professionalEdition.Number
-			}
-			enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
-			if enterpriseEdition != nil {
-				enterpriseEditionNumber = enterpriseEdition.Number
-			}
-			number := standardEditionNumber*4 + professionalEditionNumber*8 + enterpriseEditionNumber*24
-			for _, softwareBom := range softwareBomLicenseBaselineList {
-				if softwareBom.CalcMethod == "基础包，200vCPU" {
-					bomMap[softwareBom.BomId] = 1
-				}
-				if softwareBom.CalcMethod == "扩展包，100vCPU" {
-					if number-200 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
-					}
-				}
-			}
-		case constant.ProductCodeCLCP:
-		case constant.ProductCodeCOS:
-		case constant.ProductCodeCLS:
+			//case constant.ProductCodeKAFKA, constant.ProductCodeRABBITMQ:
+			//	broker := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputBroker)]
+			//	if broker == nil {
+			//		continue
+			//	}
+			//	var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber int
+			//	standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
+			//	if standardEdition != nil {
+			//		standardEditionNumber = standardEdition.Number
+			//	}
+			//	professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
+			//	if professionalEdition != nil {
+			//		professionalEditionNumber = professionalEdition.Number
+			//	}
+			//	enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
+			//	if enterpriseEdition != nil {
+			//		enterpriseEditionNumber = enterpriseEdition.Number
+			//	}
+			//	platinumEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputPlatinumEdition)]
+			//	if enterpriseEdition != nil {
+			//		platinumEditionNumber = platinumEdition.Number
+			//	}
+			//	number := (standardEditionNumber*2 + professionalEditionNumber*4 + enterpriseEditionNumber*8 + platinumEditionNumber*16) * broker.Number
+			//	for _, softwareBom := range softwareBomLicenseBaselineList {
+			//		if softwareBom.CalcMethod == constant.KAFKASoftwareBomCalcMethodBasePackage {
+			//			bomMap[softwareBom.BomId] = 1
+			//		}
+			//		if softwareBom.CalcMethod == constant.KAFKASoftwareBomCalcMethodExpansionPackage {
+			//			if number-200 > 0 {
+			//				bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
+			//			}
+			//		}
+			//	}
+			//case constant.ProductCodeCSP:
+			//	serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputMicroservice)]
+			//	if serverCapPlanning == nil {
+			//		continue
+			//	}
+			//	number := serverCapPlanning.Number
+			//	for _, softwareBom := range softwareBomLicenseBaselineList {
+			//		if softwareBom.CalcMethod == constant.CSPSoftwareBomCalcMethodBasePackage {
+			//			bomMap[softwareBom.BomId] = 1
+			//		}
+			//		if softwareBom.CalcMethod == constant.CSPSoftwareBomCalcMethodExpansionPackage {
+			//			if number-500 > 0 {
+			//				bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
+			//			}
+			//		}
+			//	}
+			//case constant.ProductCodeROCKETMQ:
+			//	var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber int
+			//	standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
+			//	if standardEdition != nil {
+			//		standardEditionNumber = standardEdition.Number
+			//	}
+			//	professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
+			//	if professionalEdition != nil {
+			//		professionalEditionNumber = professionalEdition.Number
+			//	}
+			//	enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
+			//	if enterpriseEdition != nil {
+			//		enterpriseEditionNumber = enterpriseEdition.Number
+			//	}
+			//	platinumEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputPlatinumEdition)]
+			//	if enterpriseEdition != nil {
+			//		platinumEditionNumber = platinumEdition.Number
+			//	}
+			//	number := standardEditionNumber*12 + professionalEditionNumber*24 + enterpriseEditionNumber*36 + platinumEditionNumber*48
+			//	for _, softwareBom := range softwareBomLicenseBaselineList {
+			//		if softwareBom.CalcMethod == constant.ROCKETMQSoftwareBomCalcMethodBasePackage {
+			//			bomMap[softwareBom.BomId] = 1
+			//		}
+			//		if softwareBom.CalcMethod == constant.ROCKETMQSoftwareBomCalcMethodExpansionPackage {
+			//			if number-200 > 0 {
+			//				bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
+			//			}
+			//		}
+			//	}
+			//case constant.ProductCodeAPIM:
+			//	var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber int
+			//	standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
+			//	if standardEdition != nil {
+			//		standardEditionNumber = standardEdition.Number
+			//	}
+			//	professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
+			//	if professionalEdition != nil {
+			//		professionalEditionNumber = professionalEdition.Number
+			//	}
+			//	enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
+			//	if enterpriseEdition != nil {
+			//		enterpriseEditionNumber = enterpriseEdition.Number
+			//	}
+			//	number := standardEditionNumber*3 + professionalEditionNumber*6 + enterpriseEditionNumber*12
+			//	for _, softwareBom := range softwareBomLicenseBaselineList {
+			//		if softwareBom.CalcMethod == constant.APIMSoftwareBomCalcMethodBasePackage {
+			//			bomMap[softwareBom.BomId] = 1
+			//		}
+			//		if softwareBom.CalcMethod == constant.APIMSoftwareBomCalcMethodExpansionPackage {
+			//			if number-200 > 0 {
+			//				bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
+			//			}
+			//		}
+			//	}
+			//case constant.ProductCodeCONNECT:
+			//	var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber int
+			//	standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
+			//	if standardEdition != nil {
+			//		standardEditionNumber = standardEdition.Number
+			//	}
+			//	professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
+			//	if professionalEdition != nil {
+			//		professionalEditionNumber = professionalEdition.Number
+			//	}
+			//	enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
+			//	if enterpriseEdition != nil {
+			//		enterpriseEditionNumber = enterpriseEdition.Number
+			//	}
+			//	number := standardEditionNumber*4 + professionalEditionNumber*8 + enterpriseEditionNumber*24
+			//	for _, softwareBom := range softwareBomLicenseBaselineList {
+			//		if softwareBom.CalcMethod == constant.CONNECTSoftwareBomCalcMethodBasePackage {
+			//			bomMap[softwareBom.BomId] = 1
+			//		}
+			//		if softwareBom.CalcMethod == constant.CONNECTSoftwareBomCalcMethodExpansionPackage {
+			//			if number-200 > 0 {
+			//				bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
+			//			}
+			//		}
+			//	}
+			//case constant.ProductCodeCLCP:
+			//case constant.ProductCodeCOS:
+			//case constant.ProductCodeCLS:
 		}
 	}
 	return bomMap

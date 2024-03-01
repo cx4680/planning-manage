@@ -204,7 +204,7 @@ const (
 	CapPlanningInputPlatinumEdition           = "铂金版"
 	CapPlanningInputMicroservice              = "微服务实例"
 	CapPlanningInputComputingResourceCapacity = "计算资源容量"
-	CapPlanningInputApplications              = "计算资源容量"
+	CapPlanningInputApplications              = "应用数"
 
 	CapPlanningInputOneHundred     = "100"
 	CapPlanningInputOneHundredInt  = 100
@@ -217,6 +217,9 @@ const (
 	ExpendResCodeECSMemory = "ECS_MEM"
 
 	NodeRoleCodeCompute  = "COMPUTE"
+	NodeRoleCodeEBS      = "EBS"
+	NodeRoleCodeEFS      = "EFS"
+	NodeRoleCodeOSS      = "OSS"
 	NodeRoleCodeNETWORK  = "NETWORK"
 	NodeRoleCodeNFV      = "NFV"
 	NodeRoleCodeBMSGW    = "BMSGW"
@@ -237,5 +240,18 @@ const (
 
 	SoftwareBomValueAddedServiceVulnerabilityScanning = "漏洞扫描"
 
-	SoftwareBomAuthorizedUnit500G = "500G"
+	CSOCSoftwareBomCalcMethod500GPackage          = "500G"
+	DSPSoftwareBomCalcMethod1To5Instances         = "1-5实例"
+	DSPSoftwareBomCalcMethod6To30Instances        = "6-30实例"
+	DSPSoftwareBomCalcMethodOver30Instances       = "30实例以上"
+	KAFKASoftwareBomCalcMethodBasePackage         = "基础包，200vCPU"
+	KAFKASoftwareBomCalcMethodExpansionPackage    = "扩展包，100vCPU"
+	CSPSoftwareBomCalcMethodBasePackage           = "基础包，500个微服务实例"
+	CSPSoftwareBomCalcMethodExpansionPackage      = "扩展包，100个微服务实例"
+	ROCKETMQSoftwareBomCalcMethodBasePackage      = "基础包，200vCPU"
+	ROCKETMQSoftwareBomCalcMethodExpansionPackage = "扩展包，100vCPU"
+	APIMSoftwareBomCalcMethodBasePackage          = "基础包，200vCPU"
+	APIMSoftwareBomCalcMethodExpansionPackage     = "扩容包，100vCPU"
+	CONNECTSoftwareBomCalcMethodBasePackage       = "基础包，200个集成流"
+	CONNECTSoftwareBomCalcMethodExpansionPackage  = "扩容包，100个集成流"
 )
