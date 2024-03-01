@@ -153,6 +153,9 @@ const (
 	CpuTypeIntel = "intel"
 	CpuTypeHygon = "hygon"
 
+	NetworkInterface10GE = "10GE"
+	NetworkInterface25GE = "25GE"
+
 	ProductCodeCKE        = "CKE"
 	ProductCodeECS        = "ECS"
 	ProductCodeBMS        = "BMS"
@@ -184,6 +187,7 @@ const (
 	ProductCodeCLCP       = "CLCP"
 	ProductCodeCOS        = "COS"
 	ProductCodeCLS        = "CLS"
+	ProductCodeBGW        = "BGW"
 
 	CapPlanningInputVCpu                      = "vCPU"
 	CapPlanningInputMemory                    = "内存"
