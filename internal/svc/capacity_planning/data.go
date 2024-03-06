@@ -554,16 +554,18 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 			}
 		}
 		// 查询计算节点的服务器基线配置
-		serverBaseline := serverBaselineMap[ecsServerPlanning.ServerBaselineId]
-		number := handleEcsData(request.EcsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap, capServerCalcBaselineMap, minimumNum)
-		ecsServerPlanning.Number = number
-		ecsServerCapPlanning = &entity.ServerCapPlanning{
-			PlanId:        request.PlanId,
-			ProductCode:   constant.ProductCodeECS,
-			Type:          2,
-			FeatureNumber: request.EcsCapacity.FeatureNumber,
-			VersionId:     serverBaselineMap[ecsServerPlanning.ServerBaselineId].VersionId,
-			Special:       util.ToString(request.EcsCapacity)}
+		if ecsServerPlanning != nil {
+			serverBaseline := serverBaselineMap[ecsServerPlanning.ServerBaselineId]
+			number := handleEcsData(request.EcsCapacity, serverBaseline, ecsResourceProductMap, capConvertBaselineMap, capServerCalcBaselineMap, minimumNum)
+			ecsServerPlanning.Number = number
+			ecsServerCapPlanning = &entity.ServerCapPlanning{
+				PlanId:        request.PlanId,
+				ProductCode:   constant.ProductCodeECS,
+				Type:          2,
+				FeatureNumber: request.EcsCapacity.FeatureNumber,
+				VersionId:     serverBaselineMap[ecsServerPlanning.ServerBaselineId].VersionId,
+				Special:       util.ToString(request.EcsCapacity)}
+		}
 	}
 	// 处理BGW云产品
 	if bgwCapPlanningInputNumber != 0 {
