@@ -501,28 +501,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				bomMap[softwareBom.BomId] = number
 			}
 		case constant.ProductCodeKAFKA, constant.ProductCodeRABBITMQ:
-			broker := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputBroker)]
-			if broker == nil {
-				continue
-			}
-			var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber int
-			standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
-			if standardEdition != nil {
-				standardEditionNumber = standardEdition.Number
-			}
-			professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
-			if professionalEdition != nil {
-				professionalEditionNumber = professionalEdition.Number
-			}
-			enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
-			if enterpriseEdition != nil {
-				enterpriseEditionNumber = enterpriseEdition.Number
-			}
-			platinumEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputPlatinumEdition)]
-			if enterpriseEdition != nil {
-				platinumEditionNumber = platinumEdition.Number
-			}
-			number := (standardEditionNumber*2 + professionalEditionNumber*4 + enterpriseEditionNumber*8 + platinumEditionNumber*16) * broker.Number
+			brokerNumber, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber := handlePAASCapPlanningInput(serverCapPlanningMap, productCode)
+			number := (standardEditionNumber*2 + professionalEditionNumber*4 + enterpriseEditionNumber*8 + platinumEditionNumber*16) * brokerNumber
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.CalcMethod == constant.KAFKASoftwareBomCalcMethodBasePackage {
 					bomMap[softwareBom.BomId] = 1
@@ -550,23 +530,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 			}
 		case constant.ProductCodeROCKETMQ:
-			var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber int
-			standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
-			if standardEdition != nil {
-				standardEditionNumber = standardEdition.Number
-			}
-			professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
-			if professionalEdition != nil {
-				professionalEditionNumber = professionalEdition.Number
-			}
-			enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
-			if enterpriseEdition != nil {
-				enterpriseEditionNumber = enterpriseEdition.Number
-			}
-			platinumEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputPlatinumEdition)]
-			if enterpriseEdition != nil {
-				platinumEditionNumber = platinumEdition.Number
-			}
+			_, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber := handlePAASCapPlanningInput(serverCapPlanningMap, productCode)
 			number := standardEditionNumber*12 + professionalEditionNumber*24 + enterpriseEditionNumber*36 + platinumEditionNumber*48
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.CalcMethod == constant.ROCKETMQSoftwareBomCalcMethodBasePackage {
@@ -579,19 +543,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 			}
 		case constant.ProductCodeAPIM:
-			var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber int
-			standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
-			if standardEdition != nil {
-				standardEditionNumber = standardEdition.Number
-			}
-			professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
-			if professionalEdition != nil {
-				professionalEditionNumber = professionalEdition.Number
-			}
-			enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
-			if enterpriseEdition != nil {
-				enterpriseEditionNumber = enterpriseEdition.Number
-			}
+			_, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, _ := handlePAASCapPlanningInput(serverCapPlanningMap, productCode)
 			number := standardEditionNumber*3 + professionalEditionNumber*6 + enterpriseEditionNumber*12
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.CalcMethod == constant.APIMSoftwareBomCalcMethodBasePackage {
@@ -604,19 +556,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 			}
 		case constant.ProductCodeCONNECT:
-			var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber int
-			standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
-			if standardEdition != nil {
-				standardEditionNumber = standardEdition.Number
-			}
-			professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
-			if professionalEdition != nil {
-				professionalEditionNumber = professionalEdition.Number
-			}
-			enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
-			if enterpriseEdition != nil {
-				enterpriseEditionNumber = enterpriseEdition.Number
-			}
+			_, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, _ := handlePAASCapPlanningInput(serverCapPlanningMap, productCode)
 			number := standardEditionNumber*4 + professionalEditionNumber*8 + enterpriseEditionNumber*24
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.CalcMethod == constant.CONNECTSoftwareBomCalcMethodBasePackage {
@@ -629,19 +569,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 			}
 		case constant.ProductCodeCLCP:
-			var standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber int
-			standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
-			if standardEdition != nil {
-				standardEditionNumber = standardEdition.Number
-			}
-			professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
-			if professionalEdition != nil {
-				professionalEditionNumber = professionalEdition.Number
-			}
-			enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
-			if enterpriseEdition != nil {
-				enterpriseEditionNumber = enterpriseEdition.Number
-			}
+			_, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, _ := handlePAASCapPlanningInput(serverCapPlanningMap, productCode)
 			number := standardEditionNumber*16 + professionalEditionNumber*64 + enterpriseEditionNumber*96
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.CalcMethod == constant.CLCPSoftwareBomCalcMethodBasePackage {
@@ -691,6 +619,31 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 		}
 	}
 	return bomMap
+}
+
+func handlePAASCapPlanningInput(serverCapPlanningMap map[string]*entity.ServerCapPlanning, productCode string) (int, int, int, int, int) {
+	var brokerNumber, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber int
+	broker := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputBroker)]
+	if broker != nil {
+		brokerNumber = broker.Number
+	}
+	standardEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputStandardEdition)]
+	if standardEdition != nil {
+		standardEditionNumber = standardEdition.Number
+	}
+	professionalEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputProfessionalEdition)]
+	if professionalEdition != nil {
+		professionalEditionNumber = professionalEdition.Number
+	}
+	enterpriseEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputEnterpriseEdition)]
+	if enterpriseEdition != nil {
+		enterpriseEditionNumber = enterpriseEdition.Number
+	}
+	platinumEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputPlatinumEdition)]
+	if enterpriseEdition != nil {
+		platinumEditionNumber = platinumEdition.Number
+	}
+	return brokerNumber, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber
 }
 
 const (
