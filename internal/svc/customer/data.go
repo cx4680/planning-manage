@@ -410,7 +410,7 @@ func InnerUpdateCustomer(quotationNo string, userList []entity.UserManage, curre
 			}
 		}
 		if len(deleteIdList) > 0 {
-			if err = tx.Table(entity.PermissionsManageTable).Where("user_id in ?", deleteIdList).UpdateColumn("delete_state", 1).Error; err != nil {
+			if err = tx.Table(entity.PermissionsManageTable).Where("user_id in (?) and customer_id = ?", deleteIdList, projectManage.CustomerId).UpdateColumn("delete_state", 1).Error; err != nil {
 				log.Errorf("[updateCustomer] batch delete customer members error, %v", err)
 				return err
 			}
