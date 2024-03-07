@@ -639,7 +639,7 @@ func handlePAASCapPlanningInput(serverCapPlanningMap map[string]*entity.ServerCa
 		enterpriseEditionNumber = enterpriseEdition.Number
 	}
 	platinumEdition := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputPlatinumEdition)]
-	if enterpriseEdition != nil {
+	if platinumEdition != nil {
 		platinumEditionNumber = platinumEdition.Number
 	}
 	return brokerNumber, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber
