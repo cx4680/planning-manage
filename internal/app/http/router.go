@@ -2,12 +2,13 @@ package http
 
 import (
 	"bytes"
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/capacity_planning"
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/software_bom"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/capacity_planning"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/software_bom"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
 
@@ -158,6 +159,8 @@ func Router(engine *gin.Engine) {
 			planGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除方案", "deletePlanById", middleware.DELETE, middleware.INFO)), plan.Delete)
 			// 推送方案
 			planGroup.PUT("/send/:id", middleware.OperatorLog(DefaultEventOpInfo("推送方案", "sendPlanToBoms", middleware.UPDATE, middleware.INFO)), plan.Send)
+			// 复制方案
+			planGroup.POST("/copy/:id", middleware.OperatorLog(DefaultEventOpInfo("复制方案", "copyPlan", middleware.CREATE, middleware.INFO)), plan.Copy)
 		}
 
 		// 服务器规划

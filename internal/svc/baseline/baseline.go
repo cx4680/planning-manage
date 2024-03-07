@@ -1385,11 +1385,11 @@ func ImportSoftwareBomLicenseBaseline(context *gin.Context, versionId int64, f *
 			var insertSoftwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline
 			var updateSoftwareBomLicenseBaselines []entity.SoftwareBomLicenseBaseline
 			for _, originSoftwareBomLicenseBaseline := range originSoftwareBomLicenseBaselines {
-				key := fmt.Sprintf("%s-%s-%s-%s-%s-%s", originSoftwareBomLicenseBaseline.ServiceCode, originSoftwareBomLicenseBaseline.SellSpecs, originSoftwareBomLicenseBaseline.ValueAddedService, originSoftwareBomLicenseBaseline.AuthorizedUnit, originSoftwareBomLicenseBaseline.SellType, originSoftwareBomLicenseBaseline.HardwareArch)
+				key := fmt.Sprintf("%s-%s-%s-%s-%s-%s-%s", originSoftwareBomLicenseBaseline.ServiceCode, originSoftwareBomLicenseBaseline.SellSpecs, originSoftwareBomLicenseBaseline.ValueAddedService, originSoftwareBomLicenseBaseline.AuthorizedUnit, originSoftwareBomLicenseBaseline.SellType, originSoftwareBomLicenseBaseline.HardwareArch, originSoftwareBomLicenseBaseline.BomId)
 				originSoftwareBomLicenseMap[key] = originSoftwareBomLicenseBaseline
 			}
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselines {
-				key := fmt.Sprintf("%s-%s-%s-%s-%s-%s", softwareBomLicenseBaseline.ServiceCode, softwareBomLicenseBaseline.SellSpecs, softwareBomLicenseBaseline.ValueAddedService, softwareBomLicenseBaseline.AuthorizedUnit, softwareBomLicenseBaseline.SellType, softwareBomLicenseBaseline.HardwareArch)
+				key := fmt.Sprintf("%s-%s-%s-%s-%s-%s-%s", softwareBomLicenseBaseline.ServiceCode, softwareBomLicenseBaseline.SellSpecs, softwareBomLicenseBaseline.ValueAddedService, softwareBomLicenseBaseline.AuthorizedUnit, softwareBomLicenseBaseline.SellType, softwareBomLicenseBaseline.HardwareArch, softwareBomLicenseBaseline.BomId)
 				originSoftwareBomLicenseBaseline, ok := originSoftwareBomLicenseMap[key]
 				if ok {
 					softwareBomLicenseBaseline.Id = originSoftwareBomLicenseBaseline.Id
