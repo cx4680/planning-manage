@@ -486,6 +486,12 @@ func CopyPlan(request *Request) error {
 		}
 		return err
 	}
+	if planManage.Type == constant.Delivery {
+		return errors.New("只能复制售前方案")
+	}
+	if planManage.Type == constant.Alternate {
+		planManage.Type = constant.General
+	}
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
 		planManage.Id = 0
 		planManage.Name = planManage.Name + constant.CopyPlanEndOfName
