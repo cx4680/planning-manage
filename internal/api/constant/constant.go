@@ -277,4 +277,6 @@ const (
 	COSSoftwareBomCalcMethodExpansionPackage       = "扩容包，200个监控节点"
 	CLSSoftwareBomCalcMethodBasePackage            = "基础包，10T"
 	CLSSoftwareBomCalcMethodExpansionPackage       = "扩容包，5T"
+
+	CopyPlanEndOfName = "的副本"
 )

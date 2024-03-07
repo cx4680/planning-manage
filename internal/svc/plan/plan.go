@@ -1,16 +1,18 @@
 package plan
 
 import (
+	"errors"
+	"fmt"
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
-	"errors"
-	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"net/http"
-	"strconv"
 )
 
 func Page(c *gin.Context) {
@@ -120,4 +122,20 @@ func Send(c *gin.Context) {
 		message := fmt.Sprintf("请求bom错误：%s, %s", data.Desc, data.Message)
 		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, message)
 	}
+}
+
+func Copy(c *gin.Context) {
+	request := &Request{}
+	request.Id, _ = strconv.ParseInt(c.Param("id"), 10, 64)
+	request.UserId = user.GetUserId(c)
+	if err := checkRequest(request, false); err != nil {
+		result.Failure(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := CopyPlan(request); err != nil {
+		log.Errorf("copy plan error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, nil)
 }

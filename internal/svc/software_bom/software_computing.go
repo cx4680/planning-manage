@@ -480,11 +480,10 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if serverCapPlanning != nil {
 				number = serverCapPlanning.Number
 			}
+			bomMap[DatabaseManagementBom] = 1
 			for _, softwareBom := range softwareBomLicenseBaselineList {
-				bomMap[DatabaseManagementBom] = 1
 				if serverBaseline.Arch == constant.CpuArchX86 {
 					bomMap[softwareBom.BomId] = int(math.Ceil(float64(number) / 2))
-
 				}
 				if serverBaseline.Arch == constant.CpuArchXC {
 					bomMap[softwareBom.BomId] = number
@@ -496,8 +495,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if serverCapPlanning != nil {
 				number = serverCapPlanning.Number
 			}
+			bomMap[DatabaseManagementBom] = 1
 			for _, softwareBom := range softwareBomLicenseBaselineList {
-				bomMap[DatabaseManagementBom] = 1
 				bomMap[softwareBom.BomId] = number
 			}
 		case constant.ProductCodeKAFKA, constant.ProductCodeRABBITMQ:

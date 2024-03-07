@@ -2,22 +2,24 @@ package plan
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
+	"os"
+	"strings"
+	"time"
+
 	"code.cestc.cn/ccos/cnm/ops-base/logging"
+	"github.com/acmestack/godkits/gox/stringsx"
+	"github.com/gin-gonic/gin"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/httpcall"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
-	"encoding/json"
-	"errors"
-	"github.com/acmestack/godkits/gox/stringsx"
-	"github.com/gin-gonic/gin"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"gorm.io/gorm"
-	"os"
-	"strings"
-	"time"
 )
 
 func PagePlan(request *Request) ([]*Plan, int64, error) {
@@ -159,7 +161,7 @@ func UpdatePlanStage(tx *gorm.DB, planId int64, stage string, userId string, bus
 }
 
 func DeletePlan(request *Request) error {
-	//校验该项目下是否有方案
+	// 校验该项目下是否有方案
 	var plan = &entity.PlanManage{}
 	if err := data.DB.Model(&entity.PlanManage{}).Where("id = ? AND delete_state = ?", request.Id, 0).First(&plan).Error; err != nil {
 		return err
@@ -182,7 +184,7 @@ func DeletePlan(request *Request) error {
 
 func checkBusiness(request *Request, isCreate bool) error {
 	if isCreate {
-		//校验projectId
+		// 校验projectId
 		var projectCount int64
 		if err := data.DB.Model(&entity.ProjectManage{}).Where("id = ? AND delete_state = ?", request.ProjectId, 0).Count(&projectCount).Error; err != nil {
 			return err
@@ -191,7 +193,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 			return errors.New("项目不存在")
 		}
 	} else {
-		//校验planId
+		// 校验planId
 		var planCount int64
 		if err := data.DB.Model(&entity.PlanManage{}).Where("id = ? AND delete_state = ?", request.Id, 0).Count(&planCount).Error; err != nil {
 			return err
@@ -199,7 +201,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 		if planCount == 0 {
 			return errors.New("方案不存在")
 		}
-		//校验planType
+		// 校验planType
 		if util.IsNotBlank(request.Type) {
 			var planTypeCount int64
 			if err := data.DB.Model(&entity.ConfigItem{}).Where("p_id = ? AND code = ?", "5", request.Type).Count(&planTypeCount).Error; err != nil {
@@ -209,7 +211,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 				return errors.New("type参数错误")
 			}
 		}
-		//校验planStage
+		// 校验planStage
 		if util.IsNotBlank(request.Stage) {
 			var planStageCount int64
 			if err := data.DB.Model(&entity.ConfigItem{}).Where("p_id = ? AND code = ?", "6", request.Stage).Count(&planStageCount).Error; err != nil {
@@ -371,10 +373,10 @@ func buildServerFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 	featureMap := make(map[string]*SendBomsRequestFeature)
 
 	// 该方案按照node_role分组，同一个feature会有相同的bom_id，改为按照role的classify分组
-	//var planList []entity.ServerPlanning
-	//if err := data.DB.Model(&entity.ServerPlanning{}).Where("plan_id = ? and delete_state = 0", planId).Find(&planList).Error; err != nil {
+	// var planList []entity.ServerPlanning
+	// if err := data.DB.Model(&entity.ServerPlanning{}).Where("plan_id = ? and delete_state = 0", planId).Find(&planList).Error; err != nil {
 	//	return nil, err
-	//}
+	// }
 
 	var planList []entity.ServerPlanningSelect
 	if err := data.DB.Table(entity.ServerPlanningTable).
@@ -403,12 +405,12 @@ func buildServerFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 			return nil, err
 		}
 
-		//if err := data.DB.Table("node_role_baseline").Select("f.feature_name, f.feature_code").
+		// if err := data.DB.Table("node_role_baseline").Select("f.feature_name, f.feature_code").
 		//	Joins("LEFT JOIN feature_name_code_rel f on node_role_baseline.classify = f.feature_name").
 		//	Where("node_role_baseline.id = ?", plan.NodeRoleId).
 		//	Find(&featureInfo).Error; err != nil {
 		//	return nil, err
-		//}
+		// }
 
 		if _, flag := featureMap[featureInfo.FeatureCode]; flag {
 			featureMap[featureInfo.FeatureCode].Boms = append(featureMap[featureInfo.FeatureCode].Boms, &SendBomsRequestBom{
@@ -473,4 +475,142 @@ func buildNetDeviceFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 		result = append(result, v)
 	}
 	return result, nil
+}
+
+func CopyPlan(request *Request) error {
+	now := datetime.GetNow()
+	var planManage = &entity.PlanManage{}
+	if err := data.DB.Where("id = ? AND delete_state = ?", request.Id, 0).Find(planManage).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return errors.New("方案不存在")
+		}
+		return err
+	}
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		planManage.Id = 0
+		planManage.Name = planManage.Name + constant.CopyPlanEndOfName
+		planManage.CreateUserId = request.UserId
+		planManage.UpdateUserId = request.UserId
+		planManage.CreateTime = now
+		planManage.UpdateTime = now
+		if err := tx.Create(&planManage).Error; err != nil {
+			return err
+		}
+		// 复制云产品规划数据
+		var cloudProductPlannings []*entity.CloudProductPlanning
+		if err := tx.Where("plan_id = ?", request.Id).Find(&cloudProductPlannings).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
+				return nil
+			}
+			return err
+		}
+		for i := range cloudProductPlannings {
+			cloudProductPlannings[i].Id = 0
+			cloudProductPlannings[i].PlanId = planManage.Id
+			cloudProductPlannings[i].CreateTime = now
+			cloudProductPlannings[i].UpdateTime = now
+		}
+		if err := tx.Create(&cloudProductPlannings).Error; err != nil {
+			return err
+		}
+		// 复制服务器规划数据
+		var serverPlannings []*entity.ServerPlanning
+		// 这里没像云产品规划那样判断，如果数据为空就不走下面的逻辑的原因：在服务器规划页面只操作了容量规划，而没有点击下一步到网络设备规划，这样就不会将服务器规划数据保存到数据库了
+		if err := tx.Where("plan_id = ? and delete_state = ?", request.Id, 0).Find(&serverPlannings).Error; err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if len(serverPlannings) > 0 {
+			for i := range serverPlannings {
+				serverPlannings[i].Id = 0
+				serverPlannings[i].PlanId = planManage.Id
+				serverPlannings[i].CreateUserId = request.UserId
+				serverPlannings[i].UpdateUserId = request.UserId
+				serverPlannings[i].CreateTime = now
+				serverPlannings[i].UpdateTime = now
+			}
+			if err := tx.Create(&serverPlannings).Error; err != nil {
+				return err
+			}
+		}
+		// 复制容量规划数据
+		var serverCapPlannings []*entity.ServerCapPlanning
+		if err := tx.Where("plan_id = ?", request.Id).Find(&serverCapPlannings).Error; err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if len(serverCapPlannings) > 0 {
+			for i := range serverCapPlannings {
+				serverCapPlannings[i].Id = 0
+				serverCapPlannings[i].PlanId = planManage.Id
+			}
+			if err := tx.Create(&serverCapPlannings).Error; err != nil {
+				return err
+			}
+		}
+		// 复制网络设备规划数据
+		var networkDevicePlannings []*entity.NetworkDevicePlanning
+		if err := tx.Where("plan_id = ?", request.Id).Find(&networkDevicePlannings).Error; err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if len(networkDevicePlannings) > 0 {
+			for i := range networkDevicePlannings {
+				networkDevicePlannings[i].Id = 0
+				networkDevicePlannings[i].PlanId = planManage.Id
+				networkDevicePlannings[i].CreateTime = now
+				networkDevicePlannings[i].UpdateTime = now
+			}
+			if err := tx.Create(&networkDevicePlannings).Error; err != nil {
+				return err
+			}
+		}
+		// 复制网络设备清单数据
+		var networkDeviceList []*entity.NetworkDeviceList
+		if err := tx.Where("plan_id = ? and delete_state = ?", request.Id, 0).Find(&networkDeviceList).Error; err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if len(networkDeviceList) > 0 {
+			for i := range networkDeviceList {
+				networkDeviceList[i].Id = 0
+				networkDeviceList[i].PlanId = planManage.Id
+				networkDeviceList[i].CreateTime = now
+				networkDeviceList[i].UpdateTime = now
+			}
+			if err := tx.Create(&networkDeviceList).Error; err != nil {
+				return err
+			}
+		}
+		// 复制IP需求规划数据
+		var ipDemandPlannings []*entity.IpDemandPlanning
+		if err := tx.Where("plan_id = ?", request.Id).Find(&ipDemandPlannings).Error; err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if len(ipDemandPlannings) > 0 {
+			for i := range ipDemandPlannings {
+				ipDemandPlannings[i].Id = 0
+				ipDemandPlannings[i].PlanId = planManage.Id
+				ipDemandPlannings[i].CreateTime = now
+				ipDemandPlannings[i].UpdateTime = now
+			}
+			if err := tx.Create(&ipDemandPlannings).Error; err != nil {
+				return err
+			}
+		}
+		// 复制软件BOM规划数据
+		var softwareBomPlannings []*entity.SoftwareBomPlanning
+		if err := tx.Where("plan_id = ?", request.Id).Find(&softwareBomPlannings).Error; err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if len(softwareBomPlannings) > 0 {
+			for i := range softwareBomPlannings {
+				softwareBomPlannings[i].Id = 0
+				softwareBomPlannings[i].PlanId = planManage.Id
+			}
+			if err := tx.Create(&softwareBomPlannings).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
+		return err
+	}
+	return nil
 }

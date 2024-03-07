@@ -119,15 +119,6 @@ func updateCustomer(customerParam UpdateCustomerRequest, currentUserId string) e
 				log.Errorf("[updateCustomer] update customer error, %v", err)
 				return err
 			}
-			// 如果修改了接口人，同时保存接口人信息
-			/*if customerManage.LeaderId != customerParam.LeaderId {
-				ldapUser, err := user.SearchUserById(customerParam.LeaderId)
-				if err != nil {
-					log.Errorf("[updateCustomer] search user by id error,%v", err)
-					return err
-				}
-				user.SaveUser(ldapUser)
-			}*/
 		}
 		// 更改成员信息
 		members, err := searchMembersByCustomerId(customerParam.ID)
@@ -182,7 +173,7 @@ func updateCustomer(customerParam UpdateCustomerRequest, currentUserId string) e
 			}
 		}
 		if len(deleteIdList) > 0 {
-			if err = tx.Table(entity.PermissionsManageTable).Where("user_id in ?", deleteIdList).UpdateColumn("delete_state", 1).Error; err != nil {
+			if err = tx.Table(entity.PermissionsManageTable).Where("user_id in (?) and customer_id = ?", deleteIdList, customerParam.ID).UpdateColumn("delete_state", 1).Error; err != nil {
 				log.Errorf("[updateCustomer] batch delete customer members error, %v", err)
 				return err
 			}
