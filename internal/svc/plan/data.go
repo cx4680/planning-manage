@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/httpcall"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 )
@@ -619,4 +621,150 @@ func CopyPlan(request *Request) error {
 		return err
 	}
 	return nil
+}
+
+func DownloadPlanningConfigChecklist(planId int64) ([]excel.ExportSheet, string, error) {
+	// 构建返回体
+	var response []excel.ExportSheet
+	var versionId int64
+	// 查询云产品清单
+	var cloudProductResponse []CloudProductPlanningExportResponse
+	if err := data.DB.Table("cloud_product_planning cpp").Select("cpb.product_type,cpb.product_name, cpp.sell_spec, cpp.value_added_service, cpb.instructions").
+		Joins("LEFT JOIN cloud_product_baseline cpb ON cpb.id = cpp.product_id").
+		Where("cpp.plan_id=?", planId).
+		Find(&cloudProductResponse).Error; err != nil {
+		log.Errorf("[downloadPlanningConfigChecklist] query db error")
+		return nil, "", err
+	}
+	response = append(response, excel.ExportSheet{SheetName: "云产品清单", Data: cloudProductResponse})
+
+	// 查询服务器规划清单
+	var serverList []*entity.ServerPlanning
+	if err := data.DB.Where("plan_id = ?", planId).Find(&serverList).Error; err != nil {
+		return nil, "", err
+	}
+	// 查询关联的角色和设备，封装成map
+	var nodeRoleIdList, serverBaselineIdList []int64
+	for _, v := range serverList {
+		nodeRoleIdList = append(nodeRoleIdList, v.NodeRoleId)
+		serverBaselineIdList = append(serverBaselineIdList, v.ServerBaselineId)
+	}
+	var nodeRoleList []*entity.NodeRoleBaseline
+	if err := data.DB.Where("id IN (?)", nodeRoleIdList).Find(&nodeRoleList).Error; err != nil {
+		return nil, "", err
+	}
+	versionId = nodeRoleList[0].VersionId
+	var nodeRoleMap = make(map[int64]*entity.NodeRoleBaseline)
+	for _, v := range nodeRoleList {
+		nodeRoleMap[v.Id] = v
+	}
+	var serverBaselineList []*entity.ServerBaseline
+	if err := data.DB.Where("id IN (?)", serverBaselineIdList).Find(&serverBaselineList).Error; err != nil {
+		return nil, "", err
+	}
+	var serverBaselineMap = make(map[int64]*entity.ServerBaseline)
+	for _, v := range serverBaselineList {
+		serverBaselineMap[v.Id] = v
+	}
+	// 构建返回体
+	var serverResponse []ResponseDownloadServer
+	var total int
+	for _, v := range serverList {
+		serverResponse = append(serverResponse, ResponseDownloadServer{
+			NodeRole:   nodeRoleMap[v.NodeRoleId].NodeRoleName,
+			ServerType: serverBaselineMap[v.ServerBaselineId].Arch,
+			BomCode:    serverBaselineMap[v.ServerBaselineId].BomCode,
+			Spec:       serverBaselineMap[v.ServerBaselineId].ConfigurationInfo,
+			Number:     strconv.Itoa(v.Number),
+		})
+		total += v.Number
+	}
+	serverResponse = append(serverResponse, ResponseDownloadServer{
+		Number: "总计：" + strconv.Itoa(total) + "台",
+	})
+	response = append(response, excel.ExportSheet{SheetName: "服务器规划清单", Data: serverResponse})
+
+	// 查询网络设备规划清单
+	var roleIdNum []NetworkDeviceRoleIdNum
+	if err := data.DB.Table(entity.NetworkDeviceListTable).Select("network_device_role_id", "count(*) as num").
+		Where("plan_id = ? AND delete_state = 0", planId).Group("network_device_role_id").Find(&roleIdNum).Error; err != nil {
+		log.Errorf("[downloadPlanningConfigChecklist] query db error, %v", err)
+		return nil, "", err
+	}
+	if len(roleIdNum) == 0 {
+		return nil, "", errors.New("获取网络设备清单为空")
+	}
+	total = 0
+	var networkDeviceResponse []NetworkDeviceListExportResponse
+	for _, roleNum := range roleIdNum {
+		roleId := roleNum.NetworkDeviceRoleId
+		var networkDevice entity.NetworkDeviceList
+		if err := data.DB.Where("plan_id = ? AND delete_state = 0 AND network_device_role_id = ?", planId, roleId).Find(&networkDevice).Error; err != nil {
+			log.Errorf("[getNetworkDeviceListByPlanIdAndRoleId] query db error, %v", err)
+			return nil, "", err
+		}
+		total += roleNum.Num
+		networkDeviceResponse = append(networkDeviceResponse, NetworkDeviceListExportResponse{
+			NetworkDeviceRoleName: networkDevice.NetworkDeviceRoleName,
+			NetworkDeviceRole:     networkDevice.NetworkDeviceRole,
+			Brand:                 networkDevice.Brand,
+			DeviceModel:           networkDevice.DeviceModel,
+			ConfOverview:          networkDevice.ConfOverview,
+			Num:                   strconv.Itoa(roleNum.Num),
+		})
+	}
+	// 手动添加合计行
+	networkDeviceResponse = append(networkDeviceResponse, NetworkDeviceListExportResponse{
+		Num: "总计:" + strconv.Itoa(total) + "台",
+	})
+	response = append(response, excel.ExportSheet{SheetName: "网络设备清单", Data: networkDeviceResponse})
+
+	// 查询BOM清单
+	var softwareBomPlannings []*entity.SoftwareBomPlanning
+	if err := data.DB.Where("plan_id = ?", planId).Order("software_baseline_id, id").Find(&softwareBomPlannings).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, "", errors.New("获取BOM清单为空")
+		}
+		return nil, "", err
+	}
+	var cloudProductBaselines []*entity.CloudProductBaseline
+	if err := data.DB.Where("version_id = ?", versionId).Find(&cloudProductBaselines).Error; err != nil {
+		return nil, "", err
+	}
+	cloudProductBaselineMap := make(map[string]*entity.CloudProductBaseline)
+	for _, cloudProductBaseline := range cloudProductBaselines {
+		cloudProductBaselineMap[cloudProductBaseline.ProductCode] = cloudProductBaseline
+	}
+	var bomListDownload []BomListDownload
+	for _, softwareBomPlanning := range softwareBomPlannings {
+		var category string
+		cloudProductBaseline := cloudProductBaselineMap[softwareBomPlanning.ServiceCode]
+		if cloudProductBaseline != nil {
+			category = cloudProductBaseline.ProductType
+		}
+		bomListDownload = append(bomListDownload, BomListDownload{
+			Category:       category,
+			CloudProduct:   softwareBomPlanning.CloudService,
+			SellType:       softwareBomPlanning.SellType,
+			BomId:          softwareBomPlanning.BomId,
+			AuthorizedUnit: softwareBomPlanning.AuthorizedUnit,
+			Number:         strconv.Itoa(softwareBomPlanning.Number),
+		})
+	}
+	response = append(response, excel.ExportSheet{SheetName: "BOM清单", Data: bomListDownload})
+
+	// 构建文件名称
+	var planManage = &entity.PlanManage{}
+	if err := data.DB.Where("id = ? AND delete_state = ?", planId, 0).Find(&planManage).Error; err != nil {
+		return nil, "", err
+	}
+	if planManage.Id == 0 {
+		return nil, "", errors.New("方案不存在")
+	}
+	var projectManage = &entity.ProjectManage{}
+	if err := data.DB.Where("id = ? AND delete_state = ?", planManage.ProjectId, 0).First(&projectManage).Error; err != nil {
+		return nil, "", err
+	}
+	fileName := projectManage.Name + "-" + planManage.Name + "-" + "规划配置清单"
+	return response, fileName, nil
 }

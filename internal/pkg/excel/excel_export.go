@@ -387,3 +387,41 @@ func ExportExcelByExistHeader(sheet, fields string, row int, isIgnore bool, list
 	}
 	return
 }
+
+func DownLoadBySheet(fileName string, sheetData []ExportSheet, res http.ResponseWriter) error {
+	e := ExcelInit()
+	for _, exportSheet := range sheetData {
+		if err := ExportExcelMultiSheet(exportSheet.SheetName, "", "", false, false, exportSheet.Data, nil, e); err != nil {
+			return err
+		}
+	}
+	DownLoadExcel(fileName, res, e.F)
+	return nil
+}
+
+func ExportExcelMultiSheet(sheet, title, fields string, isGhbj, isIgnore bool, list interface{}, changeHead map[string]string, e *Excel) (err error) {
+	index, _ := e.F.GetSheetIndex(sheet)
+	if index < 0 {
+		if e.F.GetSheetName(0) == "Sheet1" {
+			e.F.SetSheetName("Sheet1", sheet)
+		} else {
+			e.F.NewSheet(sheet)
+		}
+	}
+	// 构造excel表格
+	// 取目标对象的元素类型、字段类型和 tag
+	dataValue := reflect.ValueOf(list)
+	// 判断数据的类型
+	if dataValue.Kind() != reflect.Slice {
+		err = errors.New("invalid data type")
+		return
+	}
+	// 构造表头
+	endColName, dataRow, err := normalBuildTitle(e, sheet, title, fields, isIgnore, changeHead, dataValue)
+	if err != nil {
+		return
+	}
+	// 构造数据行
+	err = NormalBuildDataRow(e, sheet, endColName, fields, dataRow, isGhbj, isIgnore, dataValue)
+	return
+}

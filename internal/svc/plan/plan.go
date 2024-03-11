@@ -10,6 +10,7 @@ import (
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
@@ -138,4 +139,22 @@ func Copy(c *gin.Context) {
 		return
 	}
 	result.Success(c, nil)
+}
+
+func Download(c *gin.Context) {
+	id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	if id == 0 {
+		result.Failure(c, "方案id为空", http.StatusBadRequest)
+		return
+	}
+	response, fileName, err := DownloadPlanningConfigChecklist(id)
+	if err != nil {
+		log.Error("download plan error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err = excel.DownLoadBySheet(fileName, response, c.Writer); err != nil {
+		log.Error("导出错误：", err)
+	}
+	return
 }

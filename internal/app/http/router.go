@@ -161,6 +161,8 @@ func Router(engine *gin.Engine) {
 			planGroup.PUT("/send/:id", middleware.OperatorLog(DefaultEventOpInfo("推送方案", "sendPlanToBoms", middleware.UPDATE, middleware.INFO)), plan.Send)
 			// 复制方案
 			planGroup.POST("/copy/:id", middleware.OperatorLog(DefaultEventOpInfo("复制方案", "copyPlan", middleware.CREATE, middleware.INFO)), plan.Copy)
+			// 下载规划配置清单
+			planGroup.GET("/download/:id", middleware.OperatorLog(DefaultEventOpInfo("下载规划配置清单", "downloadPlanningConfigChecklist", middleware.EXPORT, middleware.INFO)), plan.Download)
 		}
 
 		// 服务器规划

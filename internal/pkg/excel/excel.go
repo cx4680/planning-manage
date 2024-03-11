@@ -175,3 +175,8 @@ func (e *Excel) getDataRowStyle() {
 	}
 	e.ContentStyle2, _ = e.F.NewStyle(&style)
 }
+
+type ExportSheet struct {
+	SheetName string      `json:"sheetName"`
+	Data      interface{} `json:"data"`
+}
