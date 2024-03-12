@@ -1279,12 +1279,19 @@ func ImportCapServerCalcBaseline(context *gin.Context, versionId int64, f *excel
 		for _, capServerCalcBaselineExcel := range capServerCalcBaselineExcelList {
 			nodeWastageCalcTypeStr := capServerCalcBaselineExcel.NodeWastageCalcType
 			var nodeWastageCalcType int
-			if nodeWastageCalcTypeStr == constant.NodeWastageCalcTypeNumCn {
+			switch nodeWastageCalcTypeStr {
+			case constant.NodeWastageCalcTypeNumCn:
 				nodeWastageCalcType = constant.NodeWastageCalcTypeNum
-			} else if nodeWastageCalcTypeStr == constant.NodeWastageCalcTypePercentCn {
+				break
+			case constant.NodeWastageCalcTypePercentCn:
 				nodeWastageCalcType = constant.NodeWastageCalcTypePercent
-			} else {
+				break
+			case constant.NodeWastageCalcTypeDataDiskNumCn:
+				nodeWastageCalcType = constant.NodeWastageCalcTypeDataDiskNum
+				break
+			default:
 				nodeWastageCalcType = 0
+				break
 			}
 			capServerCalcBaselines = append(capServerCalcBaselines, entity.CapServerCalcBaseline{
 				VersionId:           versionId,

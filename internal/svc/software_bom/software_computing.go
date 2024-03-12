@@ -272,9 +272,14 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 			}
 		case constant.ProductCodeCBR:
-			// TB（还没给数据，默认先输出1）
+			// BOM单位是TiB，容量规划输入的是GiB，换算
+			number := 1
+			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputBackupDataCapacity)]
+			if serverCapPlanning != nil {
+				number = int(math.Ceil(float64(serverCapPlanning.Number) / 1024))
+			}
 			for _, softwareBom := range softwareBomLicenseBaselineList {
-				bomMap[softwareBom.BomId] = 1
+				bomMap[softwareBom.BomId] = number
 			}
 		case constant.ProductCodeEBS, constant.ProductCodeEFS, constant.ProductCodeOSS:
 			// TB，可用容量

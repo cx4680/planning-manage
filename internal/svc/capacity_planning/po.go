@@ -1,5 +1,9 @@
 package capacity_planning
 
+import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+)
+
 type Request struct {
 	Id                 int64
 	PlanId             int64                    `form:"planId"`
@@ -68,11 +72,18 @@ type ResponseFeatures struct {
 }
 
 type EcsCapacity struct {
-	CapacityIdList []int64 `form:"capacityIdList" json:"capacityIdList"`
-	FeatureNumber  int     `form:"featureNumber" json:"featureNumber"`
-	List           []*struct {
-		CpuNumber    int `form:"cpuNumber" json:"cpuNumber"`
-		MemoryNumber int `form:"memoryNumber" json:"memoryNumber"`
-		Count        int `form:"count" json:"count"`
-	} `json:"list"`
+	CapacityIdList []int64     `form:"capacityIdList" json:"capacityIdList"`
+	FeatureNumber  int         `form:"featureNumber" json:"featureNumber"`
+	List           []*EcsSpecs `json:"list"`
+}
+
+type EcsSpecs struct {
+	CpuNumber    int `form:"cpuNumber" json:"cpuNumber"`
+	MemoryNumber int `form:"memoryNumber" json:"memoryNumber"`
+	Count        int `form:"count" json:"count"`
+}
+
+type ExpendResFeature struct {
+	CapActualResBaseline entity.CapActualResBaseline `json:"capActualResBaseline"`
+	FeatureNumber        int                         `json:"featureNumber"`
 }

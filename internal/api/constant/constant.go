@@ -13,6 +13,7 @@ const (
 	Colon        = ":"
 	Hyphen       = "-"
 	ForwardSlash = "/"
+	Underline    = "_"
 
 	EnvGlobalBaseDomain = "GLOBAL_BASE_DOMAIN"
 	BaseDomain          = "BASE_DOMAIN"
@@ -94,10 +95,12 @@ const (
 	NodeRoleSupportDPDKCn    = "是"
 	NodeRoleNotSupportDPDKCn = "否"
 
-	NodeWastageCalcTypeNumCn     = "数量"
-	NodeWastageCalcTypePercentCn = "百分比"
-	NodeWastageCalcTypeNum       = 1
-	NodeWastageCalcTypePercent   = 2
+	NodeWastageCalcTypeNumCn         = "数量"
+	NodeWastageCalcTypePercentCn     = "百分比"
+	NodeWastageCalcTypeDataDiskNumCn = "数据盘数量"
+	NodeWastageCalcTypeNum           = 1
+	NodeWastageCalcTypePercent       = 2
+	NodeWastageCalcTypeDataDiskNum   = 3
 
 	CellTypeControl = "control"
 
@@ -159,6 +162,7 @@ const (
 	ProductCodeCKE        = "CKE"
 	ProductCodeECS        = "ECS"
 	ProductCodeBMS        = "BMS"
+	ProductCodeCCR        = "CCR"
 	ProductCodeCBR        = "CBR"
 	ProductCodeEBS        = "EBS"
 	ProductCodeEFS        = "EFS"
@@ -189,25 +193,28 @@ const (
 	ProductCodeCLS        = "CLS"
 	ProductCodeBGW        = "BGW"
 
-	CapPlanningInputVCpu                  = "vCPU"
-	CapPlanningInputMemory                = "内存"
-	CapPlanningInputContainerCluster      = "容器集群数"
-	CapPlanningInputStorageCapacity       = "存储容量"
-	CapPlanningInputFirewall              = "防火墙数量"
-	CapPlanningInputLogStorage            = "日志存储容量"
-	CapPlanningInputAssetAccess           = "资产接入授权"
-	CapPlanningInputVulnerabilityScanning = "漏洞扫描服务数"
-	CapPlanningInputDatabaseAudit         = "数据库审计"
-	CapPlanningInputBusinessDataVolume    = "业务数据量"
-	CapPlanningInputLinks                 = "链路数量"
-	CapPlanningInputBroker                = "broker节点数"
-	CapPlanningInputDiskCapacity          = "磁盘容量"
-	CapPlanningInputStandardEdition       = "标准版"
-	CapPlanningInputProfessionalEdition   = "专业版"
-	CapPlanningInputEnterpriseEdition     = "企业版"
-	CapPlanningInputPlatinumEdition       = "铂金版"
-	CapPlanningInputMicroservice          = "微服务实例"
-	CapPlanningInputMonitoringNode        = "监控节点数量"
+	CapPlanningInputVCpu                   = "vCPU"
+	CapPlanningInputMemory                 = "内存"
+	CapPlanningInputContainerCluster       = "容器集群数"
+	CapPlanningInputStorageCapacity        = "存储容量"
+	CapPlanningInputFirewall               = "防火墙数量"
+	CapPlanningInputLogStorage             = "日志存储容量"
+	CapPlanningInputAssetAccess            = "资产接入授权"
+	CapPlanningInputVulnerabilityScanning  = "漏洞扫描服务数"
+	CapPlanningInputDatabaseAudit          = "数据库审计"
+	CapPlanningInputBusinessDataVolume     = "业务数据量"
+	CapPlanningInputLinks                  = "链路数量"
+	CapPlanningInputBroker                 = "broker节点数"
+	CapPlanningInputDiskCapacity           = "磁盘容量"
+	CapPlanningInputStandardEdition        = "标准版"
+	CapPlanningInputProfessionalEdition    = "专业版"
+	CapPlanningInputEnterpriseEdition      = "企业版"
+	CapPlanningInputPlatinumEdition        = "铂金版"
+	CapPlanningInputMicroservice           = "微服务实例"
+	CapPlanningInputMonitoringNode         = "监控节点数量"
+	CapPlanningInputInstances              = "实例数量"
+	CapPlanningInputSingleInstanceCapacity = "单实例存储容量"
+	CapPlanningInputBackupDataCapacity     = "备份数据容量"
 
 	CapPlanningInputOneHundred     = "100"
 	CapPlanningInputOneHundredInt  = 100
@@ -215,6 +222,7 @@ const (
 	CapPlanningInputFiveHundredInt = 500
 	CapPlanningInputOneThousand    = "1000"
 	CapPlanningInputOneThousandInt = 1000
+	CapPlanningInputOpsAssets      = "运维资产数"
 
 	ExpendResCodeECSVCpu           = "ECS_VCPU"
 	ExpendResCodeECSMemory         = "ECS_MEM"
