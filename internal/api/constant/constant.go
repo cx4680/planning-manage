@@ -231,6 +231,9 @@ const (
 	ExpendResCodePAASDataVCpu      = "PAAS-DATA_VCPU"
 	ExpendResCodePAASDataMemory    = "PAAS-DATA_MEM"
 	ExpendResCodePAASDataDisk      = "PAAS-DATA_DISK"
+	ExpendResCodeEBSDisk           = "EBS_DISK"
+	ExpendResCodeEFSDisk           = "EFS_DISK"
+	ExpendResCodeOSSDisk           = "OSS_DISK"
 
 	ExpendResCodeEndOfVCpu = "_VCPU"
 	ExpendResCodeEndOfMem  = "_MEM"

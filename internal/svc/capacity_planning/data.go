@@ -230,7 +230,10 @@ func SaveServerCapacity(request *Request) error {
 		serverCapPlanningList = append(serverCapPlanningList, serverCapPlanning)
 	}
 	// 计算个节点角色的服务器数量
-	nodeRoleCapNumberMap, ecsServerPlanning, ecsServerCapPlanning := computing(db, request, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	nodeRoleCapNumberMap, ecsServerPlanning, ecsServerCapPlanning, err := computing(db, request, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	if err != nil {
+		return err
+	}
 	if ecsServerPlanning != nil {
 		newServerPlanningList = append(newServerPlanningList, ecsServerPlanning)
 	}
@@ -357,7 +360,10 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 	var serverPlanningMap = map[int64]*entity.ServerPlanning{serverPlanning.NodeRoleId: serverPlanning}
 	var nodeRoleBaselineMap = map[string]*entity.NodeRoleBaseline{nodeRoleBaseline.NodeRoleCode: nodeRoleBaseline}
 	var serverBaselineMap = map[int64]*entity.ServerBaseline{serverBaseline.Id: serverBaseline}
-	nodeRoleCapNumberMap, ecsServerPlanning, _ := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	nodeRoleCapNumberMap, ecsServerPlanning, _, err := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	if err != nil {
+		return nil, err
+	}
 	if ecsServerPlanning != nil {
 		// TODO ecsServerPlanning使用的计算节点已经算了最小数量，如果nodeRoleCapNumberMap里有计算节点，这样相加有问题
 		nodeRoleCapNumberMap[ecsServerPlanning.NodeRoleId] += ecsServerPlanning.Number
@@ -397,7 +403,10 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, serverPlanningMap map[int6
 		return nil, err
 	}
 	// 计算各角色节点服务器数量
-	nodeRoleCapNumberMap, ecsServerPlanning, _ := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	nodeRoleCapNumberMap, ecsServerPlanning, _, err := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	if err != nil {
+		return nil, err
+	}
 	if ecsServerPlanning != nil {
 		// TODO ecsServerPlanning使用的计算节点已经算了最小数量，如果nodeRoleCapNumberMap里有计算节点，这样相加有问题
 		nodeRoleCapNumberMap[ecsServerPlanning.NodeRoleId] += ecsServerPlanning.Number
@@ -406,7 +415,7 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, serverPlanningMap map[int6
 }
 
 func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capActualResBaselineMap map[string][]*entity.CapActualResBaseline, capServerCalcBaselineMap map[string]*entity.CapServerCalcBaseline,
-	serverPlanningMap map[int64]*entity.ServerPlanning, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline, serverBaselineMap map[int64]*entity.ServerBaseline) (map[int64]int, *entity.ServerPlanning, *entity.ServerCapPlanning) {
+	serverPlanningMap map[int64]*entity.ServerPlanning, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline, serverBaselineMap map[int64]*entity.ServerBaseline) (map[int64]int, *entity.ServerPlanning, *entity.ServerCapPlanning, error) {
 
 	// 角色节点id为key，服务器数量为value
 	var nodeRoleCapNumberMap = make(map[int64]int)
@@ -432,7 +441,7 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 		Joins("LEFT JOIN cloud_product_baseline cpb on cpp.product_id = cpb.id").
 		Where("cpb.product_code in (?) and cpp.plan_id = ?", extraCalcProductCodes, request.PlanId).
 		Find(&extraProductCodes).Error; err != nil && err != gorm.ErrRecordNotFound {
-		return nil, nil, nil
+		return nil, nil, nil, err
 	}
 	if len(extraProductCodes) > 0 {
 		var versionId int64
@@ -443,7 +452,7 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 		// 查询容量实际资源消耗表
 		var capActualResBaselineList []*entity.CapActualResBaseline
 		if err := db.Where("version_id = ? AND product_code IN (?)", versionId, extraProductCodes).Find(&capActualResBaselineList).Error; err != nil {
-			return nil, nil, nil
+			return nil, nil, nil, err
 		}
 		extraCapActualResBaselineMap := make(map[string][]*entity.CapActualResBaseline)
 		for _, capActualResBaseline := range capActualResBaselineList {
@@ -636,7 +645,7 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 			nodeRoleCapNumberMap[bmsNodeRoleBaseline.Id] += bmsCapPlanningInputNumber
 		}
 		if bmsGwNodeRoleBaseline != nil {
-			nodeRoleCapNumberMap[bmsGwNodeRoleBaseline.Id] += int(math.Ceil(float64(bgwCapPlanningInputNumber/30))) * 2
+			nodeRoleCapNumberMap[bmsGwNodeRoleBaseline.Id] += int(math.Ceil(float64(bmsCapPlanningInputNumber)/30)) * 2
 		}
 	}
 	// 处理nodeRoleCapNumberMap的节点最小数量
@@ -649,7 +658,7 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 			}
 		}
 	}
-	return nodeRoleCapNumberMap, ecsServerPlanning, ecsServerCapPlanning
+	return nodeRoleCapNumberMap, ecsServerPlanning, ecsServerCapPlanning, nil
 }
 
 func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entity.CapConvertBaseline, map[string][]*entity.CapActualResBaseline, map[string]*entity.CapServerCalcBaseline, error) {
@@ -693,6 +702,8 @@ func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entit
 
 func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseline, ecsResourceProductMap map[string][]*RequestServerCapacity, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capServerCalcBaselineMap map[string]*entity.CapServerCalcBaseline, minimumNumber int) int {
 	// 计算其它计算节点相关的产品消耗的ECS实例数量
+	var ecsCapacityList []*EcsSpecs
+	ecsCapacityList = append(ecsCapacityList, ecsCapacity.List...)
 	for k, v := range ecsResourceProductMap {
 		switch k {
 		case constant.ProductCodeCKE:
@@ -706,7 +717,7 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 				}
 			}
 			waterLevel, _ := strconv.ParseFloat(capServerCalcBaselineMap[constant.ExpendResCodeECSVCpu].WaterLevel, 64)
-			ecsCapacity.List = append(ecsCapacity.List, &EcsSpecs{
+			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 				CpuNumber:    16,
 				MemoryNumber: 32,
 				Count:        int(math.Ceil(vCpu/waterLevel/14.6 + cluster*3)),
@@ -717,7 +728,7 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 			for _, requestCapacity := range v {
 				assetsNumber += float64(requestCapacity.Number)
 			}
-			ecsCapacity.List = append(ecsCapacity.List, &EcsSpecs{
+			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 				CpuNumber:    4,
 				MemoryNumber: 8,
 				Count:        int(math.Ceil(assetsNumber / 50)),
@@ -725,14 +736,14 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 		case constant.ProductCodeCNFW:
 			for _, requestCapacity := range v {
 				if capConvertBaselineMap[requestCapacity.Id].SellSpecs == constant.SellSpecsStandardEdition {
-					ecsCapacity.List = append(ecsCapacity.List, &EcsSpecs{
+					ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 						CpuNumber:    4,
 						MemoryNumber: 8,
 						Count:        requestCapacity.Number,
 					})
 				}
 				if capConvertBaselineMap[requestCapacity.Id].SellSpecs == constant.SellSpecsUltimateEdition {
-					ecsCapacity.List = append(ecsCapacity.List, &EcsSpecs{
+					ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 						CpuNumber:    8,
 						MemoryNumber: 16,
 						Count:        requestCapacity.Number,
@@ -744,7 +755,7 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 			for _, requestCapacity := range v {
 				instanceNumber += requestCapacity.Number
 			}
-			ecsCapacity.List = append(ecsCapacity.List, &EcsSpecs{
+			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 				CpuNumber:    4,
 				MemoryNumber: 4,
 				Count:        instanceNumber,
@@ -753,7 +764,7 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 	}
 	// 计算ecs小箱子
 	var items []util.Item
-	for _, v := range ecsCapacity.List {
+	for _, v := range ecsCapacityList {
 		width := float64(v.CpuNumber)
 		// 每个实例额外消耗内存（单位：M）=138M(libvirt)+8M(IO)+16M(GPU)+8M*vCPU+内存(M)/512，ARM额外128M
 		extraMemorySpent := float64(138 + 8 + 16 + 8*v.CpuNumber + v.MemoryNumber*1024/512)
