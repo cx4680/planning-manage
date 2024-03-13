@@ -636,7 +636,7 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 			nodeRoleCapNumberMap[bmsNodeRoleBaseline.Id] += bmsCapPlanningInputNumber
 		}
 		if bmsGwNodeRoleBaseline != nil {
-			nodeRoleCapNumberMap[bmsGwNodeRoleBaseline.Id] += int(math.Ceil(float64(bgwCapPlanningInputNumber/30))) * 2
+			nodeRoleCapNumberMap[bmsGwNodeRoleBaseline.Id] += int(math.Ceil(float64(bmsCapPlanningInputNumber/30))) * 2
 		}
 	}
 	// 处理nodeRoleCapNumberMap的节点最小数量
