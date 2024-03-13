@@ -1,14 +1,16 @@
 package network_device
 
 import (
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/software_bom"
 	"errors"
 	"fmt"
+	"math"
 	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/software_bom"
 
 	"github.com/xuri/excelize/v2"
 
@@ -106,12 +108,12 @@ func ListNetworkDevices(c *gin.Context) {
 	var response []NetworkDevices
 	// 根据方案ID查询网络设备规划表 没有则保存，有则更新
 	planId := request.PlanId
-	deviceList, err := SearchDeviceListByPlanId(planId)
-	if err != nil {
-		log.Errorf("[searchDeviceListByPlanId] search device list by planId error, %v", err)
-		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
-		return
-	}
+	// deviceList, err := SearchDeviceListByPlanId(planId)
+	// if err != nil {
+	// 	log.Errorf("[searchDeviceListByPlanId] search device list by planId error, %v", err)
+	// 	result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
+	// 	return
+	// }
 	// 根据方案id查询服务器规划
 	serverPlanningList, err := queryServerPlanningListByPlanId(planId)
 	if err != nil {
@@ -123,32 +125,32 @@ func ListNetworkDevices(c *gin.Context) {
 		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.ServerPlanningListEmpty)
 		return
 	}
-	if len(deviceList) > 0 && !request.EditFlag {
-		// 不是第一次进入并且也不是编辑网络设备规划 那就不需要重新计算 直接从库里拿
-		for _, device := range deviceList {
-			networkDevice := NetworkDevices{
-				NetworkDeviceRole:     device.NetworkDeviceRole,
-				NetworkDeviceRoleName: device.NetworkDeviceRoleName,
-				NetworkDeviceRoleId:   device.NetworkDeviceRoleId,
-				LogicalGrouping:       device.LogicalGrouping,
-				DeviceId:              device.DeviceId,
-				Brand:                 device.Brand,
-				DeviceModel:           device.DeviceModel,
-				ConfOverview:          device.ConfOverview,
-				BomId:                 device.BomId,
-			}
-			// 单独处理下型号列表
-			deviceModels, _ := GetModelsByVersionIdAndRoleAndBrand(versionId, device.NetworkDeviceRoleId, request.Brand, request.DeviceType)
-			networkDevice.DeviceModels = deviceModels
-			response = append(response, networkDevice)
-		}
-		// 计算网络设备总数
-		count := len(response)
-		finalResponse.Total = count
-		finalResponse.NetworkDeviceList = response
-		result.Success(c, finalResponse)
-		return
-	}
+	// if len(deviceList) > 0 && !request.EditFlag {
+	// 	// 不是第一次进入并且也不是编辑网络设备规划 那就不需要重新计算 直接从库里拿
+	// 	for _, device := range deviceList {
+	// 		networkDevice := NetworkDevices{
+	// 			NetworkDeviceRole:     device.NetworkDeviceRole,
+	// 			NetworkDeviceRoleName: device.NetworkDeviceRoleName,
+	// 			NetworkDeviceRoleId:   device.NetworkDeviceRoleId,
+	// 			LogicalGrouping:       device.LogicalGrouping,
+	// 			DeviceId:              device.DeviceId,
+	// 			Brand:                 device.Brand,
+	// 			DeviceModel:           device.DeviceModel,
+	// 			ConfOverview:          device.ConfOverview,
+	// 			BomId:                 device.BomId,
+	// 		}
+	// 		// 单独处理下型号列表
+	// 		deviceModels, _ := GetModelsByVersionIdAndRoleAndBrand(versionId, device.NetworkDeviceRoleId, request.Brand, request.DeviceType)
+	// 		networkDevice.DeviceModels = deviceModels
+	// 		response = append(response, networkDevice)
+	// 	}
+	// 	// 计算网络设备总数
+	// 	count := len(response)
+	// 	finalResponse.Total = count
+	// 	finalResponse.NetworkDeviceList = response
+	// 	result.Success(c, finalResponse)
+	// 	return
+	// }
 	// 服务器规划数据转为map
 	var nodeRoleServerNumMap = make(map[int64]int)
 	for _, value := range serverPlanningList {
@@ -306,7 +308,7 @@ func SaveDeviceList(c *gin.Context) {
 		if err = ip_demand.SaveBatch(tx, ipDemandPlannings); err != nil {
 			return err
 		}
-		//软件bom计算并保存
+		// 软件bom计算并保存
 		if err = software_bom.SaveSoftwareBomPlanning(tx, planId); err != nil {
 			return err
 		}
@@ -415,12 +417,12 @@ func dealNetworkModel(versionId int64, request *Request, networkModel int, roleB
 	}
 	funcCompoName := roleBaseLine.FuncCompoName
 	funcCompoCode := roleBaseLine.FuncCompoCode
-	id := roleBaseLine.Id
+	networkRoleId := roleBaseLine.Id
 	brand := request.Brand
 	awsServerNum := request.AwsServerNum
 	deviceType := request.DeviceType
 	var response []NetworkDevices
-	deviceModels, _ := GetModelsByVersionIdAndRoleAndBrand(versionId, id, brand, deviceType)
+	deviceModels, _ := GetModelsByVersionIdAndRoleAndBrand(versionId, networkRoleId, brand, deviceType)
 	var deviceModel string
 	var confOverview string
 	var bomId string
@@ -433,14 +435,14 @@ func dealNetworkModel(versionId int64, request *Request, networkModel int, roleB
 	}
 	if constant.NeedQueryOtherTable == networkModel {
 		var serverNum = 0
-		var nodeRoles []int64
+		var nodeRoleOrNetworkRoleIds []int64
 		/**
 		1.根据网络设备角色ID和组网模型查询关联表获取节点角色ID
 		2.为空则return
 		3.取其中一条判断是节点角色还是网络设备角色（这里默认每个网络设备角色的关联类型要么全是节点角色，要么全是网络设备角色）
 		4.循环关联表数据向nodeRoles添加数据 要注意数量
 		*/
-		modelRoleRels, err := SearchModelRoleRelByRoleIdAndNetworkModel(id, request.NetworkModel)
+		modelRoleRels, err := SearchModelRoleRelByRoleIdAndNetworkModel(networkRoleId, request.NetworkModel)
 		if err != nil {
 			return nil, err
 		}
@@ -450,38 +452,34 @@ func dealNetworkModel(versionId int64, request *Request, networkModel int, roleB
 		}
 		associatedType := modelRoleRels[0].AssociatedType
 		for _, roleRel := range modelRoleRels {
-			roleNum := roleRel.RoleNum
-			roleId := roleRel.RoleId
-			for i := 1; i <= roleNum; i++ {
-				nodeRoles = append(nodeRoles, roleId)
+			for i := 1; i <= roleRel.RoleNum; i++ {
+				nodeRoleOrNetworkRoleIds = append(nodeRoleOrNetworkRoleIds, roleRel.RoleId)
 			}
 		}
-		log.Infof("角色编码=%v,查询到的节点角色或者设备角色ID=%v", funcCompoCode, nodeRoles)
-		for _, nodeRoleId := range nodeRoles {
+		log.Infof("角色编码=%v,查询到的节点角色或者设备角色ID=%v", funcCompoCode, nodeRoleOrNetworkRoleIds)
+		for _, nodeRoleOrNetworkRoleId := range nodeRoleOrNetworkRoleIds {
 			if constant.NodeRoleType == associatedType {
-				serverNum += nodeRoleServerNumMap[nodeRoleId]
+				serverNum += nodeRoleServerNumMap[nodeRoleOrNetworkRoleId]
 			} else {
-				serverNum += aswNum[nodeRoleId]
+				serverNum += aswNum[nodeRoleOrNetworkRoleId]
 			}
 		}
-		if constant.NodeRoleType == associatedType {
-			aswNum[id] = serverNum
+		if serverNum == 0 {
+			return nil, nil
 		}
 		log.Infof("角色编码=%v,统计出来的服务器数量=%v", funcCompoCode, serverNum)
-		var minimumNumUnit = 1
-		if serverNum > awsServerNum {
-			discuss := serverNum / awsServerNum
-			remainder := serverNum % awsServerNum
-			if remainder == 0 {
-				minimumNumUnit = discuss
-			} else {
-				minimumNumUnit += discuss
-			}
+		var accessSwitchNum int
+		if constant.NodeRoleType == associatedType {
+			accessSwitchNum = int(math.Ceil(float64(serverNum) / float64(awsServerNum)))
+		} else {
+			// 如果是当前设备是连接网络设备的交换机，则是1对1，OASW
+			accessSwitchNum = serverNum
 		}
-		response, _ = buildDto(minimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id, confOverview, bomId)
+		aswNum[networkRoleId] = accessSwitchNum
+		response, _ = buildDto(accessSwitchNum, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, networkRoleId, confOverview, bomId)
 	} else if constant.NetworkModelYes == networkModel {
 		// 固定数量计算
-		response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, id, confOverview, bomId)
+		response, _ = buildDto(roleBaseLine.MinimumNumUnit, roleBaseLine.UnitDeviceNum, funcCompoName, funcCompoCode, brand, deviceModel, deviceModels, response, networkRoleId, confOverview, bomId)
 	}
 	return response, nil
 }
