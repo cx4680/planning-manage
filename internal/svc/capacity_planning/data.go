@@ -230,7 +230,10 @@ func SaveServerCapacity(request *Request) error {
 		serverCapPlanningList = append(serverCapPlanningList, serverCapPlanning)
 	}
 	// 计算个节点角色的服务器数量
-	nodeRoleCapNumberMap, ecsServerPlanning, ecsServerCapPlanning := computing(db, request, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	nodeRoleCapNumberMap, ecsServerPlanning, ecsServerCapPlanning, err := computing(db, request, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	if err != nil {
+		return err
+	}
 	if ecsServerPlanning != nil {
 		newServerPlanningList = append(newServerPlanningList, ecsServerPlanning)
 	}
@@ -357,7 +360,10 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 	var serverPlanningMap = map[int64]*entity.ServerPlanning{serverPlanning.NodeRoleId: serverPlanning}
 	var nodeRoleBaselineMap = map[string]*entity.NodeRoleBaseline{nodeRoleBaseline.NodeRoleCode: nodeRoleBaseline}
 	var serverBaselineMap = map[int64]*entity.ServerBaseline{serverBaseline.Id: serverBaseline}
-	nodeRoleCapNumberMap, ecsServerPlanning, _ := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	nodeRoleCapNumberMap, ecsServerPlanning, _, err := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	if err != nil {
+		return nil, err
+	}
 	if ecsServerPlanning != nil {
 		// TODO ecsServerPlanning使用的计算节点已经算了最小数量，如果nodeRoleCapNumberMap里有计算节点，这样相加有问题
 		nodeRoleCapNumberMap[ecsServerPlanning.NodeRoleId] += ecsServerPlanning.Number
@@ -397,7 +403,10 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, serverPlanningMap map[int6
 		return nil, err
 	}
 	// 计算各角色节点服务器数量
-	nodeRoleCapNumberMap, ecsServerPlanning, _ := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	nodeRoleCapNumberMap, ecsServerPlanning, _, err := computing(db, computingRequest, capConvertBaselineMap, capActualResBaselineMap, capServerCalcBaselineMap, serverPlanningMap, nodeRoleBaselineMap, serverBaselineMap)
+	if err != nil {
+		return nil, err
+	}
 	if ecsServerPlanning != nil {
 		// TODO ecsServerPlanning使用的计算节点已经算了最小数量，如果nodeRoleCapNumberMap里有计算节点，这样相加有问题
 		nodeRoleCapNumberMap[ecsServerPlanning.NodeRoleId] += ecsServerPlanning.Number
@@ -406,7 +415,7 @@ func GetNodeRoleCapMap(db *gorm.DB, request *Request, serverPlanningMap map[int6
 }
 
 func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capActualResBaselineMap map[string][]*entity.CapActualResBaseline, capServerCalcBaselineMap map[string]*entity.CapServerCalcBaseline,
-	serverPlanningMap map[int64]*entity.ServerPlanning, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline, serverBaselineMap map[int64]*entity.ServerBaseline) (map[int64]int, *entity.ServerPlanning, *entity.ServerCapPlanning) {
+	serverPlanningMap map[int64]*entity.ServerPlanning, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline, serverBaselineMap map[int64]*entity.ServerBaseline) (map[int64]int, *entity.ServerPlanning, *entity.ServerCapPlanning, error) {
 
 	// 角色节点id为key，服务器数量为value
 	var nodeRoleCapNumberMap = make(map[int64]int)
@@ -432,7 +441,7 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 		Joins("LEFT JOIN cloud_product_baseline cpb on cpp.product_id = cpb.id").
 		Where("cpb.product_code in (?) and cpp.plan_id = ?", extraCalcProductCodes, request.PlanId).
 		Find(&extraProductCodes).Error; err != nil && err != gorm.ErrRecordNotFound {
-		return nil, nil, nil
+		return nil, nil, nil, err
 	}
 	if len(extraProductCodes) > 0 {
 		var versionId int64
@@ -443,7 +452,7 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 		// 查询容量实际资源消耗表
 		var capActualResBaselineList []*entity.CapActualResBaseline
 		if err := db.Where("version_id = ? AND product_code IN (?)", versionId, extraProductCodes).Find(&capActualResBaselineList).Error; err != nil {
-			return nil, nil, nil
+			return nil, nil, nil, err
 		}
 		extraCapActualResBaselineMap := make(map[string][]*entity.CapActualResBaseline)
 		for _, capActualResBaseline := range capActualResBaselineList {
@@ -568,6 +577,10 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 		expendResCodeFeature, ok := expendResCodeFeatureMap[k]
 		if ok {
 			capActualResNumber = capActualRes(capActualResNumber, float64(expendResCodeFeature.FeatureNumber), &expendResCodeFeature.CapActualResBaseline)
+		} else {
+			if k == constant.ExpendResCodeEBSDisk || k == constant.ExpendResCodeEFSDisk || k == constant.ExpendResCodeOSSDisk {
+				return nil, nil, nil, errors.New("请先选择对应的存储产品")
+			}
 		}
 		capServerCalcBaseline := capServerCalcBaselineMap[k]
 		if capServerCalcBaseline == nil {
@@ -649,7 +662,7 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 			}
 		}
 	}
-	return nodeRoleCapNumberMap, ecsServerPlanning, ecsServerCapPlanning
+	return nodeRoleCapNumberMap, ecsServerPlanning, ecsServerCapPlanning, nil
 }
 
 func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entity.CapConvertBaseline, map[string][]*entity.CapActualResBaseline, map[string]*entity.CapServerCalcBaseline, error) {
