@@ -27,7 +27,7 @@ func GetExcelColumnName(columnNumber int) string {
 func ExportExcel(sheet, title, fields string, isGhbj, isIgnore bool, list interface{}, changeHead map[string]string, e *Excel) (err error) {
 	index, _ := e.F.GetSheetIndex(sheet)
 	if index < 0 { // 如果sheet名称不存在，将默认的sheet页名称替换为传进来的
-		//e.F.NewSheet(sheet)
+		// e.F.NewSheet(sheet)
 		e.F.SetSheetName("Sheet1", sheet)
 	}
 	// 构造excel表格
@@ -44,7 +44,7 @@ func ExportExcel(sheet, title, fields string, isGhbj, isIgnore bool, list interf
 		return
 	}
 	// 构造数据行
-	err = normalBuildDataRow(e, sheet, endColName, fields, dataRow, isGhbj, isIgnore, dataValue)
+	err = NormalBuildDataRow(e, sheet, endColName, fields, dataRow, isGhbj, isIgnore, dataValue)
 	return
 }
 
@@ -153,7 +153,7 @@ func normalBuildTitle(e *Excel, sheet, title, fields string, isIgnore bool, chan
 }
 
 // 构造数据行
-func normalBuildDataRow(e *Excel, sheet, endColName, fields string, row int, isGhbj, isIgnore bool, dataValue reflect.Value) (err error) {
+func NormalBuildDataRow(e *Excel, sheet, endColName, fields string, row int, isGhbj, isIgnore bool, dataValue reflect.Value) (err error) {
 	// 实时写入数据
 	for i := 0; i < dataValue.Len(); i++ {
 		startCol := fmt.Sprintf("A%d", row)
@@ -252,4 +252,176 @@ func DownLoadExcel(fileName string, res http.ResponseWriter, file *excelize.File
 		http.Error(res, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+// ExportExcelByAssignCell excel指定单元格导出
+func ExportExcelByAssignCell(sheet, fields string, isIgnore bool, data interface{}, e *Excel) (err error) {
+	index, _ := e.F.GetSheetIndex(sheet)
+	if index < 0 {
+		// 如果sheet名称不存在，将默认的sheet页名称替换为传进来的
+		if err = e.F.SetSheetName("Sheet1", sheet); err != nil {
+			return
+		}
+	}
+	// 构造excel表格
+	// 取目标对象的元素类型、字段类型和 tag
+	dataValue := reflect.ValueOf(data)
+	// 实时写入数据
+	typ := dataValue.Type()
+	num := dataValue.NumField()
+	// 遍历结构体的所有字段
+	for j := 0; j < num; j++ {
+		// 获取到struct标签，需要通过reflect.Type来获取tag标签的值
+		dataField := typ.Field(j)
+		tagVal := dataField.Tag.Get(ExcelTagKey)
+		// 如果非导出则跳过
+		if tagVal == "" {
+			continue
+		}
+		// 选择要导出或要忽略的字段
+		if fields != "" {
+			if isIgnore && strings.Contains(fields, dataField.Name+",") { // 忽略指定字段
+				continue
+			}
+			if !isIgnore && !strings.Contains(fields, dataField.Name+",") { // 导出指定字段
+				continue
+			}
+		}
+		var dataCol ExcelTag
+		if err = dataCol.GetTag(tagVal); err != nil {
+			return
+		}
+		// 取字段值
+		fieldData := dataValue.FieldByName(dataField.Name)
+		if err = e.F.SetCellValue(sheet, dataCol.CellPosition, &fieldData); err != nil {
+			return
+		}
+	}
+	return
+}
+
+// 导出已有excel title的表格
+func ExportExcelByExistHeader(sheet, fields string, row int, isIgnore bool, list interface{}, e *Excel) (err error) {
+	dataValue := reflect.ValueOf(list)
+	// 判断数据的类型
+	if dataValue.Kind() != reflect.Slice {
+		err = errors.New("invalid data type")
+		return
+	}
+	// 实时写入数据
+	for i := 0; i < dataValue.Len(); i++ {
+		item := dataValue.Index(i)
+		typ := item.Type()
+		num := item.NumField()
+		var exportRow []ExcelTag
+		maxLen := 0 // 记录这一行中，数据最多的单元格的值的长度
+		// 遍历结构体的所有字段
+		for j := 0; j < num; j++ {
+			dataField := typ.Field(j) // 获取到struct标签，需要通过reflect.Type来获取tag标签的值
+			tagVal := dataField.Tag.Get(ExcelTagKey)
+			if tagVal == "" { // 如果非导出则跳过
+				continue
+			}
+			if fields != "" { // 选择要导出或要忽略的字段
+				if isIgnore && strings.Contains(fields, dataField.Name+",") { // 忽略指定字段
+					continue
+				}
+				if !isIgnore && !strings.Contains(fields, dataField.Name+",") { // 导出指定字段
+					continue
+				}
+			}
+			var dataCol ExcelTag
+			err = dataCol.GetTag(tagVal)
+			fieldData := item.FieldByName(dataField.Name) // 取字段值
+			if fieldData.Type().String() == "string" {    // string类型的才计算长度
+				rwsTemp := fieldData.Len() // 当前单元格内容的长度
+				if rwsTemp > maxLen {      // 这里取每一行中的每一列字符长度最大的那一列的字符
+					maxLen = rwsTemp
+				}
+			}
+			// 替换
+			if dataCol.Replace != "" {
+				split := strings.Split(dataCol.Replace, ",")
+				for j := range split {
+					s := strings.Split(split[j], "_") // 根据下划线进行分割，格式：需要替换的内容_替换后的内容
+					value := fieldData.String()
+					if strings.Contains(fieldData.Type().String(), "int") {
+						value = strconv.Itoa(int(fieldData.Int()))
+					} else if fieldData.Type().String() == "bool" {
+						value = strconv.FormatBool(fieldData.Bool())
+					} else if strings.Contains(fieldData.Type().String(), "float") {
+						value = strconv.FormatFloat(fieldData.Float(), 'f', -1, 64)
+					}
+					if s[0] == value {
+						dataCol.Value = s[1]
+					}
+				}
+			} else {
+				dataCol.Value = fieldData
+			}
+			if err != nil {
+				return
+			}
+			exportRow = append(exportRow, dataCol)
+		}
+		// 排序
+		sort.Slice(exportRow, func(i, j int) bool {
+			return exportRow[i].Index < exportRow[j].Index
+		})
+		var rowData []interface{} // 数据列
+		for _, colTitle := range exportRow {
+			rowData = append(rowData, colTitle.Value)
+		}
+		if maxLen > 25 { // 自适应行高
+			d := maxLen / 25
+			f := 25 * d
+			_ = e.F.SetRowHeight(sheet, row, float64(f))
+		} else {
+			_ = e.F.SetRowHeight(sheet, row, float64(25)) // 默认行高25
+		}
+		startCol := fmt.Sprintf("A%d", row)
+		if err = e.F.SetSheetRow(sheet, startCol, &rowData); err != nil {
+			return
+		}
+		row++
+	}
+	return
+}
+
+func DownLoadBySheet(fileName string, sheetData []ExportSheet, res http.ResponseWriter) error {
+	e := ExcelInit()
+	for _, exportSheet := range sheetData {
+		if err := ExportExcelMultiSheet(exportSheet.SheetName, "", "", false, false, exportSheet.Data, nil, e); err != nil {
+			return err
+		}
+	}
+	DownLoadExcel(fileName, res, e.F)
+	return nil
+}
+
+func ExportExcelMultiSheet(sheet, title, fields string, isGhbj, isIgnore bool, list interface{}, changeHead map[string]string, e *Excel) (err error) {
+	index, _ := e.F.GetSheetIndex(sheet)
+	if index < 0 {
+		if e.F.GetSheetName(0) == "Sheet1" {
+			e.F.SetSheetName("Sheet1", sheet)
+		} else {
+			e.F.NewSheet(sheet)
+		}
+	}
+	// 构造excel表格
+	// 取目标对象的元素类型、字段类型和 tag
+	dataValue := reflect.ValueOf(list)
+	// 判断数据的类型
+	if dataValue.Kind() != reflect.Slice {
+		err = errors.New("invalid data type")
+		return
+	}
+	// 构造表头
+	endColName, dataRow, err := normalBuildTitle(e, sheet, title, fields, isIgnore, changeHead, dataValue)
+	if err != nil {
+		return
+	}
+	// 构造数据行
+	err = NormalBuildDataRow(e, sheet, endColName, fields, dataRow, isGhbj, isIgnore, dataValue)
+	return
 }

@@ -10,5 +10,7 @@ WORKDIR /app
 
 COPY --from=builder /build/planning-manage ./planning-manage
 COPY --from=builder /build/migrations/*.sql ./migrations/
+COPY --from=builder /build/template/*.xlsx ./template/
+RUN chmod 777 template
 
 ENTRYPOINT ["./planning-manage"]

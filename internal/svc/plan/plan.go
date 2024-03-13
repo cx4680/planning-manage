@@ -1,15 +1,19 @@
 package plan
 
 import (
+	"errors"
+	"fmt"
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
-	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"net/http"
-	"strconv"
 )
 
 func Page(c *gin.Context) {
@@ -103,4 +107,54 @@ func checkRequest(request *Request, isCreate bool) error {
 		}
 	}
 	return nil
+}
+
+func Send(c *gin.Context) {
+	Id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	data, err := SendPlan(Id)
+	if err != nil {
+		message := fmt.Sprintf("创建bom请求体错误：%s", err.Error())
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, message)
+		return
+	}
+	if data.Success {
+		result.Success(c, data.Data)
+	} else {
+		message := fmt.Sprintf("请求bom错误：%s, %s", data.Desc, data.Message)
+		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, message)
+	}
+}
+
+func Copy(c *gin.Context) {
+	request := &Request{}
+	request.Id, _ = strconv.ParseInt(c.Param("id"), 10, 64)
+	request.UserId = user.GetUserId(c)
+	if err := checkRequest(request, false); err != nil {
+		result.Failure(c, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := CopyPlan(request); err != nil {
+		log.Errorf("copy plan error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, nil)
+}
+
+func Download(c *gin.Context) {
+	id, _ := strconv.ParseInt(c.Param("id"), 10, 64)
+	if id == 0 {
+		result.Failure(c, "方案id为空", http.StatusBadRequest)
+		return
+	}
+	response, fileName, err := DownloadPlanningConfigChecklist(id)
+	if err != nil {
+		log.Error("download plan error: ", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err = excel.DownLoadBySheet(fileName, response, c.Writer); err != nil {
+		log.Error("导出错误：", err)
+	}
+	return
 }

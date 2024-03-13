@@ -12,16 +12,17 @@ import (
 // 定义正则表达式模式
 const (
 	ExcelTagKey = "excel"
-	Pattern     = "name:(.*?);|index:(.*?);|width:(.*?);|needMerge:(.*?);|replace:(.*?);"
+	Pattern     = "name:(.*?);|index:(.*?);|width:(.*?);|needMerge:(.*?);|replace:(.*?);|cellPosition:(.*?);"
 )
 
 type ExcelTag struct {
-	Value     interface{}
-	Name      string // 表头标题
-	Index     int    // 列下标(从0开始)
-	Width     int    // 列宽
-	NeedMerge bool   // 是否需要合并
-	Replace   string // 替换（需要替换的内容_替换后的内容。比如：1_未开始 ==> 表示1替换为未开始）
+	Value        interface{}
+	Name         string // 表头标题
+	Index        int    // 列下标(从0开始)
+	Width        int    // 列宽
+	NeedMerge    bool   // 是否需要合并
+	Replace      string // 替换（需要替换的内容_替换后的内容。比如：1_未开始 ==> 表示1替换为未开始）
+	CellPosition string // 单元格位置，例如A1
 }
 
 type Header struct {
@@ -77,6 +78,9 @@ func (e *ExcelTag) setValue(tag []string, value string) {
 	}
 	if strings.Contains(tag[0], "replace") {
 		e.Replace = value
+	}
+	if strings.Contains(tag[0], "cellPosition") {
+		e.CellPosition = value
 	}
 }
 
@@ -170,4 +174,9 @@ func (e *Excel) getDataRowStyle() {
 		Pattern: 1,
 	}
 	e.ContentStyle2, _ = e.F.NewStyle(&style)
+}
+
+type ExportSheet struct {
+	SheetName string      `json:"sheetName"`
+	Data      interface{} `json:"data"`
 }

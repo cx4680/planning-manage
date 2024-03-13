@@ -1,14 +1,16 @@
 package cloud_product
 
 import (
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
-	"github.com/gin-gonic/gin"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"net/http"
-	"strconv"
 )
 
 func ListVersion(context *gin.Context) {
@@ -19,7 +21,7 @@ func ListVersion(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	//根据项目id查询云平台类型
+	// 根据项目id查询云平台类型
 	versionList, err := getVersionListByProjectId(projectId)
 	if err != nil {
 		log.Errorf("[ListVersion] getVersionListByProjectId error", err)
@@ -65,7 +67,7 @@ func Save(context *gin.Context) {
 	for _, product := range request.ProductList {
 		productIdList = append(productIdList, product.ProductId)
 	}
-	//必选云产品校验
+	// 必选云产品校验
 	baselineResponseList, err := getCloudProductBaseListByVersionId(request.VersionId)
 	if err != nil {
 		log.Errorf("[ListCloudProductBaseline] getCloudProductBaseListByVersionId error", err)
@@ -79,11 +81,11 @@ func Save(context *gin.Context) {
 			return
 		}
 	}
-	//依赖云产品校验
+	// 依赖云产品校验
 	dependList, err := getDependProductIds()
 	for _, productId := range productIdList {
 		for _, depend := range dependList {
-			//判断productIdList是否包含depend.DependId
+			// 判断productIdList是否包含depend.DependId
 			if productId == depend.ID && !contains(depend.DependId, productIdList) {
 				log.Error("[Save] invalid param error, 选择的云产品有依赖项未选中")
 				result.FailureWithMsg(context, errorcodes.CloudProductDependError, http.StatusBadRequest, "选择的云产品有依赖项未选中")
@@ -119,7 +121,7 @@ func List(context *gin.Context) {
 		result.Failure(context, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	cloudProductPlannings, err := listCloudProductPlanningByPlanId(planId)
+	cloudProductPlannings, err := ListCloudProductPlanningByPlanId(planId)
 	if err != nil {
 		log.Errorf("[List] cloudProductPlanning error, %v", err)
 		result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)

@@ -23,6 +23,11 @@ type DeviceRoleGroupNum struct {
 	GroupNum     int   `gorm:"column:groupNum" form:"groupNum"`
 }
 
+type DeviceRoleLogicGroup struct {
+	DeviceRoleId    int64  `gorm:"column:network_device_role_id" form:"deviceRoleId"`
+	LogicalGrouping string `gorm:"column:logical_grouping" form:"logicalGrouping"`
+}
+
 type Request struct {
 	PlanId                int64            `json:"planId" form:"planId"`
 	Brand                 string           `json:"brand" form:"brand"`
@@ -36,6 +41,7 @@ type Request struct {
 	VersionId             int64            `json:"versionId" form:"versionId"`
 	Devices               []NetworkDevices `json:"devices" form:"devices"`
 	EditFlag              bool             `json:"editFlag" form:"editFlag"`
+	UserId                string
 }
 
 type NetworkDevicesResponse struct {
@@ -54,9 +60,22 @@ type NetworkDevices struct {
 	DeviceModel           string               `json:"deviceModel" form:"deviceModel"`
 	ConfOverview          string               `json:"confOverview" form:"confOverview"`
 	DeviceModels          []NetworkDeviceModel `json:"deviceModels" form:"deviceModels"`
+	BomId                 string               `json:"bomId" form:"bomId"`
 }
 
 type NetworkDeviceModel struct {
 	ConfOverview string `json:"confOverview" form:"confOverview"`
 	DeviceModel  string `json:"deviceModel" form:"deviceModel"`
+	BomId        string `json:"bomId" form:"bomId"`
+}
+
+type NetworkDeviceShelveDownload struct {
+	DeviceLogicalId   string `json:"deviceLogicalId" excel:"name:网络设备逻辑ID;"`
+	DeviceId          string `json:"deviceId" excel:"name:网络设备ID;"`
+	Sn                string `json:"sn" excel:"name:SN;"`
+	MachineRoomAbbr   string `json:"machineRoomAbbr" excel:"name:机房缩写;"`
+	MachineRoomNumber string `json:"machineRoomNumber" excel:"name:机房编号;"`
+	CabinetNumber     string `json:"cabinetNumber" excel:"name:机柜编号;"`
+	SlotPosition      string `json:"slotPosition" excel:"name:槽位;"`
+	UNumber           int    `json:"uNumber" excel:"name:U数;"`
 }

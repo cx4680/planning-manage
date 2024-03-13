@@ -1,13 +1,15 @@
 package cloud_product
 
 import (
+	"strings"
+	"time"
+
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"gorm.io/gorm"
-	"strings"
-	"time"
 )
 
 func getVersionListByProjectId(projectId int64) ([]entity.SoftwareVersion, error) {
@@ -40,10 +42,14 @@ func getCloudProductBaseListByVersionId(versionId int64) ([]CloudProductBaseline
 	var responseList []CloudProductBaselineResponse
 	for _, baseline := range baselineList {
 		sellSpecs := make([]string, 1)
-		if strings.Index(baseline.SellSpecs, ",") > 0 {
-			sellSpecs = strings.Split(baseline.SellSpecs, ",")
+		if strings.Index(baseline.SellSpecs, constant.Comma) > 0 {
+			sellSpecs = strings.Split(baseline.SellSpecs, constant.Comma)
 		} else {
 			sellSpecs[0] = baseline.SellSpecs
+		}
+		var valueAddedServices []string
+		if baseline.ValueAddedService != "" {
+			valueAddedServices = strings.Split(baseline.ValueAddedService, constant.Comma)
 		}
 		var dependProductId int64
 		var dependProductName string
@@ -54,17 +60,18 @@ func getCloudProductBaseListByVersionId(versionId int64) ([]CloudProductBaseline
 			}
 		}
 		responseData := CloudProductBaselineResponse{
-			ID:                baseline.Id,
-			VersionId:         baseline.VersionId,
-			ProductType:       baseline.ProductType,
-			ProductName:       baseline.ProductName,
-			ProductCode:       baseline.ProductCode,
-			SellSpecs:         sellSpecs,
-			AuthorizedUnit:    baseline.AuthorizedUnit,
-			WhetherRequired:   baseline.WhetherRequired,
-			Instructions:      baseline.Instructions,
-			DependProductId:   dependProductId,
-			DependProductName: dependProductName,
+			ID:                 baseline.Id,
+			VersionId:          baseline.VersionId,
+			ProductType:        baseline.ProductType,
+			ProductName:        baseline.ProductName,
+			ProductCode:        baseline.ProductCode,
+			SellSpecs:          sellSpecs,
+			ValueAddedServices: valueAddedServices,
+			AuthorizedUnit:     baseline.AuthorizedUnit,
+			WhetherRequired:    baseline.WhetherRequired,
+			Instructions:       baseline.Instructions,
+			DependProductId:    dependProductId,
+			DependProductName:  dependProductName,
 		}
 		responseList = append(responseList, responseData)
 	}
@@ -74,20 +81,25 @@ func getCloudProductBaseListByVersionId(versionId int64) ([]CloudProductBaseline
 func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId string) error {
 	var cloudProductPlanningList []entity.CloudProductPlanning
 	for _, cloudProduct := range request.ProductList {
+		var valueAddedService string
+		if len(cloudProduct.ValueAddedServices) > 0 {
+			valueAddedService = strings.Join(cloudProduct.ValueAddedServices, constant.Comma)
+		}
 		cloudProductPlanning := entity.CloudProductPlanning{
-			PlanId:      request.PlanId,
-			ProductId:   cloudProduct.ProductId,
-			VersionId:   request.VersionId,
-			SellSpec:    cloudProduct.SellSpec,
-			ServiceYear: request.ServiceYear,
-			CreateTime:  time.Now(),
-			UpdateTime:  time.Now(),
+			PlanId:            request.PlanId,
+			ProductId:         cloudProduct.ProductId,
+			VersionId:         request.VersionId,
+			SellSpec:          cloudProduct.SellSpec,
+			ValueAddedService: valueAddedService,
+			ServiceYear:       request.ServiceYear,
+			CreateTime:        time.Now(),
+			UpdateTime:        time.Now(),
 		}
 		cloudProductPlanningList = append(cloudProductPlanningList, cloudProductPlanning)
 	}
 
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		//删除原有的清单
+		// 删除原有的清单
 		if err := tx.Delete(&entity.CloudProductPlanning{}, "plan_id=?", request.PlanId).Error; err != nil {
 			log.Errorf("[saveCloudProductPlanning] delete cloudProductPlanning by planId error,%v", err)
 			return err
@@ -99,8 +111,8 @@ func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId
 		}
 		// 更新方案业务规划阶段
 		if err := tx.Table(entity.PlanManageTable).Where("id = ?", request.PlanId).
-			Update("business_plan_stage", constant.ServerPlan).
-			Update("stage", "planning").
+			Update("business_plan_stage", constant.BusinessPlanningServer).
+			Update("stage", constant.PlanStagePlanning).
 			Update("update_user_id", currentUserId).
 			Update("update_time", time.Now()).Error; err != nil {
 			log.Errorf("[saveCloudProductPlanning] update plan business stage error, %v", err)
@@ -114,10 +126,10 @@ func saveCloudProductPlanning(request CloudProductPlanningRequest, currentUserId
 	return nil
 }
 
-func listCloudProductPlanningByPlanId(planId int64) ([]entity.CloudProductPlanning, error) {
+func ListCloudProductPlanningByPlanId(planId int64) ([]entity.CloudProductPlanning, error) {
 	var cloudProductPlanningList []entity.CloudProductPlanning
 	if err := data.DB.Table(entity.CloudProductPlanningTable).Where("plan_id=?", planId).Scan(&cloudProductPlanningList).Error; err != nil {
-		log.Errorf("[listCloudProductPlanningByPlanId] error, %v", err)
+		log.Errorf("[ListCloudProductPlanningByPlanId] error, %v", err)
 		return nil, err
 	}
 	return cloudProductPlanningList, nil
@@ -143,7 +155,7 @@ func exportCloudProductPlanningByPlanId(planId int64) (string, []CloudProductPla
 	}
 
 	var response []CloudProductPlanningExportResponse
-	if err := data.DB.Table("cloud_product_planning cpp").Select("cpb.product_type,cpb.product_name, cpb.instructions, cpp.sell_spec").
+	if err := data.DB.Table("cloud_product_planning cpp").Select("cpb.product_type,cpb.product_name, cpp.sell_spec, cpp.value_added_service, cpb.instructions").
 		Joins("LEFT JOIN cloud_product_baseline cpb ON cpb.id = cpp.product_id").
 		Where("cpp.plan_id=?", planId).
 		Find(&response).Error; err != nil {

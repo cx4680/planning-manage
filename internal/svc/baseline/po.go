@@ -1,27 +1,29 @@
 package baseline
 
 const (
-	CloudProductBaselineSheetName      = "云产品售卖清单"
-	ServerBaselineSheetName            = "服务器基线"
-	NetworkDeviceBaselineSheetName     = "网络设备基线"
-	NetworkDeviceRoleBaselineSheetName = "网络设备角色基线"
-	NodeRoleBaselineSheetName          = "节点角色基线"
-	IPDemandBaselineSheetName          = "IP需求规划"
-	CapConvertBaselineSheetName        = "云服务容量换算"
-	CapActualResBaselineSheetName      = "云服务容量实际资源消耗"
-	CapServerCalcBaselineSheetName     = "服务器数量计算"
+	CloudProductBaselineSheetName       = "云产品售卖清单"
+	ServerBaselineSheetName             = "服务器基线"
+	NetworkDeviceBaselineSheetName      = "网络设备基线"
+	NetworkDeviceRoleBaselineSheetName  = "网络设备角色基线"
+	NodeRoleBaselineSheetName           = "节点角色基线"
+	IPDemandBaselineSheetName           = "IP需求规划"
+	CapConvertBaselineSheetName         = "云服务容量换算"
+	CapActualResBaselineSheetName       = "云服务容量实际资源消耗"
+	CapServerCalcBaselineSheetName      = "服务器数量计算"
+	SoftwareBomLicenseBaselineSheetName = "软件BOM与license基线"
 )
 
 const (
-	CloudProductBaselineType      = "cloudProductListBaseline"
-	ServerBaselineType            = "serverBaseline"
-	NetworkDeviceBaselineType     = "networkDeviceBaseline"
-	NetworkDeviceRoleBaselineType = "networkDeviceRoleBaseline"
-	NodeRoleBaselineType          = "nodeRoleBaseline"
-	IPDemandBaselineType          = "ipDemandBaseline"
-	CapConvertBaselineType        = "capConvertBaseline"
-	CapActualResBaselineType      = "capActualResBaseline"
-	CapServerCalcBaselineType     = "capServerCalcBaseline"
+	CloudProductBaselineType       = "cloudProductListBaseline"
+	ServerBaselineType             = "serverBaseline"
+	NetworkDeviceBaselineType      = "networkDeviceBaseline"
+	NetworkDeviceRoleBaselineType  = "networkDeviceRoleBaseline"
+	NodeRoleBaselineType           = "nodeRoleBaseline"
+	IPDemandBaselineType           = "ipDemandBaseline"
+	CapConvertBaselineType         = "capConvertBaseline"
+	CapActualResBaselineType       = "capActualResBaseline"
+	CapServerCalcBaselineType      = "capServerCalcBaseline"
+	SoftwareBomLicenseBaselineType = "softwareBomLicenseBaseline"
 )
 
 type CloudProductBaselineExcel struct {
@@ -29,6 +31,7 @@ type CloudProductBaselineExcel struct {
 	ProductName             string   `excel:"name:云服务;" json:"productName"`               // 产品名称
 	ProductCode             string   `excel:"name:服务编码;" json:"productCode"`              // 产品编码
 	SellSpecs               string   `excel:"name:售卖规格;" json:"sellSpecs"`                // 售卖规格
+	ValueAddedService       string   `excel:"name:增值服务;" json:"valueAddedService"`        // 增值服务
 	AuthorizedUnit          string   `excel:"name:授权单元;" json:"authorizedUnit"`           // 授权单元
 	WhetherRequired         string   `excel:"name:是否必选;" json:"whetherRequired"`          // 是否必选，0：否，1：是
 	Instructions            string   `excel:"name:说明;" json:"instructions"`               // 说明
@@ -64,7 +67,9 @@ type ServerBaselineExcel struct {
 	ConfigurationInfo   string   `excel:"name:配置概要;" json:"configurationInfo"`         // 配置概要
 	Spec                string   `excel:"name:规格;" json:"spec"`                        // 规格
 	CpuType             string   `excel:"name:CPU类型;" json:"cpuType"`                  // CPU类型
-	Cpu                 int      `excel:"name:vCPU;" json:"cpu"`                       // CPU核数
+	CpuNum              int      `excel:"name:CPU数;" json:"cpuNum"`                    // CPU数
+	CpuCoreNum          int      `excel:"name:Core数;" json:"cpuCoreNum"`               // CPU核数
+	Cpu                 int      `excel:"name:vCPU;" json:"cpu"`                       // vCPU数
 	Gpu                 string   `excel:"name:GPU;" json:"gpu"`                        // GPU
 	Memory              int      `excel:"name:内存;" json:"memory"`                      // 内存
 	SystemDiskType      string   `excel:"name:系统盘类型;" json:"systemDiskType"`           // 系统盘类型
@@ -103,12 +108,14 @@ type NetworkDeviceBaselineExcel struct {
 	ConfOverview           string   `excel:"name:配置概述;" json:"confOverview"`            // 配置概述
 	NetworkDeviceRoleCode  string   `excel:"name:功能组件命名;" json:"networkDeviceRoleCode"` // 功能组件命名
 	Purpose                string   `excel:"name:网络设备角色（备注）;" json:"purpose"`           // 用途
+	BomId                  string   `excel:"name:BOM ID;" json:"bomId"`                 // bom id
 	NetworkDeviceRoleCodes []string `json:"networkDeviceRoleCodes"`                     // 网络设备角色编码数组
 }
 
 type IPDemandBaselineExcel struct {
 	Vlan                   string   `excel:"name:Vlan Id;" json:"vlan"`                // vlan id
 	Explain                string   `excel:"name:说明;" json:"explain"`                  // 说明
+	NetworkType            string   `excel:"name:网络类型;" json:"networkType"`            // 网络类型
 	Description            string   `excel:"name:描述;" json:"description"`              // 描述
 	IPSuggestion           string   `excel:"name:IP地址规划建议;" json:"IPSuggestion"`       // IP地址规划建议
 	NetworkDeviceRoleCode  string   `excel:"name:关联设备组;" json:"networkDeviceRoleCode"` // 关联设备组
@@ -118,24 +125,28 @@ type IPDemandBaselineExcel struct {
 }
 
 type CapConvertBaselineExcel struct {
-	ProductName      string `excel:"name:云服务;" json:"productName"`         // 产品名称
-	ProductCode      string `excel:"name:服务编码;" json:"productCode"`        // 产品编码
-	SellSpecs        string `excel:"name:售卖规格;" json:"sellSpecs"`          // 售卖规格
-	CapPlanningInput string `excel:"name:容量规划输入;" json:"capPlanningInput"` // 容量规划输入
-	Unit             string `excel:"name:单位;" json:"unit"`                 // 单位
-	Features         string `excel:"name:特性;" json:"features"`             // 特性
-	Description      string `excel:"name:说明;" json:"description"`          // 说明
+	ProductName       string `excel:"name:云服务;" json:"productName"`         // 产品名称
+	ProductCode       string `excel:"name:服务编码;" json:"productCode"`        // 产品编码
+	SellSpecs         string `excel:"name:售卖规格;" json:"sellSpecs"`          // 售卖规格
+	ValueAddedService string `excel:"name:增值服务;" json:"valueAddedService"`  // 增值服务
+	CapPlanningInput  string `excel:"name:容量规划输入;" json:"capPlanningInput"` // 容量规划输入
+	Unit              string `excel:"name:单位;" json:"unit"`                 // 单位
+	FeaturesMode      string `excel:"name:特性模式;" json:"featuresMode"`       // 特性模式
+	Features          string `excel:"name:特性;" json:"features"`             // 特性
+	Description       string `excel:"name:说明;" json:"description"`          // 说明
 }
 
 type CapActualResBaselineExcel struct {
-	ProductCode   string `excel:"name:服务编码;" json:"productCode"`     // 产品编码
-	SellSpecs     string `excel:"name:售卖规格;" json:"sellSpecs"`       // 售卖规格
-	SellUnit      string `excel:"name:售卖单元;" json:"sellUnit"`        // 售卖单元
-	ExpendRes     string `excel:"name:消耗资源;" json:"expendRes"`       // 消耗资源
-	ExpendResCode string `excel:"name:消耗资源编码;" json:"expendResCode"` // 消耗资源编码
-	Features      string `excel:"name:特性;" json:"features"`          // 特性
-	OccRatio      string `excel:"name:占用比例;" json:"occRatio"`        // 占用比例
-	Remarks       string `excel:"name:备注;" json:"remarks"`           // 备注
+	ProductCode       string `excel:"name:服务编码;" json:"productCode"`       // 产品编码
+	SellSpecs         string `excel:"name:售卖规格;" json:"sellSpecs"`         // 售卖规格
+	ValueAddedService string `excel:"name:增值服务;" json:"valueAddedService"` // 增值服务
+	SellUnit          string `excel:"name:售卖单元;" json:"sellUnit"`          // 售卖单元
+	ExpendRes         string `excel:"name:消耗资源;" json:"expendRes"`         // 消耗资源
+	ExpendResCode     string `excel:"name:消耗资源编码;" json:"expendResCode"`   // 消耗资源编码
+	Features          string `excel:"name:特性;" json:"features"`            // 特性
+	OccRatio          string `excel:"name:占用比例;" json:"occRatio"`          // 占用比例
+	ActualConsume     string `excel:"name:实际消耗;" json:"actualConsume"`     // 实际消耗
+	Remarks           string `excel:"name:备注;" json:"remarks"`             // 备注
 }
 
 type CapServerCalcBaselineExcel struct {
@@ -147,4 +158,16 @@ type CapServerCalcBaselineExcel struct {
 	NodeWastage         string `excel:"name:节点损耗;" json:"nodeWastage"`             // 节点损耗
 	NodeWastageCalcType string `excel:"name:节点损耗计算类型;" json:"nodeWastageCalcType"` // 节点损耗计算类型，1：数量，2：百分比
 	WaterLevel          string `excel:"name:水位;" json:"waterLevel"`                // 水位
+}
+
+type SoftwareBomLicenseBaselineExcel struct {
+	CloudService      string `excel:"name:云服务;" json:"cloudService"`       // 云服务
+	ServiceCode       string `excel:"name:服务编码;" json:"serviceCode"`       // 服务编码
+	SellSpecs         string `excel:"name:售卖规格;" json:"sellSpecs"`         // 售卖规格
+	ValueAddedService string `excel:"name:增值服务;" json:"valueAddedService"` // 增值服务
+	AuthorizedUnit    string `excel:"name:授权单元;" json:"authorizedUnit"`    // 授权单元
+	SellType          string `excel:"name:类型;" json:"sellType"`            // 售卖类型
+	HardwareArch      string `excel:"name:硬件架构;" json:"hardwareArch"`      // 硬件架构
+	BomId             string `excel:"name:BOM ID;" json:"bomId"`           // bom id
+	CalcMethod        string `excel:"name:计算方式;"  json:"calcMethod"`       // 计算方式
 }

@@ -1,15 +1,28 @@
 package az
 
+import (
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+)
+
 type Request struct {
 	Id              int64
 	UserId          string
-	Code            string `form:"code"`
-	RegionId        int64  `form:"regionId"`
-	MachineRoomName string `json:"machineRoomName"`
-	MachineRoomCode string `json:"machineRoomCode"`
-	Province        string `json:"province"`
-	City            string `json:"city"`
-	Address         string `json:"address"`
-	SortField       string `form:"sortField"`
-	Sort            string `form:"sort"`
+	Code            string                `form:"code"`
+	RegionId        int64                 `form:"regionId"`
+	MachineRoomList []*RequestMachineRoom `form:"machineRoomList"`
+	SortField       string                `form:"sortField"`
+	Sort            string                `form:"sort"`
+}
+
+type RequestMachineRoom struct {
+	Name     string `form:"name"`
+	Abbr     string `form:"abbr"`
+	Province string `form:"province"`
+	City     string `form:"city"`
+	Address  string `form:"address"`
+}
+
+type Az struct {
+	entity.AzManage
+	MachineRoomList []*entity.MachineRoom `gorm:"-" json:"machineRoomList"`
 }

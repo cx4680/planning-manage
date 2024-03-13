@@ -3,27 +3,33 @@ package httpcall
 import (
 	"crypto/tls"
 	"encoding/json"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 
+	"github.com/gin-gonic/gin"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 	"github.com/pkg/errors"
 
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/app/settings"
 )
 
 const (
-	GET     = "GET"
-	POST    = "POST"
-	PUT     = "PUT"
-	DELETE  = "DELETE"
 	CODE    = "code"
-	DATA    = "data"
 	SUCCESS = "success"
 )
 
 var client *http.Client
+
+type HttpRequest struct {
+	Context *gin.Context
+	URI     string
+	Headers map[string]string
+	Body    io.Reader
+	method  string
+}
 
 func Init(setting *settings.Setting) {
 	tr := &http.Transport{
@@ -39,48 +45,55 @@ func Init(setting *settings.Setting) {
 	}
 }
 
-func GETCall(uri string) (timeout bool, response *http.Response, err error) {
-	return doHttpCall(GET, uri, nil)
+func GET(httpRequest HttpRequest) (timeout bool, response *http.Response, err error) {
+	httpRequest.method = http.MethodGet
+	return doHttpCall(httpRequest)
 }
 
-func POSTCall(uri string, body io.Reader) (timeout bool, response *http.Response, err error) {
-	return doHttpCall(POST, uri, body)
+func POST(httpRequest HttpRequest) (timeout bool, response *http.Response, err error) {
+	httpRequest.method = http.MethodPost
+	return doHttpCall(httpRequest)
 }
 
-func HttpCall(uri, method string, body io.Reader) (timeout bool, response *http.Response, err error) {
-	return doHttpCall(method, uri, body)
+func HttpCall(method string, httpRequest HttpRequest) (timeout bool, response *http.Response, err error) {
+	httpRequest.method = method
+	return doHttpCall(httpRequest)
 }
 
-func GetResponse(uri, method string, bodyQ io.Reader) (map[string]interface{}, error) {
+func GetResponse(httpRequest HttpRequest) (map[string]interface{}, error) {
+	httpRequest.method = http.MethodGet
+	return Response(httpRequest)
+}
+
+func POSTResponse(httpRequest HttpRequest) (map[string]interface{}, error) {
+	httpRequest.method = http.MethodPost
+	return Response(httpRequest)
+}
+
+func Response(httpRequest HttpRequest) (map[string]interface{}, error) {
 	var mapResult map[string]interface{}
 
-	bTimeout, response, err := doHttpCall(uri, method, bodyQ)
-	if bTimeout {
-		err = errors.New("Request Timeout")
-		log.Error(err, "")
-		return mapResult, err
+	timeout, response, err := doHttpCall(httpRequest)
+	if timeout {
+		return mapResult, errors.New("httpRequest Timeout")
 	}
 
 	if err != nil {
-		err = errors.Wrap(err, "Response err")
-		log.Error(err, "Response err")
 		if response == nil {
-			return mapResult, errors.Wrap(err, "Response is nil")
+			return mapResult, errors.Wrap(err, "response is nil")
 		}
 
-		return mapResult, err
+		return mapResult, errors.Wrap(err, "response err")
 	}
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		log.Error(err, "Response data read err")
-		return mapResult, errors.Wrap(err, "Response data read err")
+		return mapResult, errors.Wrap(err, "response data read err")
 	}
 
 	err = json.Unmarshal(body, &mapResult)
 	if err != nil {
-		log.Error(err, "Invalid response data", "body", string(body))
-		return mapResult, errors.Wrap(err, "Invalid response data with err")
+		return mapResult, errors.Wrap(err, fmt.Sprintf("invalid response data %s with err", string(body)))
 	}
 
 	// 如果返回信息是有code字段说明是中心region返回的数据，其他调用次方法的地方进行判断code
@@ -89,13 +102,21 @@ func GetResponse(uri, method string, bodyQ io.Reader) (map[string]interface{}, e
 		return mapResult, nil
 	}
 
-	return mapResult, errors.Errorf("Invalid response data: does not contain 'code'. The data was :%v", mapResult)
+	return mapResult, errors.Errorf("invalid response data: does not contain 'code'. The data was :%v", mapResult)
 }
 
-func doHttpCall(uri string, method string, body io.Reader) (timeout bool, response *http.Response, err error) {
-	request, err := http.NewRequest(method, uri, body)
+func doHttpCall(httpRequest HttpRequest) (timeout bool, response *http.Response, err error) {
+	request, err := http.NewRequest(httpRequest.method, httpRequest.URI, httpRequest.Body)
 	if err != nil {
 		return
+	}
+
+	for header, value := range httpRequest.Headers {
+		request.Header.Add(header, value)
+	}
+
+	if httpRequest.Context != nil && requestID(httpRequest.Context) != "" {
+		request.Header.Set(constant.XRequestID, requestID(httpRequest.Context))
 	}
 
 	response, err = client.Do(request)
@@ -106,4 +127,8 @@ func doHttpCall(uri string, method string, body io.Reader) (timeout bool, respon
 	}
 
 	return
+}
+
+func requestID(context *gin.Context) string {
+	return context.GetString(constant.XRequestID)
 }

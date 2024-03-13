@@ -7,6 +7,7 @@ type IPDemandBaseline struct {
 	VersionId    int64  `gorm:"column:version_id" json:"versionId"`       // 版本id
 	Vlan         string `gorm:"column:vlan" json:"vlan"`                  // vlan id
 	Explain      string `gorm:"column:explain" json:"explain"`            // 说明
+	NetworkType  int    `gorm:"column:network_type" json:"networkType"`   // 网络类型，0：ipv4，1：ipv6
 	Description  string `gorm:"column:description" json:"description"`    // 描述
 	IPSuggestion string `gorm:"column:ip_suggestion" json:"IPSuggestion"` // IP地址规划建议
 	AssignNum    string `gorm:"column:assign_num" json:"assignNum"`       // 分配数量

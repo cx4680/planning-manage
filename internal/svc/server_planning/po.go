@@ -1,25 +1,30 @@
-package server
+package server_planning
 
 import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/capacity_planning"
 )
 
 type Request struct {
 	Id                 int64
+	PlanId             int64                          `form:"planId"`
+	NetworkInterface   string                         `form:"networkInterface"`
+	CpuType            string                         `form:"cpuType"`
+	ServerList         []*RequestServer               `form:"serverList"`
+	ServerCapacityList []*RequestServerCapacity       `form:"serverCapacityList"`
+	EcsCapacity        *capacity_planning.EcsCapacity `form:"ecsCapacity"`
 	UserId             string
-	PlanId             int64                    `form:"planId"`
-	NetworkInterface   string                   `form:"networkInterface"`
-	CpuType            string                   `form:"cpuType"`
-	ServerList         []*RequestServer         `form:"serverList"`
-	ServerCapacityList []*RequestServerCapacity `form:"serverCapacityList"`
 }
 
 type RequestServer struct {
-	NodeRoleId       int64 `form:"nodeRoleId"`
-	MixedNodeRoleId  int64 `form:"mixedNodeRoleId"`
-	ServerBaselineId int64 `form:"serverBaselineId"`
-	Number           int   `form:"number"`
-	OpenDpdk         int   `form:"openDpdk"`
+	NodeRoleId         int64  `form:"nodeRoleId"`
+	MixedNodeRoleId    int64  `form:"mixedNodeRoleId"`
+	ServerBaselineId   int64  `form:"serverBaselineId"`
+	Number             int    `form:"number"`
+	OpenDpdk           int    `form:"openDpdk"`
+	BusinessAttributes string `form:"businessAttributes"` // 业务属性
+	ShelveMode         string `form:"shelveMode"`         // 上架模式
+	ShelvePriority     int    `form:"shelvePriority"`     // 上架优先级
 }
 
 type RequestServerCapacity struct {
@@ -75,8 +80,11 @@ type ResponseDownloadServer struct {
 }
 
 type ResponseCapClassification struct {
-	Classification string                `json:"classification"` // 分类
-	CapConvert     []*ResponseCapConvert `json:"capConvert"`
+	Classification string                         `json:"classification"` // 分类
+	ProductName    string                         `json:"productName"`    // 产品名称
+	ProductCode    string                         `json:"productCode"`    // 产品编码
+	CapConvert     []*ResponseCapConvert          `json:"capConvert"`
+	Special        *capacity_planning.EcsCapacity `json:"special"`
 }
 
 type ResponseCapCount struct {
@@ -92,7 +100,7 @@ type ResponseCapConvert struct {
 	Number           int                 `json:"number"`           // 数量
 	Unit             string              `json:"unit"`             // 单位
 	FeatureId        int64               `json:"featureId"`        // 特性id
-	FeatureType      string              `json:"featureType"`      // 特性类型
+	FeatureMode      string              `json:"featureMode"`      // 特性模式
 	FeatureNumber    int                 `json:"featureNumber"`    // 特性数量
 	Features         []*ResponseFeatures `json:"features"`         // 特性选项
 	Description      string              `json:"description"`      // 说明
@@ -103,4 +111,35 @@ type ResponseFeatures struct {
 	Name string `json:"name"`
 }
 
-var FeatureMap = map[string]string{"超分": "超分比", "三副本": "副本模式", "EC纠删码": "副本模式"}
+type ResponseServerShelve struct {
+	*entity.ServerShelve
+	NodeRoleName string `gorm:"-" json:"nodeRoleName"` // 节点角色名称
+}
+
+type ShelveDownload struct {
+	SortNumber            int    `excel:"name:序号;" json:"sortNumber"`
+	NodeRoleName          string `excel:"name:节点角色;" json:"nodeRoleName"`
+	Sn                    string `excel:"name:SN;" json:"sn"`
+	Model                 string `excel:"name:机型;" json:"model"`
+	MachineRoomAbbr       string `excel:"name:机房缩写;" json:"machineRoomAbbr"`
+	MachineRoomNumber     string `excel:"name:房间号;" form:"machineRoomNumber"`
+	ColumnNumber          string `excel:"name:列号;" form:"columnNumber"`
+	CabinetAsw            string `excel:"name:机柜ASW组;" json:"cabinetAsw"`
+	CabinetNumber         string `excel:"name:机柜编号;" json:"cabinetNumber"`
+	CabinetOriginalNumber string `excel:"name:机柜原始编号;" json:"cabinetOriginalNumber"`
+	CabinetLocation       string `excel:"name:机柜位置;" json:"cabinetLocation"`
+	SlotPosition          string `excel:"name:槽位（U位）;" json:"slotPosition"`
+	NetworkInterface      string `excel:"name:区域;" json:"networkInterface"`
+	BmcUserName           string `excel:"name:bmc用户名;" json:"bmcUserName"`
+	BmcPassword           string `excel:"name:bmc密码;" json:"bmcPassword"`
+	BmcIp                 string `excel:"name:bmc IP地址;" json:"bmcIp"`
+	BmcMac                string `excel:"name:bmc mac地址;" json:"bmcMac"`
+	Mask                  string `excel:"name:掩码;" json:"mask"`
+	Gateway               string `excel:"name:网关;" json:"gateway"`
+}
+
+type Cabinet struct {
+	*entity.CabinetInfo
+	CabinetLocation string `json:"cabinetLocation"`
+	IdleSlot        string `json:"idleSlot"`
+}

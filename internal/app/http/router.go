@@ -1,17 +1,26 @@
 package http
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
 	"os"
-	"strconv"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/capacity_planning"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/software_bom"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
+
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/httpcall"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cloud_product"
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
-	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server"
-	"github.com/gin-contrib/sessions"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"net/http"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/global_config"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/machine_room"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/server_planning"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/az"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/cell"
@@ -51,6 +60,9 @@ func Router(engine *gin.Engine) {
 			userGroup.GET("/logout", middleware.OperatorLog(DefaultEventOpInfo("登出", "logout", middleware.OPERATE, middleware.INFO)), user.Logout)
 			// 根据名称查询ldap用户
 			userGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("根据关键字查询用户", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByName)
+			userGroup.GET("/listByUid", middleware.OperatorLog(DefaultEventOpInfo("根据关键字查询用户", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByUid)
+			userGroup.GET("/listByEmployeeNumber", middleware.OperatorLog(DefaultEventOpInfo("根据关键字查询用户", "listByName", middleware.OPERATE, middleware.INFO)), user.ListByEmployeeNumber)
+			userGroup.GET("/currentUserInfo", middleware.OperatorLog(DefaultEventOpInfo("获取当前登录人信息", "currentUserInfo", middleware.OPERATE, middleware.INFO)), user.CurrentUserInfo)
 		}
 
 		customerGroup := api.Group("/customer")
@@ -121,7 +133,7 @@ func Router(engine *gin.Engine) {
 			cellGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除cell", "deleteCell", middleware.UPDATE, middleware.INFO)), cell.Delete)
 		}
 
-		// project
+		// 项目管理
 		projectGroup := api.Group("/project")
 		{
 			// 分页查询项目
@@ -134,7 +146,7 @@ func Router(engine *gin.Engine) {
 			projectGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除项目", "deleteProject", middleware.DELETE, middleware.INFO)), project.Delete)
 		}
 
-		// plan
+		// 方案管理
 		planGroup := api.Group("/plan")
 		{
 			// 分页查询方案
@@ -145,30 +157,48 @@ func Router(engine *gin.Engine) {
 			planGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改方案", "determinePlanById", middleware.UPDATE, middleware.INFO)), plan.Update)
 			// 删除方案
 			planGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除方案", "deletePlanById", middleware.DELETE, middleware.INFO)), plan.Delete)
+			// 推送方案
+			planGroup.PUT("/send/:id", middleware.OperatorLog(DefaultEventOpInfo("推送方案", "sendPlanToBoms", middleware.UPDATE, middleware.INFO)), plan.Send)
+			// 复制方案
+			planGroup.POST("/copy/:id", middleware.OperatorLog(DefaultEventOpInfo("复制方案", "copyPlan", middleware.CREATE, middleware.INFO)), plan.Copy)
+			// 下载规划配置清单
+			planGroup.GET("/download/:id", middleware.OperatorLog(DefaultEventOpInfo("下载规划配置清单", "downloadPlanningConfigChecklist", middleware.EXPORT, middleware.INFO)), plan.Download)
 		}
 
 		// 服务器规划
 		serverGroup := api.Group("/server")
 		{
 			// 查询服务器规划列表
-			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryServerList", middleware.LIST, middleware.INFO)), server.List)
+			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryServerList", middleware.LIST, middleware.INFO)), server_planning.List)
 			// 保存服务器规划
-			serverGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "saveServerList", middleware.LIST, middleware.INFO)), server.Save)
+			serverGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "saveServerList", middleware.LIST, middleware.INFO)), server_planning.Save)
 			// 查询网络类型列表
-			serverGroup.GET("/network/list", middleware.OperatorLog(DefaultEventOpInfo("查询网络类型列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.NetworkTypeList)
+			serverGroup.GET("/network/list", middleware.OperatorLog(DefaultEventOpInfo("查询网络类型列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server_planning.NetworkTypeList)
 			// 查询cpu类型列表
-			serverGroup.GET("/cpu/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server.CpuTypeList)
+			serverGroup.GET("/cpu/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器架构列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server_planning.CpuTypeList)
 			// 查询容量规划列表
-			serverGroup.GET("/capacity/list", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "queryServerCapacityList", middleware.LIST, middleware.INFO)), server.CapacityList)
+			serverGroup.GET("/capacity/list", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "queryServerCapacityList", middleware.LIST, middleware.INFO)), capacity_planning.List)
 			// 容量计算
-			serverGroup.GET("/capacity/count", middleware.OperatorLog(DefaultEventOpInfo("容量计算", "countServerCapacityList", middleware.LIST, middleware.INFO)), server.CapacityCount)
+			serverGroup.GET("/capacity/count", middleware.OperatorLog(DefaultEventOpInfo("容量计算", "countServerCapacityList", middleware.LIST, middleware.INFO)), capacity_planning.Computing)
 			// 保存容量规划
-			serverGroup.POST("/capacity/save", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "saveServerCapacityList", middleware.LIST, middleware.INFO)), server.SaveCapacity)
+			serverGroup.POST("/capacity/save", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "saveServerCapacityList", middleware.LIST, middleware.INFO)), capacity_planning.Save)
 			// 下载服务器规划清单
-			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.EXPORT, middleware.INFO)), server.Download)
+			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.EXPORT, middleware.INFO)), server_planning.Download)
+			// 查询服务器上架表
+			serverGroup.GET("/shelve/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器上架表", "getServerShelveList", middleware.LIST, middleware.INFO)), server_planning.ListServerShelvePlanning)
+			// 下载服务器上架表模板
+			serverGroup.GET("/shelve/download/template/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架表模板", "downloadServerShelveTemplate", middleware.EXPORT, middleware.INFO)), server_planning.DownloadServerShelveTemplate)
+			// 上传服务器上架表
+			serverGroup.POST("/shelve/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传服务器上架表", "uploadServerShelve", middleware.IMPORT, middleware.INFO)), server_planning.UploadShelve)
+			// 保存服务器规划表
+			serverGroup.POST("/shelve/planning/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器规划表", "saveServerPlanning", middleware.UPDATE, middleware.INFO)), server_planning.SaveServerPlanning)
+			// 保存服务器上架表
+			serverGroup.POST("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存服务器上架表", "saveServerShelve", middleware.UPDATE, middleware.INFO)), server_planning.SaveServerShelve)
+			// 下载服务器上架清单
+			serverGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器上架清单", "downloadServerShelve", middleware.EXPORT, middleware.INFO)), server_planning.DownloadServerShelve)
 		}
 
-		// network
+		// 网络规划
 		networkGroup := api.Group("/network")
 		{
 			// 厂商列表查询
@@ -181,16 +211,32 @@ func Router(engine *gin.Engine) {
 			networkGroup.POST("/device/save", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备清单", "saveDeviceList", middleware.CREATE, middleware.INFO)), network_device.SaveDeviceList)
 			// 下载网络设备清单
 			networkGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载网络设备清单", "networkDeviceListDownload", middleware.EXPORT, middleware.INFO)), network_device.NetworkDeviceListDownload)
+			// 查询网络设备上架列表
+			networkGroup.GET("/shelve/list", middleware.OperatorLog(DefaultEventOpInfo("查询网络设备上架信息", "getNetworkShelveList", middleware.LIST, middleware.INFO)), network_device.ListNetworkShelve)
+			// 下载网络设备上架模板
+			networkGroup.GET("/shelve/download/template/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载网络设备上架模板", "downloadNetworkShelve", middleware.EXPORT, middleware.INFO)), network_device.DownloadNetworkShelveTemplate)
+			// 上传网络设备上架表
+			networkGroup.POST("/shelve/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传网络设备上架表", "uploadNetworkShelve", middleware.IMPORT, middleware.INFO)), network_device.UploadShelve)
+			// 保存网络设备上架表
+			networkGroup.POST("/shelve/save", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备上架表", "saveNetworkShelve", middleware.UPDATE, middleware.INFO)), network_device.SaveShelve)
+			// 下载网络设备上架清单
+			networkGroup.GET("/shelve/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("保存网络设备上架清单", "saveNetworkShelve", middleware.EXPORT, middleware.INFO)), network_device.DownloadNetworkShelve)
 		}
 
-		// ipDemand
+		// IP需求
 		ipDemandGroup := api.Group("/ipDemand")
 		{
 			// 下载IP需求表
 			ipDemandGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载IP需求表", "ipDemandListDownload", middleware.EXPORT, middleware.INFO)), ip_demand.IpDemandListDownload)
+			// 查询IP规划列表
+			ipDemandGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询IP规划列表", "getIpDemandList", middleware.EXPORT, middleware.INFO)), ip_demand.List)
+			// 上传IP需求表
+			ipDemandGroup.POST("/upload/:planId", middleware.OperatorLog(DefaultEventOpInfo("上传IP需求表", "uploadIpDemand", middleware.IMPORT, middleware.INFO)), ip_demand.Upload)
+			// 保存IP需求表
+			ipDemandGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("保存IP需求表", "saveIpDemand", middleware.IMPORT, middleware.INFO)), ip_demand.Save)
 		}
 
-		// cloudProduct
+		// 云产品
 		cloudProduct := api.Group("/cloud/product")
 		{
 			cloudProduct.GET("/version/list", middleware.OperatorLog(DefaultEventOpInfo("根据项目id查询云产品版本列表", "listCloudProductVersion", middleware.LIST, middleware.INFO)), cloud_product.ListVersion)
@@ -198,6 +244,46 @@ func Router(engine *gin.Engine) {
 			cloudProduct.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("保存用户选择的云产品", "saveCloudProduct", middleware.CREATE, middleware.INFO)), cloud_product.Save)
 			cloudProduct.GET("/list/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id获取用户选择的云产品清单", "listCloudProduct", middleware.LIST, middleware.INFO)), cloud_product.List)
 			cloudProduct.GET("/export/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载云服务规格清单", "exportCloudProduct", middleware.EXPORT, middleware.INFO)), cloud_product.Export)
+		}
+
+		// 机房规划
+		machineRoomGroup := api.Group("/machineRoom")
+		{
+			machineRoomGroup.GET("/list/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询机房信息", "getMachineRoomByPlanId", middleware.GET, middleware.INFO)), machine_room.GetMachineRoomByPlanId)
+			machineRoomGroup.PUT("/:planId", middleware.OperatorLog(DefaultEventOpInfo("修改机房信息", "updateMachineRoom", middleware.UPDATE, middleware.INFO)), machine_room.UpdateMachineRoom)
+			machineRoomGroup.GET("/download", middleware.OperatorLog(DefaultEventOpInfo("下载机房勘察模版", "downloadCabinetTemplate", middleware.EXPORT, middleware.INFO)), machine_room.DownloadCabinetTemplate)
+			machineRoomGroup.POST("/import", middleware.OperatorLog(DefaultEventOpInfo("导入机房勘察文件", "importCabinet", middleware.IMPORT, middleware.INFO)), machine_room.ImportCabinet)
+			machineRoomGroup.GET("/cabinet/page", middleware.OperatorLog(DefaultEventOpInfo("机房规划机柜列表查询", "pageCabinet", middleware.LIST, middleware.INFO)), machine_room.PageCabinets)
+		}
+
+		// 全局配置
+		globalConfigGroup := api.Group("/globalConfig")
+		{
+			globalConfigGroup.GET("/vlanId/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询vlan id配置信息", "getVlanIdConfigByPlanId", middleware.GET, middleware.INFO)), global_config.GetVlanIdConfigByPlanId)
+			globalConfigGroup.POST("/vlanId", middleware.OperatorLog(DefaultEventOpInfo("新增vlan id配置信息", "createVlanIdConfig", middleware.CREATE, middleware.INFO)), global_config.CreateVlanIdConfig)
+			// globalConfigGroup.PUT("/vlanId/:id", middleware.OperatorLog(DefaultEventOpInfo("修改vlan id配置信息", "updateVlanIdConfig", middleware.UPDATE, middleware.INFO)), global_config.UpdateVlanIdConfig)
+			globalConfigGroup.GET("/cell/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询集群配置信息", "getCellConfigByPlanId", middleware.GET, middleware.INFO)), global_config.GetCellConfigByPlanId)
+			globalConfigGroup.POST("/cell", middleware.OperatorLog(DefaultEventOpInfo("新增集群配置信息", "createCellConfig", middleware.CREATE, middleware.INFO)), global_config.CreateCellConfig)
+			// globalConfigGroup.PUT("/cell/:id", middleware.OperatorLog(DefaultEventOpInfo("修改集群配置信息", "updateCellConfig", middleware.UPDATE, middleware.INFO)), global_config.UpdateCellConfig)
+			globalConfigGroup.GET("/routePlanning/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询路由规划配置信息", "getRoutePlanningConfigByPlanId", middleware.GET, middleware.INFO)), global_config.GetRoutePlanningConfigByPlanId)
+			globalConfigGroup.POST("/routePlanning", middleware.OperatorLog(DefaultEventOpInfo("新增路由规划配置信息", "createRoutePlanningConfig", middleware.CREATE, middleware.INFO)), global_config.CreateRoutePlanningConfig)
+			// globalConfigGroup.PUT("/routePlanning/:id", middleware.OperatorLog(DefaultEventOpInfo("修改路由规划配置信息", "updateRoutePlanningConfig", middleware.UPDATE, middleware.INFO)), global_config.UpdateRoutePlanningConfig)
+			globalConfigGroup.GET("/largeNetwork/:planId", middleware.OperatorLog(DefaultEventOpInfo("根据方案id查询大网网段配置信息", "getLargeNetworkConfigByPlanId", middleware.GET, middleware.INFO)), global_config.GetLargeNetworkConfigByPlanId)
+			globalConfigGroup.POST("/largeNetwork", middleware.OperatorLog(DefaultEventOpInfo("新增大网网段配置信息", "createLargeNetworkPlanningConfig", middleware.CREATE, middleware.INFO)), global_config.CreateLargeNetworkConfig)
+			// globalConfigGroup.PUT("/largeNetwork/:id", middleware.OperatorLog(DefaultEventOpInfo("修改大网网段配置信息", "updateLargeNetworkConfig", middleware.UPDATE, middleware.INFO)), global_config.UpdateLargeNetworkConfig)
+			globalConfigGroup.POST("/complete/:planId", middleware.OperatorLog(DefaultEventOpInfo("全局配置完成规划", "completeGlobalConfig", middleware.CREATE, middleware.INFO)), global_config.CompleteGlobalConfig)
+			globalConfigGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载规划文件", "downloadPlanningFile", middleware.EXPORT, middleware.INFO)), global_config.DownloadPlanningFile)
+		}
+
+		// 枚举配置表
+		configGroup := api.Group("/config")
+		{
+			configGroup.GET("/:code", middleware.OperatorLog(DefaultEventOpInfo("查询枚举配置表", "queryConfig", middleware.LIST, middleware.INFO)), config_item.List)
+		}
+		// 软件bom
+		bomGroup := api.Group("/bom")
+		{
+			bomGroup.POST("save/:planId", middleware.OperatorLog(DefaultEventOpInfo("bom计算保存", "bomSave", middleware.CREATE, middleware.INFO)), software_bom.Save)
 		}
 	}
 
@@ -209,11 +295,12 @@ func Router(engine *gin.Engine) {
 			// 导入版本基线
 			baselineGroup.POST("/import", middleware.OperatorLog(DefaultEventOpInfo("导入版本基线", "importBaseline", middleware.IMPORT, middleware.INFO)), baseline.Import)
 		}
-	}
-	// 枚举配置表
-	configGroup := api.Group("/config")
-	{
-		configGroup.GET("/:code", middleware.OperatorLog(DefaultEventOpInfo("枚举配置表", "queryConfig", middleware.LIST, middleware.INFO)), config_item.List)
+		// 方案管理
+		projectGroup := innerApi.Group("/project")
+		{
+			projectGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("创建方案", "innerCreateProject", middleware.CREATE, middleware.INFO)), customer.InnerCreate)
+			projectGroup.PUT("/update/employee/:QuotationNo", middleware.OperatorLog(DefaultEventOpInfo("根据报价单号修改客户成员", "innerEditProjectCustomer", middleware.UPDATE, middleware.INFO)), customer.InnerUpdate)
+		}
 	}
 }
 
@@ -234,17 +321,75 @@ func DefaultEventOpInfo(actionDisplayName string, actionCode string, actionType 
 
 func Auth() gin.HandlerFunc {
 	return func(context *gin.Context) {
-		session := sessions.Default(context)
-		currentUserIdInterface := session.Get("userId")
-		if currentUserIdInterface == nil {
+		userCenterUrl := os.Getenv(constant.UserCenterUrl)
+		productCode := os.Getenv(constant.ProductCode)
+		redirectUrlMap := make(map[string]string)
+		redirectUrlMap["redirectUrl"] = fmt.Sprintf("%s/auth/sso/ssoLogin?productCode=%s&redirect=", userCenterUrl, productCode)
+		cookie, err := context.Request.Cookie("cestcToken")
+		if err != nil {
+			context.Abort()
 			log.Errorf("[Auth] invalid authorized")
-			result.Failure(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized)
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
 			return
 		}
-		sessionAgeStr := os.Getenv("SESSION_AGE")
-		sessionAge, _ := strconv.Atoi(sessionAgeStr)
-		session.Options(sessions.Options{MaxAge: sessionAge, Path: "/"})
-		session.Save()
-		context.Set(constant.CurrentUserId, currentUserIdInterface.(string))
+		token := cookie.Value
+		if token == "" {
+			context.Abort()
+			log.Errorf("[Auth] invalid authorized")
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
+		}
+		url := fmt.Sprintf("%s/auth/sso/tokenCheck", userCenterUrl)
+		body := user.TokenCheckRequest{
+			ProductCode: productCode,
+			CestcToken:  token,
+		}
+		reqJson, err := json.Marshal(body)
+		if err != nil {
+			context.Abort()
+			log.Errorf("Body json marshal error: %v", err)
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
+		}
+		log.Infof("call sso tokenCheck url: %s", url)
+		log.Infof("call sso tokenCheck body: %s", string(reqJson))
+
+		response, err := httpcall.POSTResponse(httpcall.HttpRequest{
+			Context: context,
+			URI:     url,
+			Headers: map[string]string{
+				"Content-Type": "application/json",
+			},
+			Body: bytes.NewBuffer(reqJson),
+		})
+		if err != nil {
+			context.Abort()
+			log.Errorf("call sso tokenCheck error: %v", err)
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
+		}
+		log.Infof("call sso tokenCheck: %v", response)
+		resByte, err := json.Marshal(response)
+		if err != nil {
+			context.Abort()
+			log.Errorf("Marshal json error: %v", err)
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
+		}
+		var responseData user.TokenCheckResponse
+		if err = json.Unmarshal(resByte, &responseData); err != nil {
+			context.Abort()
+			log.Errorf("Unmarshal json error: %v", err)
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
+		}
+		if responseData.Code != user.RequestSuccessCode {
+			context.Abort()
+			responseJson, _ := json.Marshal(response)
+			log.Error("call sso tokenCheck failure: %s", string(responseJson))
+			result.FailureWithData(context, errorcodes.InvalidAuthorized, http.StatusUnauthorized, redirectUrlMap)
+			return
+		}
+		context.Set(constant.CurrentUserId, responseData.Data.UserName)
 	}
 }

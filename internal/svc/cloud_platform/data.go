@@ -1,7 +1,6 @@
 package cloud_platform
 
 import (
-	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
@@ -10,7 +9,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func ListCloudPlatform(request *Request) ([]*entity.CloudPlatformManage, error) {
+func ListCloudPlatform(request *Request) ([]*CloudPlatform, error) {
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " create_time "
 	if request.CustomerId != 0 {
 		screenSql += " AND customer_id = ? "
@@ -30,8 +29,8 @@ func ListCloudPlatform(request *Request) ([]*entity.CloudPlatformManage, error) 
 	default:
 		orderSql += " asc "
 	}
-	var list []*entity.CloudPlatformManage
-	if err := data.DB.Where(screenSql, screenParams...).Order(orderSql).Find(&list).Error; err != nil {
+	var list []*CloudPlatform
+	if err := data.DB.Model(&entity.CloudPlatformManage{}).Where(screenSql, screenParams...).Order(orderSql).Find(&list).Error; err != nil {
 		return nil, err
 	}
 	//查询负责人名称
@@ -95,108 +94,73 @@ func UpdateCloudPlatform(request *Request) error {
 	return nil
 }
 
-func TreeCloudPlatform(request *Request) ([]*entity.RegionManage, error) {
+func TreeCloudPlatform(request *Request) (*ResponseTree, error) {
+	var responseTree = &ResponseTree{}
+	//缓存预编译 会话模式
+	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	//查询region
 	var RegionList []*entity.RegionManage
-	if err := data.DB.Model(&entity.RegionManage{}).Where(" delete_state = ? AND cloud_platform_id = ?", 0, request.CloudPlatformId).Find(&RegionList).Error; err != nil {
+	if err := db.Where(" delete_state = ? AND cloud_platform_id = ?", 0, request.CloudPlatformId).Find(&RegionList).Error; err != nil {
 		return nil, err
 	}
-	var cloudPlatformRegionMap = make(map[int64][]*entity.RegionManage)
 	var regionIdList []int64
 	for _, v := range RegionList {
-		cloudPlatformRegionMap[v.CloudPlatformId] = append(cloudPlatformRegionMap[v.CloudPlatformId], v)
+		responseTree.RegionList = append(responseTree.RegionList, &ResponseTreeRegion{Region: v})
 		regionIdList = append(regionIdList, v.Id)
 	}
 	//查询az
 	var azList []*entity.AzManage
-	if err := data.DB.Model(&entity.AzManage{}).Where(" delete_state = ? AND region_id IN (?)", 0, regionIdList).Find(&azList).Error; err != nil {
+	if err := db.Where(" delete_state = ? AND region_id IN (?)", 0, regionIdList).Find(&azList).Error; err != nil {
 		return nil, err
 	}
-	var regionAzMap = make(map[int64][]*entity.AzManage)
+	var regionAzMap = make(map[int64][]*ResponseTreeAz)
 	var azIdList []int64
 	for _, v := range azList {
-		regionAzMap[v.RegionId] = append(regionAzMap[v.RegionId], v)
+		regionAzMap[v.RegionId] = append(regionAzMap[v.RegionId], &ResponseTreeAz{Az: v})
 		azIdList = append(azIdList, v.Id)
+	}
+	for i, v := range responseTree.RegionList {
+		responseTree.RegionList[i].AzList = regionAzMap[v.Region.Id]
+	}
+	//查询机房信息
+	var machineRoomList []*entity.MachineRoom
+	if err := db.Model(&entity.MachineRoom{}).Where("az_id IN (?)", azIdList).Find(&machineRoomList).Error; err != nil {
+		return nil, err
+	}
+	var machineRoomMap = make(map[int64][]*entity.MachineRoom)
+	for _, v := range machineRoomList {
+		machineRoomMap[v.AzId] = append(machineRoomMap[v.AzId], v)
 	}
 	//查询cell
 	var cellList []*entity.CellManage
-	if err := data.DB.Model(&entity.CellManage{}).Where(" delete_state = ? AND az_id IN (?)", 0, azIdList).Find(&cellList).Error; err != nil {
+	if err := db.Model(&entity.CellManage{}).Where("delete_state = ? AND az_id IN (?)", 0, azIdList).Find(&cellList).Error; err != nil {
 		return nil, err
 	}
-	var azCellMap = make(map[int64][]*entity.CellManage)
+	var azCellMap = make(map[int64][]*ResponseTreeCell)
+	var cellIdList []int64
 	for _, v := range cellList {
-		azCellMap[v.AzId] = append(azCellMap[v.AzId], v)
+		cellIdList = append(cellIdList, v.Id)
 	}
-	//构建返回体
-	for i, region := range RegionList {
-		RegionList[i].AzList = regionAzMap[region.Id]
-		for i1, az := range regionAzMap[region.Id] {
-			RegionList[i].AzList[i1].CellList = azCellMap[az.Id]
+	//查询方案数量
+	var projectList []*entity.ProjectManage
+	if err := data.DB.Model(&entity.ProjectManage{}).Where("cell_id IN (?)", cellIdList).Find(&projectList).Error; err != nil {
+		return nil, err
+	}
+	var projectCountMap = make(map[int64]int)
+	for _, v := range projectList {
+		projectCountMap[v.CellId]++
+	}
+	for _, v := range cellList {
+		azCellMap[v.AzId] = append(azCellMap[v.AzId], &ResponseTreeCell{Cell: v, ProjectCount: projectCountMap[v.Id]})
+		cellIdList = append(cellIdList, v.Id)
+	}
+	for i, v := range responseTree.RegionList {
+		for i2, v2 := range v.AzList {
+			responseTree.RegionList[i].AzList[i2].MachineRoomList = machineRoomMap[v2.Az.Id]
+			responseTree.RegionList[i].AzList[i2].CellList = azCellMap[v2.Az.Id]
 		}
 	}
-	return RegionList, nil
-}
-
-func CreateCloudPlatformByCustomerId(request *Request) error {
-	now := datetime.GetNow()
-	cloudPlatformEntity := &entity.CloudPlatformManage{
-		Name:         "云平台1",
-		Type:         "operational",
-		CustomerId:   request.CustomerId,
-		CreateUserId: request.UserId,
-		CreateTime:   now,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
-		DeleteState:  0,
-	}
-	regionEntity := &entity.RegionManage{
-		Name:         "region1",
-		Code:         "region1",
-		Type:         "merge",
-		CreateUserId: request.UserId,
-		CreateTime:   now,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
-		DeleteState:  0,
-	}
-	azEntity := &entity.AzManage{
-		Code:         "zone1",
-		CreateUserId: request.UserId,
-		CreateTime:   now,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
-		DeleteState:  0,
-	}
-	cellEntity := &entity.CellManage{
-		Name:         "cell1",
-		Type:         constant.CellTypeControl,
-		CreateUserId: request.UserId,
-		CreateTime:   now,
-		UpdateUserId: request.UserId,
-		UpdateTime:   now,
-		DeleteState:  0,
-	}
-	if err := data.DB.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&cloudPlatformEntity).Error; err != nil {
-			return err
-		}
-		regionEntity.CloudPlatformId = cloudPlatformEntity.Id
-		if err := tx.Create(&regionEntity).Error; err != nil {
-			return err
-		}
-		azEntity.RegionId = regionEntity.Id
-		if err := tx.Create(&azEntity).Error; err != nil {
-			return err
-		}
-		cellEntity.AzId = azEntity.Id
-		if err := tx.Create(&cellEntity).Error; err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return err
-	}
-	return nil
+	return responseTree, nil
 }
 
 func checkBusiness(request *Request, isCreate bool) error {
