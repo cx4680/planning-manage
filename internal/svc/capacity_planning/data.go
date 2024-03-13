@@ -577,10 +577,6 @@ func computing(db *gorm.DB, request *Request, capConvertBaselineMap map[int64]*e
 		expendResCodeFeature, ok := expendResCodeFeatureMap[k]
 		if ok {
 			capActualResNumber = capActualRes(capActualResNumber, float64(expendResCodeFeature.FeatureNumber), &expendResCodeFeature.CapActualResBaseline)
-		} else {
-			if k == constant.ExpendResCodeEBSDisk || k == constant.ExpendResCodeEFSDisk || k == constant.ExpendResCodeOSSDisk {
-				return nil, nil, nil, errors.New("请先选择对应的存储产品")
-			}
 		}
 		capServerCalcBaseline := capServerCalcBaselineMap[k]
 		if capServerCalcBaseline == nil {
