@@ -702,6 +702,8 @@ func getCapBaseline(db *gorm.DB, serverCapacityIdList []int64) (map[int64]*entit
 
 func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseline, ecsResourceProductMap map[string][]*RequestServerCapacity, capConvertBaselineMap map[int64]*entity.CapConvertBaseline, capServerCalcBaselineMap map[string]*entity.CapServerCalcBaseline, minimumNumber int) int {
 	// 计算其它计算节点相关的产品消耗的ECS实例数量
+	var ecsCapacityList []*EcsSpecs
+	ecsCapacityList = append(ecsCapacityList, ecsCapacity.List...)
 	for k, v := range ecsResourceProductMap {
 		switch k {
 		case constant.ProductCodeCKE:
@@ -715,7 +717,7 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 				}
 			}
 			waterLevel, _ := strconv.ParseFloat(capServerCalcBaselineMap[constant.ExpendResCodeECSVCpu].WaterLevel, 64)
-			ecsCapacity.List = append(ecsCapacity.List, &EcsSpecs{
+			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 				CpuNumber:    16,
 				MemoryNumber: 32,
 				Count:        int(math.Ceil(vCpu/waterLevel/14.6 + cluster*3)),
@@ -726,7 +728,7 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 			for _, requestCapacity := range v {
 				assetsNumber += float64(requestCapacity.Number)
 			}
-			ecsCapacity.List = append(ecsCapacity.List, &EcsSpecs{
+			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 				CpuNumber:    4,
 				MemoryNumber: 8,
 				Count:        int(math.Ceil(assetsNumber / 50)),
@@ -734,14 +736,14 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 		case constant.ProductCodeCNFW:
 			for _, requestCapacity := range v {
 				if capConvertBaselineMap[requestCapacity.Id].SellSpecs == constant.SellSpecsStandardEdition {
-					ecsCapacity.List = append(ecsCapacity.List, &EcsSpecs{
+					ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 						CpuNumber:    4,
 						MemoryNumber: 8,
 						Count:        requestCapacity.Number,
 					})
 				}
 				if capConvertBaselineMap[requestCapacity.Id].SellSpecs == constant.SellSpecsUltimateEdition {
-					ecsCapacity.List = append(ecsCapacity.List, &EcsSpecs{
+					ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 						CpuNumber:    8,
 						MemoryNumber: 16,
 						Count:        requestCapacity.Number,
@@ -753,7 +755,7 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 			for _, requestCapacity := range v {
 				instanceNumber += requestCapacity.Number
 			}
-			ecsCapacity.List = append(ecsCapacity.List, &EcsSpecs{
+			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 				CpuNumber:    4,
 				MemoryNumber: 4,
 				Count:        instanceNumber,
@@ -762,7 +764,7 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 	}
 	// 计算ecs小箱子
 	var items []util.Item
-	for _, v := range ecsCapacity.List {
+	for _, v := range ecsCapacityList {
 		width := float64(v.CpuNumber)
 		// 每个实例额外消耗内存（单位：M）=138M(libvirt)+8M(IO)+16M(GPU)+8M*vCPU+内存(M)/512，ARM额外128M
 		extraMemorySpent := float64(138 + 8 + 16 + 8*v.CpuNumber + v.MemoryNumber*1024/512)
