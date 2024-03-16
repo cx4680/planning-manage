@@ -192,6 +192,7 @@ const (
 	ProductCodeCOS        = "COS"
 	ProductCodeCLS        = "CLS"
 	ProductCodeBGW        = "BGW"
+	ProductCodeNLB        = "NLB"
 
 	CapPlanningInputVCpu                   = "vCPU"
 	CapPlanningInputMemory                 = "内存"
@@ -234,6 +235,8 @@ const (
 	ExpendResCodeEBSDisk           = "EBS_DISK"
 	ExpendResCodeEFSDisk           = "EFS_DISK"
 	ExpendResCodeOSSDisk           = "OSS_DISK"
+	ExpendResCodeNFVVCpu           = "NFV_VCPU"
+	ExpendResCodeNFVMemory         = "NFV_MEM"
 
 	ExpendResCodeEndOfVCpu = "_VCPU"
 	ExpendResCodeEndOfMem  = "_MEM"
@@ -290,4 +293,8 @@ const (
 	CLSSoftwareBomCalcMethodExpansionPackage       = "扩容包，5T"
 
 	CopyPlanEndOfName = "的副本"
+
+	SellSpecDPDK = "DPDK"
+
+	ResourcePoolDefaultName = "资源池"
 )

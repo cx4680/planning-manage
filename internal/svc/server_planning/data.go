@@ -22,17 +22,33 @@ func ListServer(request *Request) ([]*Server, error) {
 	// 缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	// 查询云产品规划表
-	var productIdList []int64
-	if err := db.Model(&entity.CloudProductPlanning{}).Select("product_id").Where("plan_id = ?", request.PlanId).Find(&productIdList).Error; err != nil {
+	var cloudProductPlanningList []*entity.CloudProductPlanning
+	if err := db.Model(&entity.CloudProductPlanning{}).Where("plan_id = ?", request.PlanId).Find(&cloudProductPlanningList).Error; err != nil {
 		return nil, err
 	}
-	if len(productIdList) == 0 {
+	if len(cloudProductPlanningList) == 0 {
 		return nil, errors.New("该方案未找到关联产品")
+	}
+	var productIdList []int64
+	dpdkCloudProductMap := make(map[int64]*entity.CloudProductPlanning)
+	for _, cloudProductPlanning := range cloudProductPlanningList {
+		productIdList = append(productIdList, cloudProductPlanning.ProductId)
+		if strings.Contains(cloudProductPlanning.SellSpec, constant.SellSpecDPDK) {
+			dpdkCloudProductMap[cloudProductPlanning.ProductId] = cloudProductPlanning
+		}
 	}
 	// 查询云产品和角色关联表
 	var nodeRoleIdList []int64
-	if err := db.Model(&entity.CloudProductNodeRoleRel{}).Select("node_role_id").Where("product_id IN (?)", productIdList).Find(&nodeRoleIdList).Error; err != nil {
+	var cloudProductNodeRoleRelList []*entity.CloudProductNodeRoleRel
+	if err := db.Model(&entity.CloudProductNodeRoleRel{}).Where("product_id IN (?)", productIdList).Find(&cloudProductNodeRoleRelList).Error; err != nil {
 		return nil, err
+	}
+	dpdkNodeRoleMap := make(map[int64][]*entity.CloudProductNodeRoleRel)
+	for _, cloudProductNodeRoleRel := range cloudProductNodeRoleRelList {
+		nodeRoleIdList = append(nodeRoleIdList, cloudProductNodeRoleRel.NodeRoleId)
+		if _, ok := dpdkCloudProductMap[cloudProductNodeRoleRel.ProductId]; ok {
+			dpdkNodeRoleMap[cloudProductNodeRoleRel.NodeRoleId] = append(dpdkNodeRoleMap[cloudProductNodeRoleRel.NodeRoleId], cloudProductNodeRoleRel)
+		}
 	}
 	// 查询角色表
 	var nodeRoleBaselineList []*entity.NodeRoleBaseline
@@ -54,60 +70,233 @@ func ListServer(request *Request) ([]*Server, error) {
 	if err = db.Model(&entity.ServerPlanning{}).Where("plan_id = ? AND node_role_id IN (?)", request.PlanId, nodeRoleIdList).Find(&serverPlanningList).Error; err != nil {
 		return nil, err
 	}
-	var nodeRoleServerPlanningMap = make(map[int64]*Server)
+	var nodeRoleServerPlanningsMap = make(map[int64][]*Server)
 	for _, v := range serverPlanningList {
-		nodeRoleServerPlanningMap[v.NodeRoleId] = v
-		// serverPlanningMap[v.NodeRoleId] = &v.ServerPlanning
+		nodeRoleServerPlanningsMap[v.NodeRoleId] = append(nodeRoleServerPlanningsMap[v.NodeRoleId], v)
 	}
-	var serverPlanningMap = make(map[int64]*entity.ServerPlanning)
+	var resourcePoolList []*entity.ResourcePool
+	if err = db.Model(&entity.ResourcePool{}).Where("plan_id = ? AND node_role_id IN (?)", request.PlanId, nodeRoleIdList).Find(&resourcePoolList).Error; err != nil {
+		return nil, err
+	}
+	resourcePoolNodeRoleIdMap := make(map[int64][]*entity.ResourcePool)
+	for _, resourcePool := range resourcePoolList {
+		resourcePoolNodeRoleIdMap[resourcePool.NodeRoleId] = append(resourcePoolNodeRoleIdMap[resourcePool.NodeRoleId], resourcePool)
+	}
+	resourcePoolIdServerPlanningMap := make(map[int64]*entity.ServerPlanning)
 	// 构建返回体
 	var list []*Server
-	for _, v := range nodeRoleBaselineList {
+	nodeRoleIdNodeRoleMap := make(map[int64]*entity.NodeRoleBaseline)
+	for _, nodeRoleBaseline := range nodeRoleBaselineList {
+		nodeRoleIdNodeRoleMap[nodeRoleBaseline.Id] = nodeRoleBaseline
 		serverPlanning := &Server{}
+		nodeRoleServerPlannings := nodeRoleServerPlanningsMap[nodeRoleBaseline.Id]
 		// 若服务器规划有保存过，则加载已保存的数据
-		if nodeRoleServerPlanningMap[v.Id] != nil && util.IsBlank(request.NetworkInterface) && util.IsBlank(request.CpuType) {
-			serverPlanning = nodeRoleServerPlanningMap[v.Id]
-			serverPlanning.ServerBomCode = serverBaselineMap[serverPlanning.ServerBaselineId].BomCode
-			serverPlanning.ServerArch = serverBaselineMap[serverPlanning.ServerBaselineId].Arch
+		if len(nodeRoleServerPlannings) > 0 {
+			nodeRoleResourcePoolList := resourcePoolNodeRoleIdMap[nodeRoleBaseline.Id]
+			var needAddDpdkResourcePool bool
+			if len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) > 0 {
+				needAddDpdkResourcePool = true
+				for _, nodeRoleServerPlanning := range nodeRoleServerPlannings {
+					if needAddDpdkResourcePool && nodeRoleServerPlanning.ServerPlanning.OpenDpdk == 1 {
+						needAddDpdkResourcePool = false
+						break
+					}
+				}
+			}
+			resourcePoolMap := make(map[int64]*entity.ResourcePool)
+			for _, resourcePool := range nodeRoleResourcePoolList {
+				resourcePoolMap[resourcePool.Id] = resourcePool
+			}
+			var serverBaseline *entity.ServerBaseline
+			/**
+			1、 如果修改了云产品规划的售卖规格，（1）之前带DPDK，现在不带，dpdkNodeRoleMap就是空的，需要去掉依赖的DPDK资源池（2）之前不带DPDK，现在带，dpdkNodeRoleMap不为空，则需要添加新的DPDK资源池
+			*/
+			for _, originServerPlanning := range nodeRoleServerPlannings {
+				if originServerPlanning.ServerPlanning.OpenDpdk == 1 && needAddDpdkResourcePool {
+					needAddDpdkResourcePool = false
+				}
+				if util.IsBlank(request.NetworkInterface) && util.IsBlank(request.CpuType) {
+					serverPlanning = originServerPlanning
+					serverPlanning.ServerBomCode = serverBaselineMap[originServerPlanning.ServerPlanning.ServerBaselineId].BomCode
+					serverPlanning.ServerArch = serverBaselineMap[originServerPlanning.ServerPlanning.ServerBaselineId].Arch
+				} else {
+					serverPlanning.PlanId = request.PlanId
+					serverPlanning.NodeRoleId = nodeRoleBaseline.Id
+					serverPlanning.Number = nodeRoleBaseline.MinimumNum
+					// 列表加载机型
+					serverBaseline = screenNodeRoleServerBaselineMap[nodeRoleBaseline.Id]
+					serverPlanning.ServerBaselineId = serverBaseline.Id
+					serverPlanning.ServerBomCode = serverBaseline.BomCode
+					serverPlanning.ServerArch = serverBaseline.Arch
+					serverPlanning.MixedNodeRoleId = nodeRoleBaseline.Id
+					serverPlanning.ResourcePoolId = originServerPlanning.ServerPlanning.ResourcePoolId
+				}
+				serverPlanning.NodeRoleName = nodeRoleBaseline.NodeRoleName
+				serverPlanning.NodeRoleClassify = nodeRoleBaseline.Classify
+				serverPlanning.NodeRoleAnnotation = nodeRoleBaseline.Annotation
+				serverPlanning.SupportDpdk = nodeRoleBaseline.SupportDPDK
+				serverPlanning.ServerBaselineList = nodeRoleServerBaselineListMap[nodeRoleBaseline.Id]
+				serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[nodeRoleBaseline.Id]
+				resourcePool := resourcePoolMap[originServerPlanning.ServerPlanning.ResourcePoolId]
+				if resourcePool != nil {
+					serverPlanning.ResourcePoolName = resourcePool.ResourcePoolName
+				} else {
+					resourcePool = &entity.ResourcePool{
+						PlanId:           request.PlanId,
+						NodeRoleId:       nodeRoleBaseline.Id,
+						ResourcePoolName: fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, 1),
+						OpenDpdk:         0,
+					}
+					if err = db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
+						log.Errorf("save resource pool error: %v", err)
+						return nil, err
+					}
+					serverPlanning.ResourcePoolId = resourcePool.Id
+				}
+				list = append(list, serverPlanning)
+				resourcePoolIdServerPlanningMap[serverPlanning.ResourcePoolId] = &entity.ServerPlanning{
+					PlanId:           serverPlanning.PlanId,
+					NodeRoleId:       serverPlanning.NodeRoleId,
+					ServerBaselineId: serverPlanning.ServerBaselineId,
+					MixedNodeRoleId:  serverPlanning.MixedNodeRoleId,
+					Number:           serverPlanning.Number,
+					OpenDpdk:         serverPlanning.OpenDpdk,
+					ResourcePoolId:   serverPlanning.ResourcePoolId,
+				}
+			}
+			if needAddDpdkResourcePool {
+				if serverBaseline == nil {
+					serverBaseline = screenNodeRoleServerBaselineMap[nodeRoleBaseline.Id]
+				}
+				dpdkServerPlanning, err := addDpdkServerPlanning(db, request.PlanId, nodeRoleBaseline, serverBaseline, nodeRoleServerBaselineListMap, mixedNodeRoleMap, resourcePoolList, resourcePoolIdServerPlanningMap)
+				if err != nil {
+					return nil, err
+				}
+				list = append(list, dpdkServerPlanning)
+			}
 		} else {
 			serverPlanning.PlanId = request.PlanId
-			serverPlanning.NodeRoleId = v.Id
-			serverPlanning.Number = v.MinimumNum
+			serverPlanning.NodeRoleId = nodeRoleBaseline.Id
+			serverPlanning.Number = nodeRoleBaseline.MinimumNum
 			// 列表加载机型
-			serverBaseline := screenNodeRoleServerBaselineMap[v.Id]
+			serverBaseline := screenNodeRoleServerBaselineMap[nodeRoleBaseline.Id]
 			serverPlanning.ServerBaselineId = serverBaseline.Id
 			serverPlanning.ServerBomCode = serverBaseline.BomCode
 			serverPlanning.ServerArch = serverBaseline.Arch
-			serverPlanning.MixedNodeRoleId = v.Id
+			serverPlanning.MixedNodeRoleId = nodeRoleBaseline.Id
+			serverPlanning.NodeRoleName = nodeRoleBaseline.NodeRoleName
+			serverPlanning.NodeRoleClassify = nodeRoleBaseline.Classify
+			serverPlanning.NodeRoleAnnotation = nodeRoleBaseline.Annotation
+			serverPlanning.SupportDpdk = nodeRoleBaseline.SupportDPDK
+			serverPlanning.ServerBaselineList = nodeRoleServerBaselineListMap[nodeRoleBaseline.Id]
+			serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[nodeRoleBaseline.Id]
+			resourcePoolList = resourcePoolNodeRoleIdMap[nodeRoleBaseline.Id]
+			var resourcePool *entity.ResourcePool
+			if len(resourcePoolList) > 0 {
+				resourcePool = resourcePoolList[0]
+			} else {
+				resourcePool = &entity.ResourcePool{
+					PlanId:           request.PlanId,
+					NodeRoleId:       nodeRoleBaseline.Id,
+					ResourcePoolName: fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, 1),
+					OpenDpdk:         0,
+				}
+				if err = db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
+					log.Errorf("save resource pool error: %v", err)
+					return nil, err
+				}
+			}
+			serverPlanning.ResourcePoolName = resourcePool.ResourcePoolName
+			serverPlanning.ResourcePoolId = resourcePool.Id
+			list = append(list, serverPlanning)
+			resourcePoolIdServerPlanningMap[serverPlanning.ResourcePoolId] = &entity.ServerPlanning{
+				PlanId:           serverPlanning.PlanId,
+				NodeRoleId:       serverPlanning.NodeRoleId,
+				ServerBaselineId: serverPlanning.ServerBaselineId,
+				MixedNodeRoleId:  serverPlanning.MixedNodeRoleId,
+				Number:           serverPlanning.Number,
+				OpenDpdk:         serverPlanning.OpenDpdk,
+				ResourcePoolId:   resourcePool.Id,
+			}
+			if len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) > 0 {
+				serverPlanning.EditDpdk = 1
+				dpdkServerPlanning, err := addDpdkServerPlanning(db, request.PlanId, nodeRoleBaseline, serverBaseline, nodeRoleServerBaselineListMap, mixedNodeRoleMap, resourcePoolList, resourcePoolIdServerPlanningMap)
+				if err != nil {
+					return nil, err
+				}
+				list = append(list, dpdkServerPlanning)
+			}
 		}
-		serverPlanning.NodeRoleName = v.NodeRoleName
-		serverPlanning.NodeRoleClassify = v.Classify
-		serverPlanning.NodeRoleAnnotation = v.Annotation
-		serverPlanning.SupportDpdk = v.SupportDPDK
-		serverPlanning.ServerBaselineList = nodeRoleServerBaselineListMap[v.Id]
-		serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[v.Id]
-		serverPlanningMap[v.Id] = &entity.ServerPlanning{
-			PlanId:           serverPlanning.PlanId,
-			NodeRoleId:       serverPlanning.NodeRoleId,
-			ServerBaselineId: serverPlanning.ServerBaselineId,
-			MixedNodeRoleId:  serverPlanning.MixedNodeRoleId,
-			Number:           serverPlanning.Number,
-			OpenDpdk:         serverPlanning.OpenDpdk,
-		}
-		list = append(list, serverPlanning)
 	}
 	// 计算已保存的容量规划指标
-	nodeRoleCapMap, err := capacity_planning.GetNodeRoleCapMap(db, &capacity_planning.Request{PlanId: request.PlanId}, serverPlanningMap, nodeRoleCodeBaselineMap, serverBaselineMap)
+	resourcePoolCapMap, err := capacity_planning.GetResourcePoolCapMap(db, &capacity_planning.Request{PlanId: request.PlanId}, resourcePoolIdServerPlanningMap, nodeRoleCodeBaselineMap, serverBaselineMap)
 	if err != nil {
 		return nil, err
 	}
-	for i := range list {
-		number := nodeRoleCapMap[list[i].NodeRoleId]
-		if number > list[i].Number {
+	var resourceIdList []int64
+	for i, server := range list {
+		number := resourcePoolCapMap[server.ResourcePoolId]
+		// 处理节点最小数
+		if number < nodeRoleIdNodeRoleMap[server.NodeRoleId].MinimumNum {
+			number = nodeRoleIdNodeRoleMap[server.NodeRoleId].MinimumNum
+		}
+		if number > server.Number {
 			list[i].Number = number
 		}
+		resourceIdList = append(resourceIdList, server.ResourcePoolId)
+	}
+	if err = db.Table(entity.ResourcePoolTable).Where("plan_id = ? and id not in (?)", request.PlanId, resourceIdList).Delete(&entity.ResourcePool{}).Error; err != nil {
+		log.Errorf("delete resource pool error: %v", err)
+		return nil, err
 	}
 	return list, nil
+}
+
+func addDpdkServerPlanning(db *gorm.DB, planId int64, v *entity.NodeRoleBaseline, serverBaseline *entity.ServerBaseline, nodeRoleServerBaselineListMap map[int64][]*Baseline, mixedNodeRoleMap map[int64][]*MixedNodeRole, resourcePoolList []*entity.ResourcePool, resourcePoolServerPlanningMap map[int64]*entity.ServerPlanning) (*Server, error) {
+	dpdkServerPlanning := &Server{}
+	var resourcePool *entity.ResourcePool
+	dpdkServerPlanning.PlanId = planId
+	dpdkServerPlanning.NodeRoleId = v.Id
+	dpdkServerPlanning.Number = v.MinimumNum
+	// 列表加载机型
+	dpdkServerPlanning.ServerBaselineId = serverBaseline.Id
+	dpdkServerPlanning.ServerBomCode = serverBaseline.BomCode
+	dpdkServerPlanning.ServerArch = serverBaseline.Arch
+	dpdkServerPlanning.MixedNodeRoleId = v.Id
+	dpdkServerPlanning.NodeRoleName = v.NodeRoleName
+	dpdkServerPlanning.NodeRoleClassify = v.Classify
+	dpdkServerPlanning.NodeRoleAnnotation = v.Annotation
+	dpdkServerPlanning.SupportDpdk = v.SupportDPDK
+	dpdkServerPlanning.ServerBaselineList = nodeRoleServerBaselineListMap[v.Id]
+	dpdkServerPlanning.MixedNodeRoleList = mixedNodeRoleMap[v.Id]
+	dpdkServerPlanning.EditDpdk = 1
+	dpdkServerPlanning.OpenDpdk = 1
+	if len(resourcePoolList) > 1 {
+		resourcePool = resourcePoolList[len(resourcePoolList)-1]
+	} else {
+		resourcePool = &entity.ResourcePool{
+			PlanId:           planId,
+			NodeRoleId:       v.Id,
+			ResourcePoolName: fmt.Sprintf("%s-%s-%d", v.NodeRoleName, constant.ResourcePoolDefaultName, 2),
+			OpenDpdk:         1,
+		}
+		if err := db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
+			log.Errorf("save resource pool error: %v", err)
+			return nil, err
+		}
+	}
+	dpdkServerPlanning.ResourcePoolName = resourcePool.ResourcePoolName
+	dpdkServerPlanning.ResourcePoolId = resourcePool.Id
+	resourcePoolServerPlanningMap[v.Id] = &entity.ServerPlanning{
+		PlanId:           dpdkServerPlanning.PlanId,
+		NodeRoleId:       dpdkServerPlanning.NodeRoleId,
+		ServerBaselineId: dpdkServerPlanning.ServerBaselineId,
+		MixedNodeRoleId:  dpdkServerPlanning.MixedNodeRoleId,
+		Number:           dpdkServerPlanning.Number,
+		OpenDpdk:         dpdkServerPlanning.OpenDpdk,
+		ResourcePoolId:   resourcePool.Id,
+	}
+	return dpdkServerPlanning, nil
 }
 
 func SaveServer(request *Request) error {
@@ -153,6 +342,7 @@ func CreateServerPlanning(db *gorm.DB, request *Request) error {
 			UpdateUserId:     request.UserId,
 			UpdateTime:       now,
 			DeleteState:      0,
+			ResourcePoolId:   v.ResourcePoolId,
 		})
 	}
 	if err := db.Create(&serverPlanningEntityList).Error; err != nil {

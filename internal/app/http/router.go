@@ -171,7 +171,7 @@ func Router(engine *gin.Engine) {
 			// 查询服务器规划列表
 			serverGroup.GET("/list", middleware.OperatorLog(DefaultEventOpInfo("查询服务器列表", "queryServerList", middleware.LIST, middleware.INFO)), server_planning.List)
 			// 保存服务器规划
-			serverGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "saveServerList", middleware.LIST, middleware.INFO)), server_planning.Save)
+			serverGroup.POST("/save", middleware.OperatorLog(DefaultEventOpInfo("创建服务器", "saveServerList", middleware.CREATE, middleware.INFO)), server_planning.Save)
 			// 查询网络类型列表
 			serverGroup.GET("/network/list", middleware.OperatorLog(DefaultEventOpInfo("查询网络类型列表", "queryServerArchList", middleware.LIST, middleware.INFO)), server_planning.NetworkTypeList)
 			// 查询cpu类型列表
@@ -181,7 +181,7 @@ func Router(engine *gin.Engine) {
 			// 容量计算
 			serverGroup.GET("/capacity/count", middleware.OperatorLog(DefaultEventOpInfo("容量计算", "countServerCapacityList", middleware.LIST, middleware.INFO)), capacity_planning.Computing)
 			// 保存容量规划
-			serverGroup.POST("/capacity/save", middleware.OperatorLog(DefaultEventOpInfo("查询容量规划列表", "saveServerCapacityList", middleware.LIST, middleware.INFO)), capacity_planning.Save)
+			serverGroup.POST("/capacity/save", middleware.OperatorLog(DefaultEventOpInfo("保存容量规划", "saveServerCapacityList", middleware.CREATE, middleware.INFO)), capacity_planning.Save)
 			// 下载服务器规划清单
 			serverGroup.GET("/download/:planId", middleware.OperatorLog(DefaultEventOpInfo("下载服务器规划清单", "downloadServerList", middleware.EXPORT, middleware.INFO)), server_planning.Download)
 			// 查询服务器上架表
