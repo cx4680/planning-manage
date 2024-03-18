@@ -88,7 +88,6 @@ func ListServer(request *Request) ([]*Server, error) {
 	nodeRoleIdNodeRoleMap := make(map[int64]*entity.NodeRoleBaseline)
 	for _, nodeRoleBaseline := range nodeRoleBaselineList {
 		nodeRoleIdNodeRoleMap[nodeRoleBaseline.Id] = nodeRoleBaseline
-		serverPlanning := &Server{}
 		nodeRoleServerPlannings := nodeRoleServerPlanningsMap[nodeRoleBaseline.Id]
 		// 若服务器规划有保存过，则加载已保存的数据
 		if len(nodeRoleServerPlannings) > 0 {
@@ -112,6 +111,7 @@ func ListServer(request *Request) ([]*Server, error) {
 			1、 如果修改了云产品规划的售卖规格，（1）之前带DPDK，现在不带，dpdkNodeRoleMap就是空的，需要去掉依赖的DPDK资源池（2）之前不带DPDK，现在带，dpdkNodeRoleMap不为空，则需要添加新的DPDK资源池
 			*/
 			for _, originServerPlanning := range nodeRoleServerPlannings {
+				serverPlanning := &Server{}
 				if originServerPlanning.ServerPlanning.OpenDpdk == 1 && needAddDpdkResourcePool {
 					needAddDpdkResourcePool = false
 				}
@@ -130,6 +130,7 @@ func ListServer(request *Request) ([]*Server, error) {
 					serverPlanning.ServerArch = serverBaseline.Arch
 					serverPlanning.MixedNodeRoleId = nodeRoleBaseline.Id
 					serverPlanning.ResourcePoolId = originServerPlanning.ServerPlanning.ResourcePoolId
+					serverPlanning.OpenDpdk = originServerPlanning.ServerPlanning.OpenDpdk
 				}
 				serverPlanning.NodeRoleName = nodeRoleBaseline.NodeRoleName
 				serverPlanning.NodeRoleClassify = nodeRoleBaseline.Classify
@@ -175,6 +176,7 @@ func ListServer(request *Request) ([]*Server, error) {
 				list = append(list, dpdkServerPlanning)
 			}
 		} else {
+			serverPlanning := &Server{}
 			serverPlanning.PlanId = request.PlanId
 			serverPlanning.NodeRoleId = nodeRoleBaseline.Id
 			serverPlanning.Number = nodeRoleBaseline.MinimumNum
