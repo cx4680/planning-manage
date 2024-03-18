@@ -53,7 +53,6 @@ type Server struct {
 	MixedNodeRoleList  []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`  // 可混合部署角色列表
 	Upload             int              `gorm:"-" json:"upload"`             // 是否已上传
 	ResourcePoolName   string           `gorm:"-" json:"resourcePoolName"`   // 资源池名称
-	OpenDpdk           int              `gorm:"-" json:"openDpdk"`           // 是否开启DPDK, 0:否，1：是
 	EditDpdk           int              `gorm:"-" json:"editDpdk"`           // 是否可编辑DPDK, 0:可编辑，1：不可编辑
 }
 
