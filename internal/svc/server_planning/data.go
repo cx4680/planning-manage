@@ -311,6 +311,12 @@ func SaveServer(request *Request) error {
 		}).Error; err != nil {
 			return err
 		}
+		for _, server := range request.ServerList {
+			if err := tx.Table(entity.ResourcePoolTable).Save(&entity.ResourcePool{Id: server.ResourcePoolId, OpenDpdk: server.OpenDpdk}).Error; err != nil {
+				log.Errorf("update resourcePool error: %v", err)
+				return err
+			}
+		}
 		return nil
 	}); err != nil {
 		return err

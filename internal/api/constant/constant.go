@@ -221,6 +221,7 @@ const (
 	CapPlanningInputStandardType           = "标准型"
 	CapPlanningInputHighOrderType          = "高阶型"
 	CapPlanningInputOverallocation         = "超分比"
+	CapPlanningInputNetworkNLB             = "网络NLB数"
 
 	CapPlanningInputOneHundred     = "100"
 	CapPlanningInputOneHundredInt  = 100

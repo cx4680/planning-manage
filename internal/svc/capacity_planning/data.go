@@ -81,14 +81,14 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	var serverCapPlanningMap = make(map[int64]*entity.ServerCapPlanning)
 	// 单独处理ecs产品指标
 	resourcePoolIdEcsCapacityMap := make(map[int64]*EcsCapacity)
-	for _, v := range serverCapPlanningList {
-		if v.Type == 2 && util.IsNotBlank(v.Special) {
+	for _, serverCapPlanning := range serverCapPlanningList {
+		if serverCapPlanning.Type == 2 && util.IsNotBlank(serverCapPlanning.Special) {
 			var ecsCapacity *EcsCapacity
-			util.ToObject(v.Special, &ecsCapacity)
-			resourcePoolIdEcsCapacityMap[v.ResourcePoolId] = ecsCapacity
+			util.ToObject(serverCapPlanning.Special, &ecsCapacity)
+			resourcePoolIdEcsCapacityMap[serverCapPlanning.ResourcePoolId] = ecsCapacity
 			continue
 		}
-		serverCapPlanningMap[v.CapacityBaselineId] = v
+		serverCapPlanningMap[serverCapPlanning.CapacityBaselineId] = serverCapPlanning
 	}
 
 	// 处理按照云产品编码与服务器规划的服务器关联关系
@@ -112,42 +112,42 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 
 	var capConvertBaselineMap = make(map[string][]*ResponseFeatures)
 	resourcePoolCapConvertMap := make(map[int64][]*ResponseCapConvert)
-	for _, v := range capConvertBaselineList {
+	for _, capConvertBaseline := range capConvertBaselineList {
 		// 根据产品编码-售卖规格、产品编码-增值服务筛选容量输入列表
-		if util.IsNotBlank(v.SellSpecs) {
-			if _, ok := screenCloudProductSellSpecMap[fmt.Sprintf("%s-%s", v.ProductCode, v.SellSpecs)]; !ok {
+		if util.IsNotBlank(capConvertBaseline.SellSpecs) {
+			if _, ok := screenCloudProductSellSpecMap[fmt.Sprintf("%s-%s", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs)]; !ok {
 				continue
 			}
 		}
-		if util.IsNotBlank(v.ValueAddedService) {
-			if _, ok := screenCloudProductValueAddedServiceMap[fmt.Sprintf("%s-%s", v.ProductCode, v.ValueAddedService)]; !ok {
+		if util.IsNotBlank(capConvertBaseline.ValueAddedService) {
+			if _, ok := screenCloudProductValueAddedServiceMap[fmt.Sprintf("%s-%s", capConvertBaseline.ProductCode, capConvertBaseline.ValueAddedService)]; !ok {
 				continue
 			}
 		}
-		key := fmt.Sprintf("%v-%v", v.ProductCode, v.CapPlanningInput)
+		key := fmt.Sprintf("%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.CapPlanningInput)
 		if _, ok := capConvertBaselineMap[key]; !ok {
-			productCodeResourcePoolList := productCodeResourcePoolMap[v.ProductCode]
+			productCodeResourcePoolList := productCodeResourcePoolMap[capConvertBaseline.ProductCode]
 			for _, productCodeResourcePool := range productCodeResourcePoolList {
 				responseCapConvert := &ResponseCapConvert{
-					VersionId:        v.VersionId,
-					ProductName:      v.ProductName,
-					ProductCode:      v.ProductCode,
-					ProductType:      cloudProductCodeBaselineMap[v.ProductCode].ProductType,
-					SellSpecs:        v.SellSpecs,
-					CapPlanningInput: v.CapPlanningInput,
-					Unit:             v.Unit,
-					FeatureId:        v.Id,
-					FeatureMode:      v.FeaturesMode,
-					Description:      v.Description,
+					VersionId:        capConvertBaseline.VersionId,
+					ProductName:      capConvertBaseline.ProductName,
+					ProductCode:      capConvertBaseline.ProductCode,
+					ProductType:      cloudProductCodeBaselineMap[capConvertBaseline.ProductCode].ProductType,
+					SellSpecs:        capConvertBaseline.SellSpecs,
+					CapPlanningInput: capConvertBaseline.CapPlanningInput,
+					Unit:             capConvertBaseline.Unit,
+					FeatureId:        capConvertBaseline.Id,
+					FeatureMode:      capConvertBaseline.FeaturesMode,
+					Description:      capConvertBaseline.Description,
 				}
-				if serverCapPlanningMap[v.Id] != nil {
-					responseCapConvert.Number = serverCapPlanningMap[v.Id].Number
+				if serverCapPlanningMap[capConvertBaseline.Id] != nil {
+					responseCapConvert.Number = serverCapPlanningMap[capConvertBaseline.Id].Number
 				}
 				resourcePoolCapConvertMap[productCodeResourcePool.Id] = append(resourcePoolCapConvertMap[productCodeResourcePool.Id], responseCapConvert)
 			}
 		}
-		if util.IsNotBlank(v.Features) {
-			capConvertBaselineMap[key] = append(capConvertBaselineMap[key], &ResponseFeatures{Id: v.Id, Name: v.Features})
+		if util.IsNotBlank(capConvertBaseline.Features) {
+			capConvertBaselineMap[key] = append(capConvertBaselineMap[key], &ResponseFeatures{Id: capConvertBaseline.Id, Name: capConvertBaseline.Features})
 		}
 	}
 	// 整理容量指标的特性
@@ -532,6 +532,9 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 	for _, commonServerCapacity := range resourcePoolServerCapacity.CommonServerCapacityList {
 		// 查询容量换算表
 		capConvertBaseline := capConvertBaselineMap[commonServerCapacity.Id]
+		if capConvertBaseline == nil {
+			continue
+		}
 		if capConvertBaseline.ProductCode == constant.ProductCodeBGW {
 			bgwCapPlanningInputNumber = commonServerCapacity.Number
 			continue
@@ -580,8 +583,7 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 					}
 				}
 			}
-			// TODO 加上判断输入
-			if capConvertBaseline.ProductCode == constant.ProductCodeNLB {
+			if capConvertBaseline.ProductCode == constant.ProductCodeNLB && capConvertBaseline.CapPlanningInput == constant.CapPlanningInputNetworkNLB {
 				serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 				var copyNumber float64
 				if serverBaseline.Arch == constant.CpuArchX86 {
@@ -915,6 +917,12 @@ func createServerPlanning(db *gorm.DB, request *Request) ([]*entity.ServerPlanni
 	if err := db.Create(&serverPlanningEntityList).Error; err != nil {
 		return nil, err
 	}
+	for _, server := range request.ServerList {
+		if err := db.Table(entity.ResourcePoolTable).Save(&entity.ResourcePool{Id: server.ResourcePoolId, OpenDpdk: server.OpenDpdk}).Error; err != nil {
+			log.Errorf("update resourcePool error: %v", err)
+			return nil, err
+		}
+	}
 	return serverPlanningEntityList, nil
 }
 
@@ -969,7 +977,6 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 					cluster = serverCapacityMap[capConvertBaseline.Id]
 				}
 			}
-			// TODO 0.7的水位从哪个配置来？还是自己写死的？
 			capActualResMap[constant.ExpendResCodeECSVCpu] = 48*cluster + 16*vCpu/0.7/14.6
 			capActualResMap[constant.ExpendResCodeECSMemory] = 96*cluster + 32*memory/0.7/29.4
 			break
