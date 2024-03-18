@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/capacity_planning"
+	"code.cestc.cn/ccos/common/planning-manage/internal/svc/resource_pool"
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/software_bom"
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/svc/config_item"
@@ -285,6 +286,12 @@ func Router(engine *gin.Engine) {
 		{
 			bomGroup.POST("save/:planId", middleware.OperatorLog(DefaultEventOpInfo("bom计算保存", "bomSave", middleware.CREATE, middleware.INFO)), software_bom.Save)
 		}
+		// 资源池
+		resourcePoolGroup := api.Group("/resourcePool")
+		{
+			resourcePoolGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改资源池", "updateResourcePool", middleware.UPDATE, middleware.INFO)), resource_pool.Update)
+		}
+
 	}
 
 	innerApi := engine.Group(innerPrefix)

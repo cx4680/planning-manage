@@ -193,6 +193,7 @@ const (
 	ProductCodeCLS        = "CLS"
 	ProductCodeBGW        = "BGW"
 	ProductCodeNLB        = "NLB"
+	ProductCodeSLB        = "SLB"
 
 	CapPlanningInputVCpu                   = "vCPU"
 	CapPlanningInputMemory                 = "内存"
@@ -216,6 +217,10 @@ const (
 	CapPlanningInputInstances              = "实例数量"
 	CapPlanningInputSingleInstanceCapacity = "单实例存储容量"
 	CapPlanningInputBackupDataCapacity     = "备份数据容量"
+	CapPlanningInputBasicType              = "基础型"
+	CapPlanningInputStandardType           = "标准型"
+	CapPlanningInputHighOrderType          = "高阶型"
+	CapPlanningInputOverallocation         = "超分比"
 
 	CapPlanningInputOneHundred     = "100"
 	CapPlanningInputOneHundredInt  = 100

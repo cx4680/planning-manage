@@ -508,7 +508,9 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 	// 按产品将容量输入参数分类
 	var productCapMap = make(map[string][]*entity.CapConvertBaseline)
 	for _, v := range capConvertBaselineMap {
-		productCapMap[v.ProductCode] = append(productCapMap[v.ProductCode], v)
+		if _, ok := serverCapacityMap[v.Id]; ok {
+			productCapMap[v.ProductCode] = append(productCapMap[v.ProductCode], v)
+		}
 	}
 	specialCapActualResMap := SpecialCapacityComputing(serverCapacityMap, productCapMap, resourcePoolExpendResCodeMap)
 
@@ -1011,6 +1013,26 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 					break
 				}
 			}
+			break
+		case constant.ProductCodeSLB:
+			var overallocation, basicType, standardType, highOrderType float64
+			for _, capConvertBaseline := range capConvertBaselineList {
+				switch capConvertBaseline.CapPlanningInput {
+				case constant.CapPlanningInputOverallocation:
+					overallocation = serverCapacityMap[capConvertBaseline.Id]
+				case constant.CapPlanningInputBasicType:
+					basicType = serverCapacityMap[capConvertBaseline.Id]
+				case constant.CapPlanningInputStandardType:
+					standardType = serverCapacityMap[capConvertBaseline.Id]
+				case constant.CapPlanningInputHighOrderType:
+					highOrderType = serverCapacityMap[capConvertBaseline.Id]
+				}
+			}
+			if overallocation == 0 {
+				overallocation = 1
+			}
+			expendResCodeMap[constant.ExpendResCodeNFVVCpu] += (8*basicType + 16*standardType + 32*highOrderType) / overallocation
+			expendResCodeMap[constant.ExpendResCodeNFVMemory] += (8*basicType + 16*standardType + 32*highOrderType) / overallocation
 			break
 		default:
 			break
