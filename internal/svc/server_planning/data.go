@@ -92,28 +92,18 @@ func ListServer(request *Request) ([]*Server, error) {
 		// 若服务器规划有保存过，则加载已保存的数据
 		if len(nodeRoleServerPlannings) > 0 {
 			nodeRoleResourcePoolList := resourcePoolNodeRoleIdMap[nodeRoleBaseline.Id]
-			var needAddDpdkResourcePool bool
-			if len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) > 0 {
-				needAddDpdkResourcePool = true
-				for _, nodeRoleServerPlanning := range nodeRoleServerPlannings {
-					if needAddDpdkResourcePool && nodeRoleServerPlanning.ServerPlanning.OpenDpdk == 1 {
-						needAddDpdkResourcePool = false
-						break
-					}
-				}
-			}
 			resourcePoolMap := make(map[int64]*entity.ResourcePool)
 			for _, resourcePool := range nodeRoleResourcePoolList {
 				resourcePoolMap[resourcePool.Id] = resourcePool
 			}
-			var serverBaseline *entity.ServerBaseline
+			serverBaseline := screenNodeRoleServerBaselineMap[nodeRoleBaseline.Id]
 			/**
 			1、 如果修改了云产品规划的售卖规格，（1）之前带DPDK，现在不带，dpdkNodeRoleMap就是空的，需要去掉依赖的DPDK资源池（2）之前不带DPDK，现在带，dpdkNodeRoleMap不为空，则需要添加新的DPDK资源池
 			*/
-			for _, originServerPlanning := range nodeRoleServerPlannings {
+			for i, originServerPlanning := range nodeRoleServerPlannings {
 				serverPlanning := &Server{}
-				if originServerPlanning.ServerPlanning.OpenDpdk == 1 && needAddDpdkResourcePool {
-					needAddDpdkResourcePool = false
+				if originServerPlanning.ServerPlanning.OpenDpdk == constant.OpenDpdk && len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) == 0 {
+					continue
 				}
 				if util.IsBlank(request.NetworkInterface) && util.IsBlank(request.CpuType) {
 					serverPlanning = originServerPlanning
@@ -124,7 +114,6 @@ func ListServer(request *Request) ([]*Server, error) {
 					serverPlanning.NodeRoleId = nodeRoleBaseline.Id
 					serverPlanning.Number = nodeRoleBaseline.MinimumNum
 					// 列表加载机型
-					serverBaseline = screenNodeRoleServerBaselineMap[nodeRoleBaseline.Id]
 					serverPlanning.ServerBaselineId = serverBaseline.Id
 					serverPlanning.ServerBomCode = serverBaseline.BomCode
 					serverPlanning.ServerArch = serverBaseline.Arch
@@ -142,17 +131,24 @@ func ListServer(request *Request) ([]*Server, error) {
 				if resourcePool != nil {
 					serverPlanning.ResourcePoolName = resourcePool.ResourcePoolName
 				} else {
+					openDpdk := constant.CloseDpdk
+					resourcePoolName := fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, i+1)
+					if originServerPlanning.ServerPlanning.OpenDpdk == constant.OpenDpdk {
+						openDpdk = constant.OpenDpdk
+						resourcePoolName = fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, i+1)
+					}
 					resourcePool = &entity.ResourcePool{
 						PlanId:           request.PlanId,
 						NodeRoleId:       nodeRoleBaseline.Id,
-						ResourcePoolName: fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, 1),
-						OpenDpdk:         0,
+						ResourcePoolName: resourcePoolName,
+						OpenDpdk:         openDpdk,
 					}
 					if err = db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
 						log.Errorf("save resource pool error: %v", err)
 						return nil, err
 					}
 					serverPlanning.ResourcePoolId = resourcePool.Id
+					serverPlanning.ResourcePoolName = resourcePool.ResourcePoolName
 				}
 				list = append(list, serverPlanning)
 				resourcePoolIdServerPlanningMap[serverPlanning.ResourcePoolId] = &entity.ServerPlanning{
@@ -164,16 +160,6 @@ func ListServer(request *Request) ([]*Server, error) {
 					OpenDpdk:         serverPlanning.OpenDpdk,
 					ResourcePoolId:   serverPlanning.ResourcePoolId,
 				}
-			}
-			if needAddDpdkResourcePool {
-				if serverBaseline == nil {
-					serverBaseline = screenNodeRoleServerBaselineMap[nodeRoleBaseline.Id]
-				}
-				dpdkServerPlanning, err := addDpdkServerPlanning(db, request.PlanId, nodeRoleBaseline, serverBaseline, nodeRoleServerBaselineListMap, mixedNodeRoleMap, resourcePoolList, resourcePoolIdServerPlanningMap)
-				if err != nil {
-					return nil, err
-				}
-				list = append(list, dpdkServerPlanning)
 			}
 		} else {
 			serverPlanning := &Server{}
@@ -201,7 +187,7 @@ func ListServer(request *Request) ([]*Server, error) {
 					PlanId:           request.PlanId,
 					NodeRoleId:       nodeRoleBaseline.Id,
 					ResourcePoolName: fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, 1),
-					OpenDpdk:         0,
+					OpenDpdk:         constant.CloseDpdk,
 				}
 				if err = db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
 					log.Errorf("save resource pool error: %v", err)
@@ -221,7 +207,6 @@ func ListServer(request *Request) ([]*Server, error) {
 				ResourcePoolId:   resourcePool.Id,
 			}
 			if len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) > 0 {
-				serverPlanning.EditDpdk = 1
 				dpdkServerPlanning, err := addDpdkServerPlanning(db, request.PlanId, nodeRoleBaseline, serverBaseline, nodeRoleServerBaselineListMap, mixedNodeRoleMap, resourcePoolList, resourcePoolIdServerPlanningMap)
 				if err != nil {
 					return nil, err
@@ -237,13 +222,18 @@ func ListServer(request *Request) ([]*Server, error) {
 	}
 	var resourceIdList []int64
 	for i, server := range list {
-		number := resourcePoolCapMap[server.ResourcePoolId]
-		// 处理节点最小数
-		if number < nodeRoleIdNodeRoleMap[server.NodeRoleId].MinimumNum {
-			number = nodeRoleIdNodeRoleMap[server.NodeRoleId].MinimumNum
-		}
-		if number > server.Number {
-			list[i].Number = number
+		// 资源池变了，就去节点角色最小数
+		number, ok := resourcePoolCapMap[server.ResourcePoolId]
+		if ok {
+			// 处理节点最小数
+			if number < nodeRoleIdNodeRoleMap[server.NodeRoleId].MinimumNum {
+				number = nodeRoleIdNodeRoleMap[server.NodeRoleId].MinimumNum
+			}
+			if number > server.Number {
+				list[i].Number = number
+			}
+		} else {
+			list[i].Number = nodeRoleIdNodeRoleMap[server.NodeRoleId].MinimumNum
 		}
 		resourceIdList = append(resourceIdList, server.ResourcePoolId)
 	}
@@ -271,8 +261,7 @@ func addDpdkServerPlanning(db *gorm.DB, planId int64, v *entity.NodeRoleBaseline
 	dpdkServerPlanning.SupportDpdk = v.SupportDPDK
 	dpdkServerPlanning.ServerBaselineList = nodeRoleServerBaselineListMap[v.Id]
 	dpdkServerPlanning.MixedNodeRoleList = mixedNodeRoleMap[v.Id]
-	dpdkServerPlanning.EditDpdk = 1
-	dpdkServerPlanning.OpenDpdk = 1
+	dpdkServerPlanning.OpenDpdk = constant.OpenDpdk
 	if len(resourcePoolList) > 1 {
 		resourcePool = resourcePoolList[len(resourcePoolList)-1]
 	} else {
@@ -280,7 +269,7 @@ func addDpdkServerPlanning(db *gorm.DB, planId int64, v *entity.NodeRoleBaseline
 			PlanId:           planId,
 			NodeRoleId:       v.Id,
 			ResourcePoolName: fmt.Sprintf("%s-%s-%d", v.NodeRoleName, constant.ResourcePoolDefaultName, 2),
-			OpenDpdk:         1,
+			OpenDpdk:         constant.OpenDpdk,
 		}
 		if err := db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
 			log.Errorf("save resource pool error: %v", err)

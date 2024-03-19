@@ -303,4 +303,7 @@ const (
 	SellSpecDPDK = "DPDK"
 
 	ResourcePoolDefaultName = "资源池"
+
+	CloseDpdk = 0
+	OpenDpdk  = 1
 )
