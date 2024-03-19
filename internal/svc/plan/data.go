@@ -616,6 +616,20 @@ func CopyPlan(request *Request) error {
 				return err
 			}
 		}
+		// 复制资源池数据
+		var resourcePoolList []*entity.ResourcePool
+		if err := tx.Where("plan_id = ?", request.Id).Find(&resourcePoolList).Error; err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		if len(resourcePoolList) > 0 {
+			for _, resourcePool := range resourcePoolList {
+				resourcePool.Id = 0
+				resourcePool.PlanId = planManage.Id
+			}
+			if err := tx.Create(&resourcePoolList).Error; err != nil {
+				return err
+			}
+		}
 		return nil
 	}); err != nil {
 		return err
