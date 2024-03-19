@@ -100,7 +100,7 @@ func ListServer(request *Request) ([]*Server, error) {
 			/**
 			1、 如果修改了云产品规划的售卖规格，（1）之前带DPDK，现在不带，dpdkNodeRoleMap就是空的，需要去掉依赖的DPDK资源池（2）之前不带DPDK，现在带，dpdkNodeRoleMap不为空，则需要添加新的DPDK资源池
 			*/
-			for i, originServerPlanning := range nodeRoleServerPlannings {
+			for _, originServerPlanning := range nodeRoleServerPlannings {
 				serverPlanning := &Server{}
 				if originServerPlanning.ServerPlanning.OpenDpdk == constant.OpenDpdk && len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) == 0 {
 					continue
@@ -132,10 +132,10 @@ func ListServer(request *Request) ([]*Server, error) {
 					serverPlanning.ResourcePoolName = resourcePool.ResourcePoolName
 				} else {
 					openDpdk := constant.CloseDpdk
-					resourcePoolName := fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, i+1)
+					resourcePoolName := constant.NFVResourcePoolNameKernel
 					if originServerPlanning.ServerPlanning.OpenDpdk == constant.OpenDpdk {
 						openDpdk = constant.OpenDpdk
-						resourcePoolName = fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, i+1)
+						resourcePoolName = constant.NFVResourcePoolNameDpdk
 					}
 					resourcePool = &entity.ResourcePool{
 						PlanId:           request.PlanId,
@@ -186,7 +186,7 @@ func ListServer(request *Request) ([]*Server, error) {
 				resourcePool = &entity.ResourcePool{
 					PlanId:           request.PlanId,
 					NodeRoleId:       nodeRoleBaseline.Id,
-					ResourcePoolName: fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, 1),
+					ResourcePoolName: constant.NFVResourcePoolNameKernel,
 					OpenDpdk:         constant.CloseDpdk,
 				}
 				if err = db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
@@ -268,7 +268,7 @@ func addDpdkServerPlanning(db *gorm.DB, planId int64, v *entity.NodeRoleBaseline
 		resourcePool = &entity.ResourcePool{
 			PlanId:           planId,
 			NodeRoleId:       v.Id,
-			ResourcePoolName: fmt.Sprintf("%s-%s-%d", v.NodeRoleName, constant.ResourcePoolDefaultName, 2),
+			ResourcePoolName: constant.NFVResourcePoolNameDpdk,
 			OpenDpdk:         constant.OpenDpdk,
 		}
 		if err := db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {

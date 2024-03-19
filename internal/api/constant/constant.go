@@ -306,4 +306,7 @@ const (
 
 	CloseDpdk = 0
 	OpenDpdk  = 1
+
+	NFVResourcePoolNameKernel = "NFV-kernel资源池"
+	NFVResourcePoolNameDpdk   = "NFV-DPDK资源池"
 )
