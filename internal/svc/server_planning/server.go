@@ -1,20 +1,22 @@
 package server_planning
 
 import (
-	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
-	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"github.com/xuri/excelize/v2"
 	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"github.com/xuri/excelize/v2"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/excel"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 )
 
 func List(c *gin.Context) {
@@ -158,7 +160,7 @@ func UploadShelve(c *gin.Context) {
 		result.Failure(c, "planId不能为空", http.StatusBadRequest)
 		return
 	}
-	//上传文件处理
+	// 上传文件处理
 	file, err := c.FormFile("file")
 	if err != nil {
 		log.Error(err)
@@ -255,6 +257,11 @@ func checkRequest(request *Request) error {
 	}
 	if len(request.ServerList) == 0 {
 		return errors.New("服务器规划为空")
+	}
+	for _, requestServer := range request.ServerList {
+		if requestServer.ResourcePoolId == 0 || requestServer.ServerBaselineId == 0 {
+			return errors.New("必传参数为空")
+		}
 	}
 	return nil
 }

@@ -897,6 +897,9 @@ func createServerPlanning(db *gorm.DB, request *Request) ([]*entity.ServerPlanni
 	now := datetime.GetNow()
 	var serverPlanningEntityList []*entity.ServerPlanning
 	for _, v := range request.ServerList {
+		if v.ServerBaselineId == 0 || v.ResourcePoolId == 0 {
+			return nil, errors.New("必传参数为空")
+		}
 		serverPlanningEntityList = append(serverPlanningEntityList, &entity.ServerPlanning{
 			PlanId:           request.PlanId,
 			NodeRoleId:       v.NodeRoleId,
