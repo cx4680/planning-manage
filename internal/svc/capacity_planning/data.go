@@ -180,7 +180,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 				if responseCapConvert.ProductCode == productCode {
 					// （1）云产品没有选择DPDK规格，如果资源池开启了DPDK，则跳过 （2）云产品选择了DPDK规格，如果资源池没有开启DPDK，则跳过
 					_, ok := dpdkCloudProductCodeMap[productCode]
-					if (!ok && resourcePool.OpenDpdk == 1) || (ok && resourcePool.OpenDpdk == 0) {
+					if (!ok && resourcePool.OpenDpdk == constant.OpenDpdk) || (ok && resourcePool.OpenDpdk == constant.CloseDpdk) {
 						continue
 					}
 					resourcePoolCapConverts = append(resourcePoolCapConverts, responseCapConvert)
@@ -1040,6 +1040,81 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 			}
 			expendResCodeMap[constant.ExpendResCodeNFVVCpu] += (8*basicType + 16*standardType + 32*highOrderType) / overallocation
 			expendResCodeMap[constant.ExpendResCodeNFVMemory] += (8*basicType + 16*standardType + 32*highOrderType) / overallocation
+			break
+		case constant.ProductCodeCEASQLDW, constant.ProductCodeCEASQLCK, constant.ProductCodeMYSQL, constant.ProductCodeCEASQLTX, constant.ProductCodePOSTGRESQL, constant.ProductCodeMONGODB, constant.ProductCodeINFLUXDB, constant.ProductCodeES:
+			var vCpu, memory, disk, copyNumber float64
+			for _, capConvertBaseline := range capConvertBaselineList {
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputVCpuTotal {
+					vCpu = serverCapacityMap[capConvertBaseline.Id]
+				}
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputMemTotal {
+					memory = serverCapacityMap[capConvertBaseline.Id]
+				}
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputBusinessDataVolume {
+					disk = serverCapacityMap[capConvertBaseline.Id]
+				}
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputCopy {
+					copyNumber = serverCapacityMap[capConvertBaseline.Id]
+				}
+			}
+			expendResCodeMap[constant.ExpendResCodeDBVCpu] += vCpu * copyNumber
+			expendResCodeMap[constant.ExpendResCodeDBMemory] += memory * copyNumber
+			expendResCodeMap[constant.ExpendResCodeDBDisk] += disk * copyNumber
+			break
+		case constant.ProductCodeREDIS:
+			var vCpu, memory, copyNumber float64
+			for _, capConvertBaseline := range capConvertBaselineList {
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputVCpuTotal {
+					vCpu = serverCapacityMap[capConvertBaseline.Id]
+				}
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputMemTotal {
+					memory = serverCapacityMap[capConvertBaseline.Id]
+				}
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputCopy {
+					copyNumber = serverCapacityMap[capConvertBaseline.Id]
+				}
+			}
+			expendResCodeMap[constant.ExpendResCodeDBVCpu] += vCpu * copyNumber
+			expendResCodeMap[constant.ExpendResCodeDBMemory] += memory * copyNumber
+			// REDIS的磁盘量等于内存量
+			expendResCodeMap[constant.ExpendResCodeDBDisk] += memory * copyNumber
+			break
+		case constant.ProductCodeCIK:
+			var vCpu, memory, disk, copyNumber float64
+			for _, capConvertBaseline := range capConvertBaselineList {
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputVCpuTotal {
+					vCpu = serverCapacityMap[capConvertBaseline.Id]
+				}
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputMemTotal {
+					memory = serverCapacityMap[capConvertBaseline.Id]
+				}
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputBusinessDataVolume {
+					disk = serverCapacityMap[capConvertBaseline.Id]
+				}
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputCopy {
+					copyNumber = serverCapacityMap[capConvertBaseline.Id]
+				}
+			}
+			expendResCodeMap[constant.ExpendResCodeBDVCpu] += vCpu * copyNumber
+			expendResCodeMap[constant.ExpendResCodeBDMemory] += memory * copyNumber
+			expendResCodeMap[constant.ExpendResCodeBDDisk] += disk * copyNumber
+			break
+		case constant.ProductCodeDTS:
+			var small, middle, large float64
+			for _, capConvertBaseline := range capConvertBaselineList {
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputSmall {
+					small = serverCapacityMap[capConvertBaseline.Id]
+				}
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputMiddle {
+					middle = serverCapacityMap[capConvertBaseline.Id]
+				}
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputLarge {
+					large = serverCapacityMap[capConvertBaseline.Id]
+				}
+			}
+			expendResCodeMap[constant.ExpendResCodeDBVCpu] += small*5 + middle*8 + large*14
+			expendResCodeMap[constant.ExpendResCodeDBMemory] += small*16 + middle*30 + large*40
+			expendResCodeMap[constant.ExpendResCodeDBDisk] += (small*3 + middle*3 + large*3) * 1024
 			break
 		default:
 			break
