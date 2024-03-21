@@ -288,7 +288,6 @@ func SaveServerCapacity(request *Request) error {
 	}
 	var newServerPlanningList []*entity.ServerPlanning
 	var serverCapPlanningList []*entity.ServerCapPlanning
-	// var productCodeNodeRoleIdMap = make(map[string][]int64)
 	// 保存容量规划数据
 	resourcePoolIdServerCapacityMap := make(map[int64]*ResourcePoolServerCapacity)
 	for _, resourcePoolServerCapacity := range request.ServerCapacityList {
@@ -299,7 +298,10 @@ func SaveServerCapacity(request *Request) error {
 				resourcePoolIdServerCapacityMap[resourcePoolId].EcsCapacity = resourcePoolServerCapacity.EcsCapacity
 			}
 		} else {
-			resourcePoolIdServerCapacityMap[resourcePoolId] = resourcePoolServerCapacity
+			// 资源池id是0表示不用计算容量，用在后面的bom
+			if resourcePoolId != 0 {
+				resourcePoolIdServerCapacityMap[resourcePoolId] = resourcePoolServerCapacity
+			}
 		}
 		for _, requestServerCapacity := range resourcePoolServerCapacity.CommonServerCapacityList {
 			// 查询容量换算表
@@ -509,6 +511,10 @@ func GetResourcePoolCapMap(db *gorm.DB, request *Request, resourcePoolServerPlan
 	var capacityBaselineIdList []int64
 	resourcePoolServerCapacityMap := make(map[int64]*ResourcePoolServerCapacity)
 	for _, serverCapPlanning := range serverCapPlanningList {
+		// 资源池id为0表示不用计算容量规划，后面计算BOM用
+		if serverCapPlanning.ResourcePoolId == 0 {
+			continue
+		}
 		productCodeList = append(productCodeList, serverCapPlanning.ProductCode)
 		capacityBaselineIdList = append(capacityBaselineIdList, serverCapPlanning.CapacityBaselineId)
 		resourcePoolServerCapacity, ok := resourcePoolServerCapacityMap[serverCapPlanning.ResourcePoolId]
