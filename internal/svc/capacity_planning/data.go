@@ -305,6 +305,13 @@ func SaveServerCapacity(request *Request) error {
 		if err = tx.Save(&newServerPlanningList).Error; err != nil {
 			return err
 		}
+		// 修改资源池表的dpdk状态
+		for _, server := range request.ServerList {
+			if err = tx.Table(entity.ResourcePoolTable).Where("id = ?", server.ResourcePoolId).Update("open_dpdk", server.OpenDpdk).Error; err != nil {
+				log.Errorf("update resourcePool error: %v", err)
+				return err
+			}
+		}
 		// 保存服务器容量规划
 		if err = tx.Where("plan_id = ?", request.PlanId).Delete(&entity.ServerCapPlanning{}).Error; err != nil {
 			return err
@@ -918,12 +925,6 @@ func createServerPlanning(db *gorm.DB, request *Request) ([]*entity.ServerPlanni
 	}
 	if err := db.Create(&serverPlanningEntityList).Error; err != nil {
 		return nil, err
-	}
-	for _, server := range request.ServerList {
-		if err := db.Table(entity.ResourcePoolTable).Save(&entity.ResourcePool{Id: server.ResourcePoolId, OpenDpdk: server.OpenDpdk}).Error; err != nil {
-			log.Errorf("update resourcePool error: %v", err)
-			return nil, err
-		}
 	}
 	return serverPlanningEntityList, nil
 }
