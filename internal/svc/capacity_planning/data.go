@@ -101,7 +101,8 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		nodeRoleIdResourcePoolMap[resourcePool.NodeRoleId] = append(nodeRoleIdResourcePoolMap[resourcePool.NodeRoleId], resourcePool)
 	}
 	var cloudProductNodeRoleRelList []*entity.CloudProductNodeRoleRel
-	if err := db.Where("product_id IN (?)", cloudProductIdList).Find(&cloudProductNodeRoleRelList).Error; err != nil {
+	// 只查询资源节点角色数据，去掉管控资源节点角色
+	if err := db.Where("product_id IN (?) and node_role_type = 0", cloudProductIdList).Find(&cloudProductNodeRoleRelList).Error; err != nil {
 		return nil, err
 	}
 	productCodeResourcePoolMap := make(map[string][]*entity.ResourcePool)
