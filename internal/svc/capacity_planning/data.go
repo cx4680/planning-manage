@@ -154,10 +154,9 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		}
 	}
 	// 整理容量指标的特性
-	var productCapConvertMap = make(map[string][]*ResponseCapConvert)
 	for _, responseCapConverts := range resourcePoolCapConvertMap {
-		for i, v := range responseCapConverts {
-			key := fmt.Sprintf("%v-%v", v.ProductCode, v.CapPlanningInput)
+		for i, responseCapConvert := range responseCapConverts {
+			key := fmt.Sprintf("%v-%v", responseCapConvert.ProductCode, responseCapConvert.CapPlanningInput)
 			responseCapConverts[i].Features = capConvertBaselineMap[key]
 			// 回显容量规划数据
 			for _, feature := range capConvertBaselineMap[key] {
@@ -168,7 +167,6 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 					responseCapConverts[i].FeatureNumber = serverCapPlanningMap[feature.Id].FeatureNumber
 				}
 			}
-			productCapConvertMap[v.ProductCode] = append(productCapConvertMap[v.ProductCode], v)
 		}
 	}
 
@@ -682,12 +680,13 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 			number := handleEcsData(resourcePoolServerCapacity.EcsCapacity, serverBaseline, resourcePoolEcsResourceProductMap, capConvertBaselineMap, capServerCalcBaselineMap, minimumNum)
 			ecsServerPlanning.Number = number
 			ecsServerCapPlanning = &entity.ServerCapPlanning{
-				PlanId:        serverPlanning.PlanId,
-				ProductCode:   constant.ProductCodeECS,
-				Type:          2,
-				FeatureNumber: resourcePoolServerCapacity.EcsCapacity.FeatureNumber,
-				VersionId:     serverBaseline.VersionId,
-				Special:       util.ToString(resourcePoolServerCapacity.EcsCapacity),
+				PlanId:         serverPlanning.PlanId,
+				ProductCode:    constant.ProductCodeECS,
+				Type:           2,
+				FeatureNumber:  resourcePoolServerCapacity.EcsCapacity.FeatureNumber,
+				VersionId:      serverBaseline.VersionId,
+				Special:        util.ToString(resourcePoolServerCapacity.EcsCapacity),
+				ResourcePoolId: serverPlanning.ResourcePoolId,
 			}
 		}
 	}
