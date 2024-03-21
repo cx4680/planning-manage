@@ -111,9 +111,13 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		productCodeResourcePoolMap[productCode] = append(productCodeResourcePoolMap[productCode], nodeRoleIdResourcePoolMap[cloudProductNodeRoleRel.NodeRoleId]...)
 	}
 
-	var capConvertBaselineMap = make(map[string][]*ResponseFeatures)
+	capConvertBaselineMap := make(map[string][]*ResponseFeatures)
 	resourcePoolCapConvertMap := make(map[int64][]*ResponseCapConvert)
+	extraProductCodeResponseCapConvertMap := make(map[string][]*ResponseCapConvert)
 	for _, capConvertBaseline := range capConvertBaselineList {
+		if capConvertBaseline.CapPlanningInput == "" {
+			continue
+		}
 		// 根据产品编码-售卖规格、产品编码-增值服务筛选容量输入列表
 		if util.IsNotBlank(capConvertBaseline.SellSpecs) {
 			if _, ok := screenCloudProductSellSpecMap[fmt.Sprintf("%s-%s", capConvertBaseline.ProductCode, capConvertBaseline.SellSpecs)]; !ok {
@@ -128,6 +132,25 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		key := fmt.Sprintf("%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.CapPlanningInput)
 		if _, ok := capConvertBaselineMap[key]; !ok {
 			productCodeResourcePoolList := productCodeResourcePoolMap[capConvertBaseline.ProductCode]
+			if len(productCodeResourcePoolList) == 0 {
+				// 处理只用算BOM的容量规划输入数据，因为云产品没有关联节点角色导致需要额外处理
+				responseCapConvert := &ResponseCapConvert{
+					VersionId:        capConvertBaseline.VersionId,
+					ProductName:      capConvertBaseline.ProductName,
+					ProductCode:      capConvertBaseline.ProductCode,
+					ProductType:      cloudProductCodeBaselineMap[capConvertBaseline.ProductCode].ProductType,
+					SellSpecs:        capConvertBaseline.SellSpecs,
+					CapPlanningInput: capConvertBaseline.CapPlanningInput,
+					Unit:             capConvertBaseline.Unit,
+					FeatureId:        capConvertBaseline.Id,
+					FeatureMode:      capConvertBaseline.FeaturesMode,
+					Description:      capConvertBaseline.Description,
+				}
+				if serverCapPlanningMap[capConvertBaseline.Id] != nil {
+					responseCapConvert.Number = serverCapPlanningMap[capConvertBaseline.Id].Number
+				}
+				extraProductCodeResponseCapConvertMap[capConvertBaseline.ProductCode] = append(extraProductCodeResponseCapConvertMap[capConvertBaseline.ProductCode], responseCapConvert)
+			}
 			for _, productCodeResourcePool := range productCodeResourcePoolList {
 				responseCapConvert := &ResponseCapConvert{
 					VersionId:        capConvertBaseline.VersionId,
@@ -207,6 +230,31 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		if responseCapClassification.Classification != "" {
 			response = append(response, responseCapClassification)
 		}
+	}
+	// 处理只用算BOM的容量规划输入数据，因为云产品没有关联节点角色导致需要额外处理
+	for productCode, responseCapConverts := range extraProductCodeResponseCapConvertMap {
+		responseCapClassification := &ResponseCapClassification{}
+		for i, responseCapConvert := range responseCapConverts {
+			key := fmt.Sprintf("%v-%v", responseCapConvert.ProductCode, responseCapConvert.CapPlanningInput)
+			responseCapConverts[i].Features = capConvertBaselineMap[key]
+			// 回显容量规划数据
+			for _, feature := range capConvertBaselineMap[key] {
+				if serverCapPlanningMap[feature.Id] != nil {
+					responseCapConverts[i].FeatureId = feature.Id
+					// 处理特性的输入值
+					responseCapConverts[i].Number = serverCapPlanningMap[feature.Id].Number
+					responseCapConverts[i].FeatureNumber = serverCapPlanningMap[feature.Id].FeatureNumber
+				}
+			}
+		}
+		responseCapClassification.Classification = fmt.Sprintf("%v-%v", responseCapConverts[0].ProductName, responseCapConverts[0].SellSpecs)
+		responseCapClassification.ProductCode = productCode
+		responseCapClassification.ProductName = responseCapConverts[0].ProductName
+		responseCapClassification.ProductType = responseCapConverts[0].ProductType
+		responseCapClassification.ResourcePoolCapConverts = append(responseCapClassification.ResourcePoolCapConverts, &ResourcePoolCapConvert{
+			ResponseCapConverts: responseCapConverts,
+		})
+		response = append(response, responseCapClassification)
 	}
 	return response, nil
 }
