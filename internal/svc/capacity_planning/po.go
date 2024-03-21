@@ -80,6 +80,8 @@ type ResponseCapConvert struct {
 	FeatureNumber    int                 `json:"featureNumber"`    // 特性数量
 	Features         []*ResponseFeatures `json:"features"`         // 特性选项
 	Description      string              `json:"description"`      // 说明
+	ResourcePoolId   int64               `json:"resourcePoolId"`   // 资源池id
+	ResourcePoolName string              `json:"resourcePoolName"` // 资源池名称
 }
 
 type ResponseFeatures struct {

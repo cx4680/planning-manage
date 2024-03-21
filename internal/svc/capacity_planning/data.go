@@ -139,6 +139,8 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 					FeatureId:        capConvertBaseline.Id,
 					FeatureMode:      capConvertBaseline.FeaturesMode,
 					Description:      capConvertBaseline.Description,
+					ResourcePoolId:   productCodeResourcePool.Id,
+					ResourcePoolName: productCodeResourcePool.ResourcePoolName,
 				}
 				if serverCapPlanningMap[capConvertBaseline.Id] != nil {
 					responseCapConvert.Number = serverCapPlanningMap[capConvertBaseline.Id].Number
