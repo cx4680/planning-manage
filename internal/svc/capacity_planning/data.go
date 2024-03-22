@@ -613,7 +613,7 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 		versionId = capConvertBaseline.VersionId
 		break
 	}
-	if err := calcFixedNumber(db, resourcePoolServerCapacity, versionId, serverPlanning, expendResCodeFeatureMap, resourcePoolExpendResCodeMap); err != nil {
+	if err := calcFixedNumber(db, resourcePoolServerCapacity, versionId, serverPlanning, expendResCodeFeatureMap, resourcePoolExpendResCodeMap, nodeRoleBaselineMap); err != nil {
 		return resourcePoolCapNumber, nil, nil, err
 	}
 
@@ -805,7 +805,13 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 	return resourcePoolCapNumber, ecsServerPlanning, ecsServerCapPlanning, nil
 }
 
-func calcFixedNumber(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapacity, versionId int64, serverPlanning *entity.ServerPlanning, expendResCodeFeatureMap map[string]*ExpendResFeature, resourcePoolExpendResCodeMap map[string]float64) error {
+func calcFixedNumber(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapacity, versionId int64, serverPlanning *entity.ServerPlanning, expendResCodeFeatureMap map[string]*ExpendResFeature, resourcePoolExpendResCodeMap map[string]float64, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline) error {
+	// 默认每个Region有ShareDNS服务，4C 4G，4副本；Cloud DNS，12C 12G，2副本；均消耗NFV kernel资源池。
+	nodeRoleBaseline := nodeRoleBaselineMap[constant.NodeRoleCodeNFV]
+	if serverPlanning.NodeRoleId == nodeRoleBaseline.Id && serverPlanning.OpenDpdk == 0 {
+		resourcePoolExpendResCodeMap[constant.ExpendResCodeNFVVCpu] += 40
+		resourcePoolExpendResCodeMap[constant.ExpendResCodeNFVMemory] += 40
+	}
 	// 处理容量规划没有输入，按照固定数量计算的数据，DSP、CWP、DES，查询云产品规划表，看看是否包含了这3个云产品
 	extraCalcProductCodes := []string{constant.ProductCodeDSP, constant.ProductCodeCWP, constant.ProductCodeDES}
 	var extraCloudProductBaselineList []*entity.CloudProductBaseline

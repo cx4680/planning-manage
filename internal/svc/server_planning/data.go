@@ -215,7 +215,7 @@ func ListServer(request *Request) ([]*Server, error) {
 				OpenDpdk:         serverPlanning.OpenDpdk,
 				ResourcePoolId:   resourcePool.Id,
 			}
-			if len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) > 0 {
+			if len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) > 0 && nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
 				dpdkServerPlanning, err := addDpdkServerPlanning(db, request.PlanId, nodeRoleBaseline, serverBaseline, nodeRoleServerBaselineListMap, mixedNodeRoleMap, resourcePoolList, resourcePoolIdServerPlanningMap)
 				if err != nil {
 					return nil, err
