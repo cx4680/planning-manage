@@ -557,8 +557,7 @@ func GetResourcePoolCapMap(db *gorm.DB, request *Request, resourcePoolServerPlan
 		}
 		// 判断指标是否有ecs按规则计算，单独处理ecs容量规划-按规格数量计算
 		if serverCapPlanning.Type == 2 && util.IsNotBlank(serverCapPlanning.Special) {
-			util.ToObject(serverCapPlanning.Special, &resourcePoolServerCapacity.CommonServerCapacityList)
-			continue
+			util.ToObject(serverCapPlanning.Special, &resourcePoolServerCapacity.EcsCapacity)
 		}
 		resourcePoolServerCapacity.CommonServerCapacityList = append(resourcePoolServerCapacity.CommonServerCapacityList, &RequestServerCapacity{
 			Id:            serverCapPlanning.CapacityBaselineId,
