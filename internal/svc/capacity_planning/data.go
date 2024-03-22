@@ -793,13 +793,14 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 	// 处理BMS云产品
 	if bmsCapPlanningInputNumber != 0 {
 		bmsNodeRoleBaseline := nodeRoleBaselineMap[constant.NodeRoleCodeBMS]
-		bmsGwNodeRoleBaseline := nodeRoleBaselineMap[constant.NodeRoleCodeBMSGW]
+		// TODO 由于资源池改动，导致BMS的资源池和BMSGW资源池不一致，后续再讨论怎么处理
+		// bmsGwNodeRoleBaseline := nodeRoleBaselineMap[constant.NodeRoleCodeBMSGW]
 		if bmsNodeRoleBaseline != nil {
 			resourcePoolCapNumber += bmsCapPlanningInputNumber
 		}
-		if bmsGwNodeRoleBaseline != nil {
-			resourcePoolCapNumber += int(math.Ceil(float64(bmsCapPlanningInputNumber)/30)) * 2
-		}
+		// if bmsGwNodeRoleBaseline != nil {
+		// 	resourcePoolCapNumber += int(math.Ceil(float64(bmsCapPlanningInputNumber)/30)) * 2
+		// }
 	}
 	return resourcePoolCapNumber, ecsServerPlanning, ecsServerCapPlanning, nil
 }
