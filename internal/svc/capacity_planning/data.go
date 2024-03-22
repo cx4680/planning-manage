@@ -422,7 +422,15 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 	}
 	if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
 		// 添加容量规划基线的表1和表2对不上的NFV数据
-		var extraProductCodes = []string{constant.ProductCodeNLB}
+		var extraProductCodes = []string{constant.ProductCodeNLB, constant.ProductCodeSLB}
+		if err := db.Table(entity.CapConvertBaselineTable).Where("version_id = ? and product_code in (?)", nodeRoleBaseline.VersionId, extraProductCodes).
+			Find(&extraCapConvertBaselines).Error; err != nil {
+			return nil, err
+		}
+	}
+	if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNETWORK {
+		// 添加容量规划基线的表1和表2对不上的NETWORK数据
+		var extraProductCodes = []string{constant.ProductCodeBGW}
 		if err := db.Table(entity.CapConvertBaselineTable).Where("version_id = ? and product_code in (?)", nodeRoleBaseline.VersionId, extraProductCodes).
 			Find(&extraCapConvertBaselines).Error; err != nil {
 			return nil, err
