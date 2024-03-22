@@ -808,7 +808,7 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 func calcFixedNumber(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapacity, versionId int64, serverPlanning *entity.ServerPlanning, expendResCodeFeatureMap map[string]*ExpendResFeature, resourcePoolExpendResCodeMap map[string]float64, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline) error {
 	// 默认每个Region有ShareDNS服务，4C 4G，4副本；Cloud DNS，12C 12G，2副本；均消耗NFV kernel资源池。
 	nodeRoleBaseline := nodeRoleBaselineMap[constant.NodeRoleCodeNFV]
-	if serverPlanning.NodeRoleId == nodeRoleBaseline.Id && serverPlanning.OpenDpdk == 0 {
+	if nodeRoleBaseline != nil && serverPlanning.NodeRoleId == nodeRoleBaseline.Id && serverPlanning.OpenDpdk == 0 {
 		resourcePoolExpendResCodeMap[constant.ExpendResCodeNFVVCpu] += 40
 		resourcePoolExpendResCodeMap[constant.ExpendResCodeNFVMemory] += 40
 	}
