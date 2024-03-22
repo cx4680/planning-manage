@@ -249,7 +249,10 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				archNumberMap[serverBaseline.Arch] += serverPlanning.Number * serverBaseline.CpuNum
 			}
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
-				bomMap[softwareBomLicenseBaseline.BomId] = archNumberMap[softwareBomLicenseBaseline.HardwareArch]
+				archNumber, ok := archNumberMap[softwareBomLicenseBaseline.HardwareArch]
+				if ok {
+					bomMap[softwareBomLicenseBaseline.BomId] = archNumber
+				}
 			}
 		case constant.ProductCodeBMS:
 			// BMS节点的CPU数量
@@ -283,10 +286,12 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
 				archNumber, ok := archNumberMap[softwareBomLicenseBaseline.HardwareArch]
-				if ok && archNumber == 0 {
-					archNumber = 1
+				if ok {
+					if archNumber == 0 {
+						archNumber = 1
+					}
+					bomMap[softwareBomLicenseBaseline.BomId] = archNumber
 				}
-				bomMap[softwareBomLicenseBaseline.BomId] = archNumber
 			}
 		case constant.ProductCodeCBR:
 			// BOM单位是TiB，容量规划输入的是GiB，换算
