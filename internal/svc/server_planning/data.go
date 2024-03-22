@@ -170,7 +170,7 @@ func ListServer(request *Request) ([]*Server, error) {
 					ResourcePoolId:   serverPlanning.ResourcePoolId,
 				}
 			}
-			if addDpdkServerPlanningFlag {
+			if addDpdkServerPlanningFlag && nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
 				dpdkServerPlanning, err := addDpdkServerPlanning(db, request.PlanId, nodeRoleBaseline, serverBaseline, nodeRoleServerBaselineListMap, mixedNodeRoleMap, resourcePoolIdServerPlanningMap)
 				if err != nil {
 					return nil, err
