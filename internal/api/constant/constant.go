@@ -276,6 +276,7 @@ const (
 	NodeRoleCodePAASCompute = "PAAS-COMPUTE"
 	NodeRoleCodePAASData    = "PAAS-DATA"
 	NodeRoleCodeCBR         = "CBR"
+	NodeRoleCodeBIGDATA     = "BIG-DATA"
 
 	SellSpecsStandardEdition = "标准版"
 	SellSpecsUltimateEdition = "旗舰版"

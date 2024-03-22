@@ -436,6 +436,30 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 			return nil, err
 		}
 	}
+	if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeBMS {
+		// 添加容量规划基线的表1和表2对不上的BMS数据
+		var extraProductCodes = []string{constant.ProductCodeBMS}
+		if err := db.Table(entity.CapConvertBaselineTable).Where("version_id = ? and product_code in (?)", nodeRoleBaseline.VersionId, extraProductCodes).
+			Find(&extraCapConvertBaselines).Error; err != nil {
+			return nil, err
+		}
+	}
+	if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeBIGDATA {
+		// 添加容量规划基线的表1和表2对不上的BIG-DATA数据
+		var extraProductCodes = []string{constant.ProductCodeCIK}
+		if err := db.Table(entity.CapConvertBaselineTable).Where("version_id = ? and product_code in (?)", nodeRoleBaseline.VersionId, extraProductCodes).
+			Find(&extraCapConvertBaselines).Error; err != nil {
+			return nil, err
+		}
+	}
+	if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeDATABASE {
+		// 添加容量规划基线的表1和表2对不上的DATABASE数据
+		var extraProductCodes = []string{constant.ProductCodeCEASQLDW, constant.ProductCodeCEASQLCK, constant.ProductCodeMYSQL, constant.ProductCodeCEASQLTX, constant.ProductCodePOSTGRESQL, constant.ProductCodeMONGODB, constant.ProductCodeINFLUXDB, constant.ProductCodeES, constant.ProductCodeREDIS, constant.ProductCodeDTS}
+		if err := db.Table(entity.CapConvertBaselineTable).Where("version_id = ? and product_code in (?)", nodeRoleBaseline.VersionId, extraProductCodes).
+			Find(&extraCapConvertBaselines).Error; err != nil {
+			return nil, err
+		}
+	}
 	for _, extraCapConvertBaseline := range extraCapConvertBaselines {
 		if extraCapConvertBaseline.ProductCode == constant.ProductCodeCKE && (extraCapConvertBaseline.CapPlanningInput == constant.CapPlanningInputVCpu || extraCapConvertBaseline.CapPlanningInput == constant.CapPlanningInputMemory) {
 			continue
