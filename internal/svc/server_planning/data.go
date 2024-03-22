@@ -100,6 +100,7 @@ func ListServer(request *Request) ([]*Server, error) {
 			/**
 			1、 如果修改了云产品规划的售卖规格，（1）之前带DPDK，现在不带，dpdkNodeRoleMap就是空的，需要去掉依赖的DPDK资源池（2）之前不带DPDK，现在带，dpdkNodeRoleMap不为空，则需要添加新的DPDK资源池
 			*/
+			var addDpdkServerPlanningFlag bool
 			for i, originServerPlanning := range nodeRoleServerPlannings {
 				serverPlanning := &Server{}
 				if originServerPlanning.ServerPlanning.OpenDpdk == constant.OpenDpdk && len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) == 0 {
@@ -130,6 +131,9 @@ func ListServer(request *Request) ([]*Server, error) {
 				resourcePool := resourcePoolMap[originServerPlanning.ServerPlanning.ResourcePoolId]
 				if resourcePool != nil {
 					serverPlanning.ResourcePoolName = resourcePool.ResourcePoolName
+					if serverPlanning.ServerPlanning.OpenDpdk == constant.CloseDpdk && len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) > 0 && len(nodeRoleServerPlannings) == 1 {
+						addDpdkServerPlanningFlag = true
+					}
 				} else {
 					openDpdk := constant.CloseDpdk
 					resourcePoolName := fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, i+1)
@@ -165,6 +169,13 @@ func ListServer(request *Request) ([]*Server, error) {
 					OpenDpdk:         serverPlanning.OpenDpdk,
 					ResourcePoolId:   serverPlanning.ResourcePoolId,
 				}
+			}
+			if addDpdkServerPlanningFlag {
+				dpdkServerPlanning, err := addDpdkServerPlanning(db, request.PlanId, nodeRoleBaseline, serverBaseline, nodeRoleServerBaselineListMap, mixedNodeRoleMap, resourcePoolIdServerPlanningMap)
+				if err != nil {
+					return nil, err
+				}
+				list = append(list, dpdkServerPlanning)
 			}
 		} else {
 			serverPlanning := &Server{}
@@ -216,7 +227,7 @@ func ListServer(request *Request) ([]*Server, error) {
 				ResourcePoolId:   resourcePool.Id,
 			}
 			if len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) > 0 && nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
-				dpdkServerPlanning, err := addDpdkServerPlanning(db, request.PlanId, nodeRoleBaseline, serverBaseline, nodeRoleServerBaselineListMap, mixedNodeRoleMap, resourcePoolList, resourcePoolIdServerPlanningMap)
+				dpdkServerPlanning, err := addDpdkServerPlanning(db, request.PlanId, nodeRoleBaseline, serverBaseline, nodeRoleServerBaselineListMap, mixedNodeRoleMap, resourcePoolIdServerPlanningMap)
 				if err != nil {
 					return nil, err
 				}
@@ -253,7 +264,7 @@ func ListServer(request *Request) ([]*Server, error) {
 	return list, nil
 }
 
-func addDpdkServerPlanning(db *gorm.DB, planId int64, nodeRoleBaseline *entity.NodeRoleBaseline, serverBaseline *entity.ServerBaseline, nodeRoleServerBaselineListMap map[int64][]*Baseline, mixedNodeRoleMap map[int64][]*MixedNodeRole, resourcePoolList []*entity.ResourcePool, resourcePoolServerPlanningMap map[int64]*entity.ServerPlanning) (*Server, error) {
+func addDpdkServerPlanning(db *gorm.DB, planId int64, nodeRoleBaseline *entity.NodeRoleBaseline, serverBaseline *entity.ServerBaseline, nodeRoleServerBaselineListMap map[int64][]*Baseline, mixedNodeRoleMap map[int64][]*MixedNodeRole, resourcePoolServerPlanningMap map[int64]*entity.ServerPlanning) (*Server, error) {
 	dpdkServerPlanning := &Server{}
 	var resourcePool *entity.ResourcePool
 	dpdkServerPlanning.PlanId = planId
@@ -271,24 +282,21 @@ func addDpdkServerPlanning(db *gorm.DB, planId int64, nodeRoleBaseline *entity.N
 	dpdkServerPlanning.ServerBaselineList = nodeRoleServerBaselineListMap[nodeRoleBaseline.Id]
 	dpdkServerPlanning.MixedNodeRoleList = mixedNodeRoleMap[nodeRoleBaseline.Id]
 	dpdkServerPlanning.OpenDpdk = constant.OpenDpdk
-	if len(resourcePoolList) > 1 {
-		resourcePool = resourcePoolList[len(resourcePoolList)-1]
-	} else {
-		resourcePoolName := fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, 2)
-		if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
-			resourcePoolName = constant.NFVResourcePoolNameDpdk
-		}
-		resourcePool = &entity.ResourcePool{
-			PlanId:           planId,
-			NodeRoleId:       nodeRoleBaseline.Id,
-			ResourcePoolName: resourcePoolName,
-			OpenDpdk:         constant.OpenDpdk,
-		}
-		if err := db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
-			log.Errorf("save resource pool error: %v", err)
-			return nil, err
-		}
+	resourcePoolName := fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, 2)
+	if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
+		resourcePoolName = constant.NFVResourcePoolNameDpdk
 	}
+	resourcePool = &entity.ResourcePool{
+		PlanId:           planId,
+		NodeRoleId:       nodeRoleBaseline.Id,
+		ResourcePoolName: resourcePoolName,
+		OpenDpdk:         constant.OpenDpdk,
+	}
+	if err := db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
+		log.Errorf("save resource pool error: %v", err)
+		return nil, err
+	}
+
 	dpdkServerPlanning.ResourcePoolName = resourcePool.ResourcePoolName
 	dpdkServerPlanning.ResourcePoolId = resourcePool.Id
 	resourcePoolServerPlanningMap[nodeRoleBaseline.Id] = &entity.ServerPlanning{
