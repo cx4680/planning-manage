@@ -822,7 +822,7 @@ func calcFixedNumber(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServer
 		}
 		for _, cloudProductNodeRoleId := range cloudProductNodeRoleIds {
 			// TODO 这里因为固定的几个产品都没用到DPDK，所以在这里先写死
-			if cloudProductNodeRoleId == serverPlanning.ServerBaselineId && serverPlanning.OpenDpdk == 0 {
+			if cloudProductNodeRoleId == serverPlanning.NodeRoleId && serverPlanning.OpenDpdk == 0 {
 				extraCloudProductCodeResourcePoolIdMap[cloudProductBaseline.ProductCode] = resourcePoolServerCapacity.ResourcePoolId
 				// 加break是因为对于同一个节点角色，默认只算给第一个资源池
 				break
