@@ -198,6 +198,7 @@ const (
 	ProductCodeINFLUXDB   = "INFLUXDB"
 	ProductCodeES         = "ES"
 	ProductCodeCIK        = "CIK"
+	ProductCodeRDSDM      = "RDSDM"
 
 	CapPlanningInputVCpu                   = "vCPU"
 	CapPlanningInputMemory                 = "内存"
@@ -232,6 +233,7 @@ const (
 	CapPlanningInputSmall                  = "small"
 	CapPlanningInputMiddle                 = "middle"
 	CapPlanningInputLarge                  = "large"
+	CapPlanningInputAgent                  = "代理数"
 
 	CapPlanningInputOneHundred     = "100"
 	CapPlanningInputOneHundredInt  = 100
@@ -259,6 +261,9 @@ const (
 	ExpendResCodeBDVCpu            = "BD_VCPU"
 	ExpendResCodeBDMemory          = "BD_MEM"
 	ExpendResCodeBDDisk            = "BD_DISK"
+	ExpendResCodeECSLDVCpu         = "ECS-LD_VCPU"
+	ExpendResCodeECSLDMemory       = "ECS-LD_MEM"
+	ExpendResCodeECSLDDisk         = "ECS-LD_DISK"
 
 	ExpendResCodeEndOfVCpu = "_VCPU"
 	ExpendResCodeEndOfMem  = "_MEM"
@@ -277,6 +282,7 @@ const (
 	NodeRoleCodePAASData    = "PAAS-DATA"
 	NodeRoleCodeCBR         = "CBR"
 	NodeRoleCodeBIGDATA     = "BIG-DATA"
+	NodeRoleCodeCOMPUTELD   = "COMPUTE-LD"
 
 	SellSpecsStandardEdition = "标准版"
 	SellSpecsUltimateEdition = "旗舰版"
