@@ -15,6 +15,7 @@ type ServerPlanning struct {
 	ServerBaselineId   int64     `gorm:"column:server_baseline_id" json:"serverBaselineId"`    // 服务器基线表id
 	MixedNodeRoleId    int64     `gorm:"column:mixed_node_role_id" json:"mixedNodeRoleId"`     // 混合部署节点角色id
 	Number             int       `gorm:"column:number" json:"number"`                          // 数量
+	ResourcePoolId     int64     `gorm:"column:resource_pool_id" json:"resourcePoolId"`        // 资源池id
 	OpenDpdk           int       `gorm:"column:open_dpdk" json:"openDpdk"`                     // 是否开启DPDK，1：开启，0：关闭
 	NetworkInterface   string    `gorm:"column:network_interface" json:"networkInterface"`     // 网络类型
 	CpuType            string    `gorm:"column:cpu_type" json:"cpuType"`                       // CPU类型
@@ -37,6 +38,7 @@ type ServerCapPlanning struct {
 	PlanId             int64  `gorm:"column:plan_id" json:"planId"`                          // 方案id
 	Type               int    `gorm:"column:type" json:"type"`                               // 类型，1:按总量计算，2：按规格数量计算
 	CapacityBaselineId int64  `gorm:"column:capacity_baseline_id" json:"capacityBaselineId"` // 容量指标id
+	ResourcePoolId     int64  `gorm:"column:resource_pool_id" json:"resourcePoolId"`         // 资源池id
 	Number             int    `gorm:"column:number" json:"number"`                           // 数量
 	FeatureNumber      int    `gorm:"column:feature_number" json:"featureNumber"`            // 特性数量
 	VersionId          int64  `gorm:"column:version_id" json:"versionId"`                    // 版本id

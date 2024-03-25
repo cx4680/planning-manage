@@ -22,15 +22,17 @@ type RequestServer struct {
 	ServerBaselineId   int64  `form:"serverBaselineId"`
 	Number             int    `form:"number"`
 	OpenDpdk           int    `form:"openDpdk"`
+	ResourcePoolId     int64  `form:"resourcePoolId"`
 	BusinessAttributes string `form:"businessAttributes"` // 业务属性
 	ShelveMode         string `form:"shelveMode"`         // 上架模式
 	ShelvePriority     int    `form:"shelvePriority"`     // 上架优先级
 }
 
 type RequestServerCapacity struct {
-	Id            int64 `form:"id"`
-	Number        int   `form:"number"`
-	FeatureNumber int   `form:"featureNumber"`
+	Id             int64 `form:"id"`
+	Number         int   `form:"number"`
+	FeatureNumber  int   `form:"featureNumber"`
+	ResourcePoolId int64 `form:"resourcePoolId"`
 }
 
 type RequestServerCapacityCount struct {
@@ -50,6 +52,8 @@ type Server struct {
 	ServerBaselineList []*Baseline      `gorm:"-" json:"serverBaselineList"` // 可选择机型列表
 	MixedNodeRoleList  []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`  // 可混合部署角色列表
 	Upload             int              `gorm:"-" json:"upload"`             // 是否已上传
+	ResourcePoolName   string           `gorm:"-" json:"resourcePoolName"`   // 资源池名称
+	// EditDpdk           int              `gorm:"-" json:"editDpdk"`           // 是否可编辑DPDK, 0:可编辑，1：不可编辑
 }
 
 type MixedNodeRole struct {

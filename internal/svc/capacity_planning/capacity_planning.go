@@ -1,12 +1,15 @@
 package capacity_planning
 
 import (
+	"errors"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
-	"github.com/gin-gonic/gin"
-	"github.com/opentrx/seata-golang/v2/pkg/util/log"
-	"net/http"
 )
 
 func List(c *gin.Context) {
@@ -52,8 +55,8 @@ func Save(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
-	if request.PlanId == 0 {
-		result.Failure(c, "planId参数为空", http.StatusBadRequest)
+	if err := checkRequest(request); err != nil {
+		result.Failure(c, err.Error(), http.StatusBadRequest)
 		return
 	}
 	request.UserId = user.GetUserId(c)
@@ -64,4 +67,19 @@ func Save(c *gin.Context) {
 		return
 	}
 	result.Success(c, nil)
+}
+
+func checkRequest(request *Request) error {
+	if request.PlanId == 0 {
+		return errors.New("planId参数为空")
+	}
+	if len(request.ServerList) == 0 {
+		return errors.New("服务器规划为空")
+	}
+	for _, requestServer := range request.ServerList {
+		if requestServer.ResourcePoolId == 0 || requestServer.ServerBaselineId == 0 {
+			return errors.New("必传参数为空")
+		}
+	}
+	return nil
 }

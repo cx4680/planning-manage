@@ -192,6 +192,12 @@ const (
 	ProductCodeCOS        = "COS"
 	ProductCodeCLS        = "CLS"
 	ProductCodeBGW        = "BGW"
+	ProductCodeNLB        = "NLB"
+	ProductCodeSLB        = "SLB"
+	ProductCodeMONGODB    = "MONGODB"
+	ProductCodeINFLUXDB   = "INFLUXDB"
+	ProductCodeES         = "ES"
+	ProductCodeCIK        = "CIK"
 
 	CapPlanningInputVCpu                   = "vCPU"
 	CapPlanningInputMemory                 = "内存"
@@ -215,6 +221,17 @@ const (
 	CapPlanningInputInstances              = "实例数量"
 	CapPlanningInputSingleInstanceCapacity = "单实例存储容量"
 	CapPlanningInputBackupDataCapacity     = "备份数据容量"
+	CapPlanningInputBasicType              = "基础型"
+	CapPlanningInputStandardType           = "标准型"
+	CapPlanningInputHighOrderType          = "高阶型"
+	CapPlanningInputOverallocation         = "超分比"
+	CapPlanningInputNetworkNLB             = "网络NLB数"
+	CapPlanningInputVCpuTotal              = "vCPU总量"
+	CapPlanningInputMemTotal               = "内存量"
+	CapPlanningInputCopy                   = "副本数"
+	CapPlanningInputSmall                  = "small"
+	CapPlanningInputMiddle                 = "middle"
+	CapPlanningInputLarge                  = "large"
 
 	CapPlanningInputOneHundred     = "100"
 	CapPlanningInputOneHundredInt  = 100
@@ -234,6 +251,14 @@ const (
 	ExpendResCodeEBSDisk           = "EBS_DISK"
 	ExpendResCodeEFSDisk           = "EFS_DISK"
 	ExpendResCodeOSSDisk           = "OSS_DISK"
+	ExpendResCodeNFVVCpu           = "NFV_VCPU"
+	ExpendResCodeNFVMemory         = "NFV_MEM"
+	ExpendResCodeDBVCpu            = "DB_VCPU"
+	ExpendResCodeDBMemory          = "DB_MEM"
+	ExpendResCodeDBDisk            = "DB_DISK"
+	ExpendResCodeBDVCpu            = "BD_VCPU"
+	ExpendResCodeBDMemory          = "BD_MEM"
+	ExpendResCodeBDDisk            = "BD_DISK"
 
 	ExpendResCodeEndOfVCpu = "_VCPU"
 	ExpendResCodeEndOfMem  = "_MEM"
@@ -250,6 +275,8 @@ const (
 	NodeRoleCodeDATABASE    = "DATABASE"
 	NodeRoleCodePAASCompute = "PAAS-COMPUTE"
 	NodeRoleCodePAASData    = "PAAS-DATA"
+	NodeRoleCodeCBR         = "CBR"
+	NodeRoleCodeBIGDATA     = "BIG-DATA"
 
 	SellSpecsStandardEdition = "标准版"
 	SellSpecsUltimateEdition = "旗舰版"
@@ -290,4 +317,14 @@ const (
 	CLSSoftwareBomCalcMethodExpansionPackage       = "扩容包，5T"
 
 	CopyPlanEndOfName = "的副本"
+
+	SellSpecDPDK = "DPDK"
+
+	ResourcePoolDefaultName = "资源池"
+
+	CloseDpdk = 0
+	OpenDpdk  = 1
+
+	NFVResourcePoolNameKernel = "NFV-kernel资源池"
+	NFVResourcePoolNameDpdk   = "NFV-DPDK资源池"
 )
