@@ -521,6 +521,23 @@ func CopyPlan(request *Request) error {
 		if err := tx.Create(&cloudProductPlannings).Error; err != nil {
 			return err
 		}
+		// 复制资源池数据
+		var resourcePoolList []*entity.ResourcePool
+		if err := tx.Where("plan_id = ?", request.Id).Find(&resourcePoolList).Error; err != nil && err != gorm.ErrRecordNotFound {
+			return err
+		}
+		originResourceIdNewMap := make(map[int64]int64)
+		if len(resourcePoolList) > 0 {
+			for _, resourcePool := range resourcePoolList {
+				originResourcePoolId := resourcePool.Id
+				resourcePool.Id = 0
+				resourcePool.PlanId = planManage.Id
+				if err := tx.Create(&resourcePool).Error; err != nil {
+					return err
+				}
+				originResourceIdNewMap[originResourcePoolId] = resourcePool.Id
+			}
+		}
 		// 复制服务器规划数据
 		var serverPlannings []*entity.ServerPlanning
 		// 这里没像云产品规划那样判断，如果数据为空就不走下面的逻辑的原因：在服务器规划页面只操作了容量规划，而没有点击下一步到网络设备规划，这样就不会将服务器规划数据保存到数据库了
@@ -531,6 +548,7 @@ func CopyPlan(request *Request) error {
 			for i := range serverPlannings {
 				serverPlannings[i].Id = 0
 				serverPlannings[i].PlanId = planManage.Id
+				serverPlannings[i].ResourcePoolId = originResourceIdNewMap[serverPlannings[i].ResourcePoolId]
 				serverPlannings[i].CreateUserId = request.UserId
 				serverPlannings[i].UpdateUserId = request.UserId
 				serverPlannings[i].CreateTime = now
@@ -549,6 +567,7 @@ func CopyPlan(request *Request) error {
 			for i := range serverCapPlannings {
 				serverCapPlannings[i].Id = 0
 				serverCapPlannings[i].PlanId = planManage.Id
+				serverCapPlannings[i].ResourcePoolId = originResourceIdNewMap[serverCapPlannings[i].ResourcePoolId]
 			}
 			if err := tx.Create(&serverCapPlannings).Error; err != nil {
 				return err
@@ -613,20 +632,6 @@ func CopyPlan(request *Request) error {
 				softwareBomPlannings[i].PlanId = planManage.Id
 			}
 			if err := tx.Create(&softwareBomPlannings).Error; err != nil {
-				return err
-			}
-		}
-		// 复制资源池数据
-		var resourcePoolList []*entity.ResourcePool
-		if err := tx.Where("plan_id = ?", request.Id).Find(&resourcePoolList).Error; err != nil && err != gorm.ErrRecordNotFound {
-			return err
-		}
-		if len(resourcePoolList) > 0 {
-			for _, resourcePool := range resourcePoolList {
-				resourcePool.Id = 0
-				resourcePool.PlanId = planManage.Id
-			}
-			if err := tx.Create(&resourcePoolList).Error; err != nil {
 				return err
 			}
 		}
