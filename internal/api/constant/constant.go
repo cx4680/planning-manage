@@ -208,6 +208,7 @@ const (
 	CapPlanningInputFirewall               = "防火墙数量"
 	CapPlanningInputLogStorage             = "日志存储容量"
 	CapPlanningInputAssetAccess            = "资产接入授权"
+	CapPlanningInputLogStorageSpace        = "日志存储空间"
 	CapPlanningInputVulnerabilityScanning  = "漏洞扫描服务数"
 	CapPlanningInputDatabaseAudit          = "数据库审计"
 	CapPlanningInputBusinessDataVolume     = "业务数据量"

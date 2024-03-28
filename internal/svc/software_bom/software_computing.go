@@ -199,7 +199,7 @@ func getSoftwareBomPlanningData(db *gorm.DB, planId int64) (*SoftwareData, error
 	for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
 		// 根据产品编码-售卖规格、产品编码-增值服务筛选容量输入列表
 		if util.IsNotBlank(softwareBomLicenseBaseline.SellSpecs) {
-			if _, ok := screenCloudProductSellSpecMap[fmt.Sprintf("%s-%s", softwareBomLicenseBaseline.ServiceCode, softwareBomLicenseBaseline.SellSpecs)]; !ok {
+			if _, ok := screenCloudProductSellSpecMap[fmt.Sprintf("%s-%s", softwareBomLicenseBaseline.ServiceCode, softwareBomLicenseBaseline.SellSpecs)]; !ok && softwareBomLicenseBaseline.ServiceCode != constant.ProductCodeCNBH {
 				continue
 			}
 		}
@@ -415,7 +415,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				if assetAccess != nil {
 					assetAccessNumber += assetAccess.Number
 				}
-				logStorage := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputLogStorage)]
+				logStorage := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputLogStorageSpace)]
 				if logStorage != nil {
 					logStorageNumber += logStorage.Number
 				}
