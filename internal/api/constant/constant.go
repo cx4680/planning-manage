@@ -199,6 +199,7 @@ const (
 	ProductCodeES         = "ES"
 	ProductCodeCIK        = "CIK"
 	ProductCodeRDSDM      = "RDSDM"
+	ProductCodeHPC        = "HPC"
 
 	CapPlanningInputVCpu                   = "vCPU"
 	CapPlanningInputMemory                 = "内存"
@@ -234,6 +235,10 @@ const (
 	CapPlanningInputMiddle                 = "middle"
 	CapPlanningInputLarge                  = "large"
 	CapPlanningInputAgent                  = "代理数"
+	CapPlanningInputCluster                = "集群数量"
+	CapPlanningInputComputeVCpu            = "计算节点vCPU"
+	CapPlanningInputComputeMemory          = "计算节点内存"
+	CapPlanningInputComputeCount           = "单集群计算节点数量"
 
 	CapPlanningInputOneHundred     = "100"
 	CapPlanningInputOneHundredInt  = 100
@@ -264,6 +269,7 @@ const (
 	ExpendResCodeECSLDVCpu         = "ECS-LD_VCPU"
 	ExpendResCodeECSLDMemory       = "ECS-LD_MEM"
 	ExpendResCodeECSLDDisk         = "ECS-LD_DISK"
+	ExpendResCodeCBRDisk           = "CBR_DISK"
 
 	ExpendResCodeEndOfVCpu = "_VCPU"
 	ExpendResCodeEndOfMem  = "_MEM"
