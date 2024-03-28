@@ -141,6 +141,9 @@ func getSoftwareBomPlanningData(db *gorm.DB, planId int64) (*SoftwareData, error
 		if serverBaseline.Arch == constant.CpuArchARM {
 			serverBaseline.Arch = constant.CpuArchXC
 		}
+		if strings.ToLower(serverBaseline.CpuType) == constant.CpuTypeHygon {
+			serverBaseline.Arch = constant.CpuArchXC
+		}
 		serverBaselineMap[serverBaseline.Id] = serverBaseline
 	}
 	// 查询容量规划
