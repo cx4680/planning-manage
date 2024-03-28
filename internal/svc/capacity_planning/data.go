@@ -219,7 +219,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 					ResourcePoolId:      resourcePool.Id,
 					ResourcePoolName:    resourcePool.ResourcePoolName,
 					ResponseCapConverts: resourcePoolCapConverts,
-					Specials:            resourcePoolIdEcsCapacityMap[resourcePool.Id],
+					// Specials:            resourcePoolIdEcsCapacityMap[resourcePool.Id],
 				}
 				if productCode == constant.ProductCodeECS {
 					resourcePoolCapConvert.Specials = resourcePoolIdEcsCapacityMap[resourcePool.Id]
