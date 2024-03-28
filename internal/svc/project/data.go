@@ -1,17 +1,19 @@
 package project
 
 import (
+	"errors"
+
+	"gorm.io/gorm"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
-	"errors"
-	"gorm.io/gorm"
 )
 
 func PageProject(request *Request) ([]*Project, int64, error) {
-	//缓存预编译 会话模式
+	// 缓存预编译 会话模式
 	db := data.DB.Session(&gorm.Session{PrepareStmt: true})
 	screenSql, screenParams, orderSql := " delete_state = ? ", []interface{}{0}, " update_time "
 	if request.Id != 0 {
@@ -22,7 +24,7 @@ func PageProject(request *Request) ([]*Project, int64, error) {
 		screenSql += " AND customer_id = ? "
 		screenParams = append(screenParams, request.CustomerId)
 	} else {
-		//查询账号下关联的所有客户，客户接口人和项目成员
+		// 查询账号下关联的所有客户，客户接口人和项目成员
 		customerIdList, err := getCustomerIdList(db, request)
 		if err != nil {
 			return nil, 0, err
@@ -143,9 +145,9 @@ func UpdateProject(request *Request) error {
 }
 
 func DeleteProject(request *Request) error {
-	//校验该项目下是否有方案
+	// 校验该项目下是否有方案
 	var planCount int64
-	if err := data.DB.Model(&entity.PlanManage{}).Where("project_id = ?", request.Id).Count(&planCount).Error; err != nil {
+	if err := data.DB.Model(&entity.PlanManage{}).Where("project_id = ? AND delete_state = ?", request.Id, 0).Count(&planCount).Error; err != nil {
 		return err
 	}
 	if planCount != 0 {
@@ -166,7 +168,7 @@ func DeleteProject(request *Request) error {
 
 func checkBusiness(request *Request, isCreate bool) error {
 	if isCreate {
-		//校验customerId
+		// 校验customerId
 		var customerCount int64
 		if err := data.DB.Model(&entity.CustomerManage{}).Where("id = ? AND delete_state = ?", request.CustomerId, 0).Count(&customerCount).Error; err != nil {
 			return err
@@ -174,7 +176,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 		if customerCount == 0 {
 			return errors.New("customerId参数错误")
 		}
-		//校验projectType
+		// 校验projectType
 		var projectTypeCount int64
 		if err := data.DB.Model(&entity.ConfigItem{}).Where("p_id = ? AND code = ?", "3", request.Type).Count(&projectTypeCount).Error; err != nil {
 			return err
@@ -182,7 +184,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 		if projectTypeCount == 0 {
 			return errors.New("type参数错误")
 		}
-		//校验cloudPlatform
+		// 校验cloudPlatform
 		var cloudPlatform = &entity.CloudPlatformManage{}
 		if err := data.DB.Where("id = ? AND delete_state = ?", request.CloudPlatformId, 0).Find(&cloudPlatform).Error; err != nil {
 			return err
@@ -193,7 +195,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 		if util.IsBlank(cloudPlatform.Type) && util.IsBlank(request.CloudPlatformType) {
 			return errors.New("云平台类型未设置")
 		}
-		//校验regionId
+		// 校验regionId
 		var regionCount int64
 		if err := data.DB.Model(&entity.RegionManage{}).Where("id = ? AND delete_state = ?", request.RegionId, 0).Count(&regionCount).Error; err != nil {
 			return err
@@ -201,7 +203,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 		if regionCount == 0 {
 			return errors.New("region不存在")
 		}
-		//校验azId
+		// 校验azId
 		var azCount int64
 		if err := data.DB.Model(&entity.AzManage{}).Where("id = ? AND delete_state = ?", request.AzId, 0).Count(&azCount).Error; err != nil {
 			return err
@@ -210,7 +212,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 			return errors.New("az不存在")
 		}
 	} else {
-		//校验projectId
+		// 校验projectId
 		var projectCount int64
 		if err := data.DB.Model(&entity.ProjectManage{}).Where("id = ? AND delete_state = ?", request.Id, 0).Count(&projectCount).Error; err != nil {
 			return err
@@ -218,7 +220,7 @@ func checkBusiness(request *Request, isCreate bool) error {
 		if projectCount == 0 {
 			return errors.New("project不存在")
 		}
-		//校验projectStage
+		// 校验projectStage
 		if util.IsNotBlank(request.Stage) {
 			var projectStageCount int64
 			if err := data.DB.Model(&entity.ConfigItem{}).Where("p_id = ? AND code = ?", "4", request.Stage).Count(&projectStageCount).Error; err != nil {
@@ -245,16 +247,16 @@ func buildResponse(list []*Project) ([]*Project, error) {
 		azIdList = append(azIdList, v.AzId)
 		cellIdList = append(cellIdList, v.CellId)
 	}
-	//查询方案数量
+	// 查询方案数量
 	var planList []*entity.PlanManage
-	if err := data.DB.Model(&entity.PlanManage{}).Where("project_id IN (?)", projectIdList).Find(&planList).Error; err != nil {
+	if err := data.DB.Model(&entity.PlanManage{}).Where("project_id IN (?) AND delete_state = ?", projectIdList, 0).Find(&planList).Error; err != nil {
 		return nil, err
 	}
 	var planCountMap = make(map[int64]int)
 	for _, v := range planList {
 		planCountMap[v.ProjectId]++
 	}
-	//查询客户名称
+	// 查询客户名称
 	var customerList []*entity.CustomerManage
 	if err := data.DB.Where("id IN (?)", customerIdList).Find(&customerList).Error; err != nil {
 		return nil, err
@@ -263,7 +265,7 @@ func buildResponse(list []*Project) ([]*Project, error) {
 	for _, v := range customerList {
 		customerMap[v.ID] = v
 	}
-	//查询云平台名称
+	// 查询云平台名称
 	var cloudPlatformList []*entity.CloudPlatformManage
 	if err := data.DB.Where("id IN (?)", cloudPlatformIdList).Find(&cloudPlatformList).Error; err != nil {
 		return nil, err
@@ -272,7 +274,7 @@ func buildResponse(list []*Project) ([]*Project, error) {
 	for _, v := range cloudPlatformList {
 		cloudPlatformMap[v.Id] = v
 	}
-	//查询region名称
+	// 查询region名称
 	var regionList []*entity.RegionManage
 	if err := data.DB.Where("id IN (?)", regionIdList).Find(&regionList).Error; err != nil {
 		return nil, err
@@ -281,7 +283,7 @@ func buildResponse(list []*Project) ([]*Project, error) {
 	for _, v := range regionList {
 		regionMap[v.Id] = v
 	}
-	//查询az名称
+	// 查询az名称
 	var azList []*entity.AzManage
 	if err := data.DB.Where("id IN (?)", azIdList).Find(&azList).Error; err != nil {
 		return nil, err
@@ -290,7 +292,7 @@ func buildResponse(list []*Project) ([]*Project, error) {
 	for _, v := range azList {
 		azMap[v.Id] = v
 	}
-	//查询cell名称
+	// 查询cell名称
 	var cellList []*entity.CellManage
 	if err := data.DB.Where("id IN (?)", cellIdList).Find(&cellList).Error; err != nil {
 		return nil, err
