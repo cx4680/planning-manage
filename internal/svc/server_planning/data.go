@@ -242,6 +242,10 @@ func ListServer(request *Request) ([]*Server, error) {
 	}
 	var resourceIdList []int64
 	for i, server := range list {
+		if serverPlanning, ok := resourcePoolIdServerPlanningMap[server.ResourcePoolId]; ok && util.IsBlank(request.NetworkInterface) && util.IsBlank(request.CpuType) {
+			list[i].Number = serverPlanning.Number
+			continue
+		}
 		// 资源池变了，就去节点角色最小数
 		number, ok := resourcePoolCapMap[server.ResourcePoolId]
 		if ok {
