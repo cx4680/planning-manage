@@ -242,6 +242,11 @@ func ListServer(request *Request) ([]*Server, error) {
 	}
 	var resourceIdList []int64
 	for i, server := range list {
+		resourceIdList = append(resourceIdList, server.ResourcePoolId)
+		if serverPlanning, ok := resourcePoolIdServerPlanningMap[server.ResourcePoolId]; ok && util.IsBlank(request.NetworkInterface) && util.IsBlank(request.CpuType) {
+			list[i].Number = serverPlanning.Number
+			continue
+		}
 		// 资源池变了，就去节点角色最小数
 		number, ok := resourcePoolCapMap[server.ResourcePoolId]
 		if ok {
@@ -255,7 +260,6 @@ func ListServer(request *Request) ([]*Server, error) {
 		} else {
 			list[i].Number = nodeRoleIdNodeRoleMap[server.NodeRoleId].MinimumNum
 		}
-		resourceIdList = append(resourceIdList, server.ResourcePoolId)
 	}
 	if err = db.Table(entity.ResourcePoolTable).Where("plan_id = ? and id not in (?)", request.PlanId, resourceIdList).Delete(&entity.ResourcePool{}).Error; err != nil {
 		log.Errorf("delete resource pool error: %v", err)

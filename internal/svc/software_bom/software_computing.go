@@ -74,7 +74,11 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 	// 软件base：0100115150861886，默认1套
 	softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: SoftwareBaseBom, CloudService: SoftwareName, ServiceCode: SoftwareCode, Number: 1})
 	// 平台升级维保：根据选择年限对应不同BOM
-	softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: ServiceYearBom[softwareData.ServiceYear], CloudService: ServiceYearName, ServiceCode: ServiceYearCode, Number: 1})
+	if softwareData.ServiceYear > 1 {
+		softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: ServiceYearBom[softwareData.ServiceYear-1], CloudService: ServiceYearName, ServiceCode: ServiceYearCode, Number: 1})
+	} else {
+		softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: ServiceYearBom[1], CloudService: ServiceYearName, ServiceCode: ServiceYearCode, Number: 0})
+	}
 	// 保存云产品规划bom表
 	if err = db.Delete(&entity.SoftwareBomPlanning{}, "plan_id = ?", planId).Error; err != nil {
 		return err
@@ -141,6 +145,9 @@ func getSoftwareBomPlanningData(db *gorm.DB, planId int64) (*SoftwareData, error
 		if serverBaseline.Arch == constant.CpuArchARM {
 			serverBaseline.Arch = constant.CpuArchXC
 		}
+		if strings.ToLower(serverBaseline.CpuType) == constant.CpuTypeHygon {
+			serverBaseline.Arch = constant.CpuArchXC
+		}
 		serverBaselineMap[serverBaseline.Id] = serverBaseline
 	}
 	// 查询容量规划
@@ -196,7 +203,7 @@ func getSoftwareBomPlanningData(db *gorm.DB, planId int64) (*SoftwareData, error
 	for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
 		// 根据产品编码-售卖规格、产品编码-增值服务筛选容量输入列表
 		if util.IsNotBlank(softwareBomLicenseBaseline.SellSpecs) {
-			if _, ok := screenCloudProductSellSpecMap[fmt.Sprintf("%s-%s", softwareBomLicenseBaseline.ServiceCode, softwareBomLicenseBaseline.SellSpecs)]; !ok {
+			if _, ok := screenCloudProductSellSpecMap[fmt.Sprintf("%s-%s", softwareBomLicenseBaseline.ServiceCode, softwareBomLicenseBaseline.SellSpecs)]; !ok && softwareBomLicenseBaseline.ServiceCode != constant.ProductCodeCNBH {
 				continue
 			}
 		}
@@ -225,7 +232,7 @@ func getSoftwareBomPlanningData(db *gorm.DB, planId int64) (*SoftwareData, error
 func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 	// bomId为key，数量为value
 	var bomMap = make(map[string]int)
-	serviceYear := softwareData.ServiceYear
+	serviceYear := softwareData.ServiceYear - 1
 	serverPlanningsMap := softwareData.ServerPlanningsMap
 	serverBaselineMap := softwareData.ServerBaselineMap
 	serverCapPlanningMap := softwareData.ServerCapPlanningMap
@@ -412,7 +419,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				if assetAccess != nil {
 					assetAccessNumber += assetAccess.Number
 				}
-				logStorage := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputLogStorage)]
+				logStorage := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputLogStorageSpace)]
 				if logStorage != nil {
 					logStorageNumber += logStorage.Number
 				}
@@ -536,14 +543,58 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 			}
 		case constant.ProductCodeCWP:
-			// 还没给数据，默认先输出1
-			number := 1
-			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
-				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
-					bomMap[softwareBomLicenseBaseline.BomId] = number
+			var protectiveEcsTerminalNumber int
+			var protectiveContainerServiceNumber int
+			var protectedWebsiteDirectoryNumber int
+			serverPlannings := serverPlanningsMap[constant.NodeRoleCodeNFV]
+			if len(serverPlannings) == 0 {
+				continue
+			}
+			for _, serverPlanning := range serverPlannings {
+				protectiveEcsTerminal := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputProtectiveECSTerminal)]
+				if protectiveEcsTerminal != nil {
+					protectiveEcsTerminalNumber += protectiveEcsTerminal.Number
 				}
-				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance {
-					bomMap[softwareBomLicenseBaseline.BomId] = number * serviceYear
+				protectiveContainerService := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputProtectiveContainerService)]
+				if protectiveContainerService != nil {
+					protectiveContainerServiceNumber += protectiveContainerService.Number
+				}
+				protectedWebsiteDirectory := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputProtectiveWebsiteDirectory)]
+				if protectedWebsiteDirectory != nil {
+					protectedWebsiteDirectoryNumber += protectedWebsiteDirectory.Number
+				}
+			}
+			if protectiveEcsTerminalNumber == 0 {
+				protectiveEcsTerminalNumber = 1
+			}
+			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
+				if util.IsNotBlank(softwareBomLicenseBaseline.SellSpecs) {
+					if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
+						bomMap[softwareBomLicenseBaseline.BomId] = protectiveEcsTerminalNumber
+					}
+					if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance {
+						bomMap[softwareBomLicenseBaseline.BomId] = protectiveEcsTerminalNumber * serviceYear
+					}
+				}
+				if softwareBomLicenseBaseline.ValueAddedService == constant.SoftwareBomValueAddedServiceContainerSafety {
+					if protectiveContainerServiceNumber != 0 {
+						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
+							bomMap[softwareBomLicenseBaseline.BomId] = protectiveContainerServiceNumber
+						}
+						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance {
+							bomMap[softwareBomLicenseBaseline.BomId] = protectiveContainerServiceNumber * serviceYear
+						}
+					}
+				}
+				if softwareBomLicenseBaseline.ValueAddedService == constant.SoftwareBomValueAddedServiceWebPageTamperPrevention {
+					if protectedWebsiteDirectoryNumber != 0 {
+						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
+							bomMap[softwareBomLicenseBaseline.BomId] = protectedWebsiteDirectoryNumber
+						}
+						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance {
+							bomMap[softwareBomLicenseBaseline.BomId] = protectedWebsiteDirectoryNumber * serviceYear
+						}
+					}
 				}
 			}
 		case constant.ProductCodeDES:
