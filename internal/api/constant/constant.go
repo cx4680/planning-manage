@@ -95,6 +95,11 @@ const (
 	NodeRoleSupportDPDKCn    = "是"
 	NodeRoleNotSupportDPDKCn = "否"
 
+	NodeRoleSupportMultiResourcePool      = 1
+	NodeRoleNotSupportMultiResourcePool   = 0
+	NodeRoleSupportMultiResourcePoolCn    = "是"
+	NodeRoleNotSupportMultiResourcePoolCn = "否"
+
 	NodeWastageCalcTypeNumCn         = "数量"
 	NodeWastageCalcTypePercentCn     = "百分比"
 	NodeWastageCalcTypeDataDiskNumCn = "数据盘数量"

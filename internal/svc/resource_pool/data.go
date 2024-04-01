@@ -28,6 +28,12 @@ func CreateResourcePool(request *Request) error {
 	if err := data.DB.Where("id = ?", request.NodeRoleId).Find(&nodeRoleBaseline).Error; err != nil {
 		return err
 	}
+	if nodeRoleBaseline == nil {
+		return errors.New("节点角色不存在")
+	}
+	if nodeRoleBaseline.SupportMultiResourcePool == constant.NodeRoleNotSupportMultiResourcePool {
+		return errors.New("该节点角色不支持多资源池")
+	}
 	var count int64
 	if err := data.DB.Table(entity.ResourcePoolTable).Where("plan_id = ? and node_role_id = ?", request.PlanId, request.NodeRoleId).Count(&count).Error; err != nil {
 		return err
@@ -42,15 +48,26 @@ func CreateResourcePool(request *Request) error {
 		NodeRoleId:       request.NodeRoleId,
 		OpenDpdk:         constant.CloseDpdk,
 	}
-	if err := data.DB.Save(&resourcePool).Error; err != nil {
+	if err := data.DB.Create(&resourcePool).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func DeleteResourcePool(request *Request) error {
-	if err := checkBusiness(request); err != nil {
+	var resourcePool = &entity.ResourcePool{}
+	if err := data.DB.Where("id = ?", request.Id).Find(&resourcePool).Error; err != nil {
 		return err
+	}
+	if resourcePool.Id == 0 {
+		return errors.New("资源池不存在")
+	}
+	var resourcePools []*entity.ResourcePool
+	if err := data.DB.Where("plan_id = ? and node_role_id = ?", resourcePool.PlanId, resourcePool.NodeRoleId).Find(&resourcePools).Error; err != nil {
+		return err
+	}
+	if len(resourcePools) < 2 {
+		return errors.New("该节点角色至少有一个资源池")
 	}
 	if err := data.DB.Where("id = ?", request.Id).Delete(&entity.ResourcePool{}).Error; err != nil {
 		return err

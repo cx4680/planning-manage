@@ -126,6 +126,7 @@ func ListServer(request *Request) ([]*Server, error) {
 				serverPlanning.NodeRoleClassify = nodeRoleBaseline.Classify
 				serverPlanning.NodeRoleAnnotation = nodeRoleBaseline.Annotation
 				serverPlanning.SupportDpdk = nodeRoleBaseline.SupportDPDK
+				serverPlanning.SupportMultiResourcePool = nodeRoleBaseline.SupportMultiResourcePool
 				serverPlanning.ServerBaselineList = nodeRoleServerBaselineListMap[nodeRoleBaseline.Id]
 				serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[nodeRoleBaseline.Id]
 				resourcePool := resourcePoolMap[originServerPlanning.ServerPlanning.ResourcePoolId]
@@ -192,6 +193,7 @@ func ListServer(request *Request) ([]*Server, error) {
 			serverPlanning.NodeRoleClassify = nodeRoleBaseline.Classify
 			serverPlanning.NodeRoleAnnotation = nodeRoleBaseline.Annotation
 			serverPlanning.SupportDpdk = nodeRoleBaseline.SupportDPDK
+			serverPlanning.SupportMultiResourcePool = nodeRoleBaseline.SupportMultiResourcePool
 			serverPlanning.ServerBaselineList = nodeRoleServerBaselineListMap[nodeRoleBaseline.Id]
 			serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[nodeRoleBaseline.Id]
 			resourcePoolList = resourcePoolNodeRoleIdMap[nodeRoleBaseline.Id]
