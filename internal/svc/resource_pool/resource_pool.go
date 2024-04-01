@@ -16,7 +16,7 @@ import (
 func Update(c *gin.Context) {
 	request := &Request{}
 	if err := c.ShouldBindJSON(&request); err != nil {
-		log.Errorf("update resource pool bind param error: ", err)
+		log.Errorf("update resource pool bind param error: %v", err)
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
@@ -26,7 +26,33 @@ func Update(c *gin.Context) {
 		return
 	}
 	if err := UpdateResourcePool(request); err != nil {
-		log.Errorf("update resource pool error: ", err)
+		log.Errorf("update resource pool error: %v", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, nil)
+}
+
+func Create(c *gin.Context) {
+	request := &Request{}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		log.Errorf("create resource pool bind param error: %v", err)
+		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
+		return
+	}
+	if err := CreateResourcePool(request); err != nil {
+		log.Errorf("create resource pool error: %v", err)
+		result.Failure(c, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	result.Success(c, nil)
+}
+
+func Delete(c *gin.Context) {
+	request := &Request{}
+	request.Id, _ = strconv.ParseInt(c.Param("id"), 10, 64)
+	if err := DeleteResourcePool(request); err != nil {
+		log.Errorf("delete resource pool error: %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)
 		return
 	}
