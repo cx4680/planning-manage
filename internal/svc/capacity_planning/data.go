@@ -70,7 +70,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	if err := db.Where("plan_id = ?", request.PlanId).Find(&serverCapPlanningList).Error; err != nil {
 		return nil, err
 	}
-	var serverCapPlanningMap = make(map[int64]*entity.ServerCapPlanning)
+	var serverCapPlanningMap = make(map[string]*entity.ServerCapPlanning)
 	// 单独处理ecs产品指标
 	resourcePoolIdEcsCapacityMap := make(map[int64]*EcsCapacity)
 	for _, serverCapPlanning := range serverCapPlanningList {
@@ -80,7 +80,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 			resourcePoolIdEcsCapacityMap[serverCapPlanning.ResourcePoolId] = ecsCapacity
 			continue
 		}
-		serverCapPlanningMap[serverCapPlanning.CapacityBaselineId] = serverCapPlanning
+		serverCapPlanningMap[fmt.Sprintf("%d-%d", serverCapPlanning.ResourcePoolId, serverCapPlanning.CapacityBaselineId)] = serverCapPlanning
 	}
 
 	// 处理按照云产品编码与服务器规划的服务器关联关系
@@ -138,8 +138,9 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 					FeatureMode:      capConvertBaseline.FeaturesMode,
 					Description:      capConvertBaseline.Description,
 				}
-				if serverCapPlanningMap[capConvertBaseline.Id] != nil {
-					responseCapConvert.Number = serverCapPlanningMap[capConvertBaseline.Id].Number
+				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", 0, capConvertBaseline.Id)]
+				if serverCapPlanning != nil {
+					responseCapConvert.Number = serverCapPlanning.Number
 				}
 				extraProductCodeResponseCapConvertMap[capConvertBaseline.ProductCode] = append(extraProductCodeResponseCapConvertMap[capConvertBaseline.ProductCode], responseCapConvert)
 			}
@@ -158,8 +159,9 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 					ResourcePoolId:   productCodeResourcePool.Id,
 					ResourcePoolName: productCodeResourcePool.ResourcePoolName,
 				}
-				serverCapPlanning := serverCapPlanningMap[capConvertBaseline.Id]
+				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", productCodeResourcePool.Id, capConvertBaseline.Id)]
 				if serverCapPlanning != nil && serverCapPlanning.ResourcePoolId == productCodeResourcePool.Id {
+					responseCapConvert.FeatureId = serverCapPlanning.CapacityBaselineId
 					responseCapConvert.Number = serverCapPlanning.Number
 				}
 				resourcePoolCapConvertMap[productCodeResourcePool.Id] = append(resourcePoolCapConvertMap[productCodeResourcePool.Id], responseCapConvert)
@@ -172,18 +174,19 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	// 整理容量指标的特性
 	for _, responseCapConverts := range resourcePoolCapConvertMap {
 		for i, responseCapConvert := range responseCapConverts {
-			key := fmt.Sprintf("%v-%v", responseCapConvert.ProductCode, responseCapConvert.CapPlanningInput)
-			responseCapConverts[i].Features = capConvertBaselineMap[key]
+			responseFeatures := capConvertBaselineMap[fmt.Sprintf("%v-%v", responseCapConvert.ProductCode, responseCapConvert.CapPlanningInput)]
+			responseCapConverts[i].Features = responseFeatures
 			// 回显容量规划数据
-			for _, feature := range capConvertBaselineMap[key] {
-				if serverCapPlanningMap[feature.Id] != nil {
+			for _, feature := range responseFeatures {
+				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", responseCapConvert.ResourcePoolId, feature.Id)]
+				if serverCapPlanning != nil {
 					responseCapConverts[i].FeatureId = feature.Id
 					// 处理特性的输入值
-					serverCapPlanning := serverCapPlanningMap[feature.Id]
 					if serverCapPlanning.ResourcePoolId == responseCapConvert.ResourcePoolId {
 						responseCapConverts[i].Number = serverCapPlanning.Number
 						responseCapConverts[i].FeatureNumber = serverCapPlanning.FeatureNumber
 					}
+					break
 				}
 			}
 		}
@@ -225,15 +228,16 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	for productCode, responseCapConverts := range extraProductCodeResponseCapConvertMap {
 		responseCapClassification := &ResponseCapClassification{}
 		for i, responseCapConvert := range responseCapConverts {
-			key := fmt.Sprintf("%v-%v", responseCapConvert.ProductCode, responseCapConvert.CapPlanningInput)
-			responseCapConverts[i].Features = capConvertBaselineMap[key]
+			responseFeatures := capConvertBaselineMap[fmt.Sprintf("%v-%v", responseCapConvert.ProductCode, responseCapConvert.CapPlanningInput)]
+			responseCapConverts[i].Features = responseFeatures
 			// 回显容量规划数据
-			for _, feature := range capConvertBaselineMap[key] {
-				if serverCapPlanningMap[feature.Id] != nil {
+			for _, feature := range responseFeatures {
+				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", responseCapConvert.ResourcePoolId, feature.Id)]
+				if serverCapPlanning != nil {
 					responseCapConverts[i].FeatureId = feature.Id
 					// 处理特性的输入值
-					responseCapConverts[i].Number = serverCapPlanningMap[feature.Id].Number
-					responseCapConverts[i].FeatureNumber = serverCapPlanningMap[feature.Id].FeatureNumber
+					responseCapConverts[i].Number = serverCapPlanning.Number
+					responseCapConverts[i].FeatureNumber = serverCapPlanning.FeatureNumber
 				}
 			}
 		}
