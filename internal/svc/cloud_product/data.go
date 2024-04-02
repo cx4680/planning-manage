@@ -200,22 +200,11 @@ func HandleResourcePoolAndServerPlanning(db *gorm.DB, planId int64, cloudProduct
 			1、 如果修改了云产品规划的售卖规格，（1）之前带DPDK，现在不带，dpdkNodeRoleMap就是空的，需要去掉依赖的DPDK资源池（2）之前不带DPDK，现在带，dpdkNodeRoleMap不为空，则需要添加新的DPDK资源池
 			*/
 			var addDpdkServerPlanningFlag bool
-			for i, originServerPlanning := range nodeRoleServerPlannings {
-				serverPlanning := &entity.ServerPlanning{}
-				if originServerPlanning.OpenDpdk == constant.OpenDpdk && len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) == 0 {
+			for i, serverPlanning := range nodeRoleServerPlannings {
+				if serverPlanning.OpenDpdk == constant.OpenDpdk && len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) == 0 {
 					continue
 				}
-				serverPlanning.PlanId = planId
-				serverPlanning.NodeRoleId = nodeRoleBaseline.Id
-				serverPlanning.Number = nodeRoleBaseline.MinimumNum
-				// 列表加载机型
-				serverPlanning.ServerBaselineId = originServerPlanning.ServerBaselineId
-				serverPlanning.MixedNodeRoleId = nodeRoleBaseline.Id
-				serverPlanning.ResourcePoolId = originServerPlanning.ResourcePoolId
-				serverPlanning.OpenDpdk = originServerPlanning.OpenDpdk
-				serverPlanning.NetworkInterface = originServerPlanning.NetworkInterface
-				serverPlanning.CpuType = originServerPlanning.CpuType
-				resourcePool := resourcePoolMap[originServerPlanning.ResourcePoolId]
+				resourcePool := resourcePoolMap[serverPlanning.ResourcePoolId]
 				if resourcePool != nil {
 					if serverPlanning.OpenDpdk == constant.CloseDpdk && len(dpdkNodeRoleMap[nodeRoleBaseline.Id]) > 0 && len(nodeRoleServerPlannings) == 1 {
 						addDpdkServerPlanningFlag = true
@@ -226,7 +215,7 @@ func HandleResourcePoolAndServerPlanning(db *gorm.DB, planId int64, cloudProduct
 					if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
 						resourcePoolName = constant.NFVResourcePoolNameKernel
 					}
-					if originServerPlanning.OpenDpdk == constant.OpenDpdk {
+					if serverPlanning.OpenDpdk == constant.OpenDpdk {
 						openDpdk = constant.OpenDpdk
 						if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
 							resourcePoolName = constant.NFVResourcePoolNameDpdk
@@ -263,16 +252,16 @@ func HandleResourcePoolAndServerPlanning(db *gorm.DB, planId int64, cloudProduct
 				list = append(list, dpdkServerPlanning)
 			}
 		} else {
-			serverPlanning := &entity.ServerPlanning{}
-			serverPlanning.PlanId = planId
-			serverPlanning.NodeRoleId = nodeRoleBaseline.Id
-			serverPlanning.Number = nodeRoleBaseline.MinimumNum
-			// 列表加载机型
 			serverBaseline := screenNodeRoleServerBaselineMap[nodeRoleBaseline.Id]
-			serverPlanning.ServerBaselineId = serverBaseline.Id
-			serverPlanning.MixedNodeRoleId = nodeRoleBaseline.Id
-			serverPlanning.NetworkInterface = serverBaseline.NetworkInterface
-			serverPlanning.CpuType = serverBaseline.CpuType
+			serverPlanning := &entity.ServerPlanning{
+				PlanId:           planId,
+				NodeRoleId:       nodeRoleBaseline.Id,
+				Number:           nodeRoleBaseline.MinimumNum,
+				ServerBaselineId: serverBaseline.Id,
+				MixedNodeRoleId:  nodeRoleBaseline.Id,
+				NetworkInterface: serverBaseline.NetworkInterface,
+				CpuType:          serverBaseline.CpuType,
+			}
 			resourcePoolList = resourcePoolNodeRoleIdMap[nodeRoleBaseline.Id]
 			var resourcePool *entity.ResourcePool
 			if len(resourcePoolList) > 0 {
@@ -384,9 +373,9 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, nodeRoleB
 	}
 	var nodeRoleServerRelMap = make(map[int64][]int64)
 	var serverBaselineIdList []int64
-	for _, v := range serverNodeRoleRelList {
-		nodeRoleServerRelMap[v.NodeRoleId] = append(nodeRoleServerRelMap[v.NodeRoleId], v.ServerId)
-		serverBaselineIdList = append(serverBaselineIdList, v.ServerId)
+	for _, serverNodeRoleRel := range serverNodeRoleRelList {
+		nodeRoleServerRelMap[serverNodeRoleRel.NodeRoleId] = append(nodeRoleServerRelMap[serverNodeRoleRel.NodeRoleId], serverNodeRoleRel.ServerId)
+		serverBaselineIdList = append(serverBaselineIdList, serverNodeRoleRel.ServerId)
 	}
 	// 查询服务器基线表
 	var serverBaselineList []*entity.ServerBaseline
@@ -394,21 +383,21 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, nodeRoleB
 		return nil, nil, nil, err
 	}
 	var serverBaselineMap = make(map[int64]*entity.ServerBaseline)
-	for _, v := range serverBaselineList {
-		serverBaselineMap[v.Id] = v
+	for _, serverBaseline := range serverBaselineList {
+		serverBaselineMap[serverBaseline.Id] = serverBaseline
 	}
 	// 查询服务器基线表
 	var screenNodeRoleServerBaselineMap = make(map[int64]*entity.ServerBaseline)
 	var nodeRoleCodeBaselineMap = make(map[string]*entity.NodeRoleBaseline)
-	for k, serverIdList := range nodeRoleServerRelMap {
+	for nodeRoleId, serverIdList := range nodeRoleServerRelMap {
 		for _, serverId := range serverIdList {
 			serverBaseline := serverBaselineMap[serverId]
 			if serverBaseline == nil {
 				continue
 			}
-			if screenNodeRoleServerBaselineMap[k] == nil {
-				screenNodeRoleServerBaselineMap[k] = serverBaseline
-				nodeRoleCodeBaselineMap[nodeRoleBaselineMap[k].NodeRoleCode] = nodeRoleBaselineMap[k]
+			if screenNodeRoleServerBaselineMap[nodeRoleId] == nil {
+				screenNodeRoleServerBaselineMap[nodeRoleId] = serverBaseline
+				nodeRoleCodeBaselineMap[nodeRoleBaselineMap[nodeRoleId].NodeRoleCode] = nodeRoleBaselineMap[nodeRoleId]
 			}
 		}
 	}
@@ -416,22 +405,21 @@ func getNodeRoleServerBaselineMap(db *gorm.DB, nodeRoleIdList []int64, nodeRoleB
 }
 
 func addDpdkServerPlanning(db *gorm.DB, planId int64, nodeRoleBaseline *entity.NodeRoleBaseline, serverBaseline *entity.ServerBaseline, resourcePoolServerPlanningMap map[int64]*entity.ServerPlanning) (*entity.ServerPlanning, error) {
-	dpdkServerPlanning := &entity.ServerPlanning{}
-	var resourcePool *entity.ResourcePool
-	dpdkServerPlanning.PlanId = planId
-	dpdkServerPlanning.NodeRoleId = nodeRoleBaseline.Id
-	dpdkServerPlanning.Number = nodeRoleBaseline.MinimumNum
-	// 列表加载机型
-	dpdkServerPlanning.ServerBaselineId = serverBaseline.Id
-	dpdkServerPlanning.MixedNodeRoleId = nodeRoleBaseline.Id
-	dpdkServerPlanning.NetworkInterface = serverBaseline.NetworkInterface
-	dpdkServerPlanning.CpuType = serverBaseline.CpuType
-	dpdkServerPlanning.OpenDpdk = constant.OpenDpdk
+	dpdkServerPlanning := &entity.ServerPlanning{
+		PlanId:           planId,
+		NodeRoleId:       nodeRoleBaseline.Id,
+		Number:           nodeRoleBaseline.MinimumNum,
+		ServerBaselineId: serverBaseline.Id,
+		MixedNodeRoleId:  nodeRoleBaseline.Id,
+		NetworkInterface: serverBaseline.NetworkInterface,
+		CpuType:          serverBaseline.CpuType,
+		OpenDpdk:         constant.OpenDpdk,
+	}
 	resourcePoolName := fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, 2)
 	if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
 		resourcePoolName = constant.NFVResourcePoolNameDpdk
 	}
-	resourcePool = &entity.ResourcePool{
+	resourcePool := &entity.ResourcePool{
 		PlanId:           planId,
 		NodeRoleId:       nodeRoleBaseline.Id,
 		ResourcePoolName: resourcePoolName,
