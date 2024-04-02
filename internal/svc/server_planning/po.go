@@ -54,12 +54,15 @@ type Server struct {
 	Upload                   int              `gorm:"-" json:"upload"`                   // 是否已上传
 	ResourcePoolName         string           `gorm:"-" json:"resourcePoolName"`         // 资源池名称
 	SupportMultiResourcePool int              `gorm:"-" json:"supportMultiResourcePool"` // 是否支持多资源池
+	DefaultResourcePool      int              `gorm:"-" json:"defaultResourcePool"`      // 是否为默认资源池
 	// EditDpdk           int              `gorm:"-" json:"editDpdk"`           // 是否可编辑DPDK, 0:可编辑，1：不可编辑
 }
 
 type MixedNodeRole struct {
-	Id   int64  `gorm:"-" json:"id"`   // 混合节点角色id
-	Name string `gorm:"-" json:"name"` // 混合节点角色名称
+	Id               int64  `gorm:"-" json:"id"`               // 混合节点角色id
+	Name             string `gorm:"-" json:"name"`             // 混合节点角色名称
+	ResourcePoolId   int64  `gorm:"-" json:"resourcePoolId"`   // 混部的资源池id
+	ResourcePoolName string `gorm:"-" json:"resourcePoolName"` // 混部的资源池名称
 }
 
 type Baseline struct {

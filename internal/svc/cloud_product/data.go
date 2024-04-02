@@ -222,10 +222,11 @@ func HandleResourcePoolAndServerPlanning(db *gorm.DB, planId int64, cloudProduct
 						}
 					}
 					resourcePool = &entity.ResourcePool{
-						PlanId:           planId,
-						NodeRoleId:       nodeRoleBaseline.Id,
-						ResourcePoolName: resourcePoolName,
-						OpenDpdk:         openDpdk,
+						PlanId:              planId,
+						NodeRoleId:          nodeRoleBaseline.Id,
+						ResourcePoolName:    resourcePoolName,
+						OpenDpdk:            openDpdk,
+						DefaultResourcePool: constant.Yes,
 					}
 					if err = db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
 						log.Errorf("save resource pool error: %v", err)
@@ -272,10 +273,11 @@ func HandleResourcePoolAndServerPlanning(db *gorm.DB, planId int64, cloudProduct
 					resourcePoolName = constant.NFVResourcePoolNameKernel
 				}
 				resourcePool = &entity.ResourcePool{
-					PlanId:           planId,
-					NodeRoleId:       nodeRoleBaseline.Id,
-					ResourcePoolName: resourcePoolName,
-					OpenDpdk:         constant.CloseDpdk,
+					PlanId:              planId,
+					NodeRoleId:          nodeRoleBaseline.Id,
+					ResourcePoolName:    resourcePoolName,
+					OpenDpdk:            constant.CloseDpdk,
+					DefaultResourcePool: constant.Yes,
 				}
 				if err = db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
 					log.Errorf("save resource pool error: %v", err)
@@ -420,10 +422,11 @@ func addDpdkServerPlanning(db *gorm.DB, planId int64, nodeRoleBaseline *entity.N
 		resourcePoolName = constant.NFVResourcePoolNameDpdk
 	}
 	resourcePool := &entity.ResourcePool{
-		PlanId:           planId,
-		NodeRoleId:       nodeRoleBaseline.Id,
-		ResourcePoolName: resourcePoolName,
-		OpenDpdk:         constant.OpenDpdk,
+		PlanId:              planId,
+		NodeRoleId:          nodeRoleBaseline.Id,
+		ResourcePoolName:    resourcePoolName,
+		OpenDpdk:            constant.OpenDpdk,
+		DefaultResourcePool: constant.Yes,
 	}
 	if err := db.Table(entity.ResourcePoolTable).Save(&resourcePool).Error; err != nil {
 		log.Errorf("save resource pool error: %v", err)

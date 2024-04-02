@@ -46,10 +46,11 @@ func CreateResourcePool(request *Request) error {
 	}
 	resourcePoolName := fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, count+1)
 	resourcePool := &entity.ResourcePool{
-		ResourcePoolName: resourcePoolName,
-		PlanId:           request.PlanId,
-		NodeRoleId:       request.NodeRoleId,
-		OpenDpdk:         constant.CloseDpdk,
+		ResourcePoolName:    resourcePoolName,
+		PlanId:              request.PlanId,
+		NodeRoleId:          request.NodeRoleId,
+		OpenDpdk:            constant.CloseDpdk,
+		DefaultResourcePool: constant.No,
 	}
 	if err := data.DB.Create(&resourcePool).Error; err != nil {
 		return err
@@ -65,12 +66,8 @@ func DeleteResourcePool(request *Request) error {
 	if resourcePool.Id == 0 {
 		return errors.New("资源池不存在")
 	}
-	var resourcePools []*entity.ResourcePool
-	if err := data.DB.Where("plan_id = ? and node_role_id = ?", resourcePool.PlanId, resourcePool.NodeRoleId).Find(&resourcePools).Error; err != nil {
-		return err
-	}
-	if len(resourcePools) < 2 {
-		return errors.New("该节点角色至少有一个资源池")
+	if resourcePool.DefaultResourcePool == constant.Yes {
+		return errors.New("默认资源池不可以删除")
 	}
 	if err := data.DB.Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("id = ?", request.Id).Delete(&entity.ResourcePool{}).Error; err != nil {

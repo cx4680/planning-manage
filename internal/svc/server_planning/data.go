@@ -121,6 +121,7 @@ func ListServer(request *Request) ([]*Server, error) {
 				serverPlanning.ServerBaselineList = nodeRoleServerBaselineListMap[nodeRoleBaseline.Id]
 				serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[nodeRoleBaseline.Id]
 				serverPlanning.ResourcePoolName = resourcePool.ResourcePoolName
+				serverPlanning.DefaultResourcePool = resourcePool.DefaultResourcePool
 				list = append(list, serverPlanning)
 				resourcePoolIdServerPlanningMap[serverPlanning.ResourcePoolId] = &entity.ServerPlanning{
 					PlanId:           serverPlanning.PlanId,
@@ -166,6 +167,7 @@ func ListServer(request *Request) ([]*Server, error) {
 					resourcePoolList = resourcePoolNodeRoleIdMap[nodeRoleBaseline.Id]
 					serverPlanning.ResourcePoolName = resourcePool.ResourcePoolName
 					serverPlanning.ResourcePoolId = resourcePool.Id
+					serverPlanning.DefaultResourcePool = resourcePool.DefaultResourcePool
 					list = append(list, serverPlanning)
 					resourcePoolIdServerPlanningMap[serverPlanning.ResourcePoolId] = &entity.ServerPlanning{
 						PlanId:           serverPlanning.PlanId,
@@ -406,10 +408,10 @@ func DownloadServer(planId int64) ([]ResponseDownloadServer, string, error) {
 func getMixedNodeRoleMap(db *gorm.DB, nodeRoleIdList []int64) (map[int64][]*MixedNodeRole, error) {
 	var nodeRoleIdMap = make(map[int64]interface{})
 	var newNodeRoleId []int64
-	for _, v := range nodeRoleIdList {
-		if _, ok := nodeRoleIdMap[v]; !ok {
-			nodeRoleIdMap[v] = struct{}{}
-			newNodeRoleId = append(newNodeRoleId, v)
+	for _, nodeRoleId := range nodeRoleIdList {
+		if _, ok := nodeRoleIdMap[nodeRoleId]; !ok {
+			nodeRoleIdMap[nodeRoleId] = struct{}{}
+			newNodeRoleId = append(newNodeRoleId, nodeRoleId)
 		}
 	}
 	var nodeRoleMixedDeployList []*entity.NodeRoleMixedDeploy
