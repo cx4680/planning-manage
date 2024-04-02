@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+	"gorm.io/gorm"
+
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
@@ -69,7 +72,19 @@ func DeleteResourcePool(request *Request) error {
 	if len(resourcePools) < 2 {
 		return errors.New("该节点角色至少有一个资源池")
 	}
-	if err := data.DB.Where("id = ?", request.Id).Delete(&entity.ResourcePool{}).Error; err != nil {
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("id = ?", request.Id).Delete(&entity.ResourcePool{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("resource_pool_id = ?", request.Id).Delete(&entity.ServerPlanning{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("resource_pool_id = ?", request.Id).Delete(&entity.ServerCapPlanning{}).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		log.Errorf("[deleteResourcePool] error, %v", err)
 		return err
 	}
 	return nil
