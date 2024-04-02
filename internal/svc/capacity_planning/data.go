@@ -29,12 +29,8 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		return nil, errors.New("云产品规划错误")
 	}
 	var cloudProductIdList []int64
-	dpdkCloudProductIdMap := make(map[int64]*entity.CloudProductPlanning)
 	for _, cloudProductPlanning := range cloudProductPlanningList {
 		cloudProductIdList = append(cloudProductIdList, cloudProductPlanning.ProductId)
-		if strings.Contains(cloudProductPlanning.SellSpec, constant.SellSpecDPDK) {
-			dpdkCloudProductIdMap[cloudProductPlanning.ProductId] = cloudProductPlanning
-		}
 	}
 	// 查询云产品基线表
 	var cloudProductBaselineList []*entity.CloudProductBaseline
@@ -44,14 +40,10 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	var cloudProductCodeList []string
 	var cloudProductIdBaselineMap = make(map[int64]*entity.CloudProductBaseline)
 	var cloudProductCodeBaselineMap = make(map[string]*entity.CloudProductBaseline)
-	dpdkCloudProductCodeMap := make(map[string]*entity.CloudProductBaseline)
 	for _, cloudProductBaseline := range cloudProductBaselineList {
 		cloudProductCodeList = append(cloudProductCodeList, cloudProductBaseline.ProductCode)
 		cloudProductIdBaselineMap[cloudProductBaseline.Id] = cloudProductBaseline
 		cloudProductCodeBaselineMap[cloudProductBaseline.ProductCode] = cloudProductBaseline
-		if _, ok := dpdkCloudProductIdMap[cloudProductBaseline.Id]; ok {
-			dpdkCloudProductCodeMap[cloudProductBaseline.ProductCode] = cloudProductBaseline
-		}
 	}
 	// 根据产品编码-售卖规格、产品编码-增值服务筛选容量输入列表
 	var screenCloudProductSellSpecMap = make(map[string]interface{})
@@ -166,8 +158,9 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 					ResourcePoolId:   productCodeResourcePool.Id,
 					ResourcePoolName: productCodeResourcePool.ResourcePoolName,
 				}
-				if serverCapPlanningMap[capConvertBaseline.Id] != nil {
-					responseCapConvert.Number = serverCapPlanningMap[capConvertBaseline.Id].Number
+				serverCapPlanning := serverCapPlanningMap[capConvertBaseline.Id]
+				if serverCapPlanning != nil && serverCapPlanning.ResourcePoolId == productCodeResourcePool.Id {
+					responseCapConvert.Number = serverCapPlanning.Number
 				}
 				resourcePoolCapConvertMap[productCodeResourcePool.Id] = append(resourcePoolCapConvertMap[productCodeResourcePool.Id], responseCapConvert)
 			}
@@ -186,8 +179,11 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 				if serverCapPlanningMap[feature.Id] != nil {
 					responseCapConverts[i].FeatureId = feature.Id
 					// 处理特性的输入值
-					responseCapConverts[i].Number = serverCapPlanningMap[feature.Id].Number
-					responseCapConverts[i].FeatureNumber = serverCapPlanningMap[feature.Id].FeatureNumber
+					serverCapPlanning := serverCapPlanningMap[feature.Id]
+					if serverCapPlanning.ResourcePoolId == responseCapConvert.ResourcePoolId {
+						responseCapConverts[i].Number = serverCapPlanning.Number
+						responseCapConverts[i].FeatureNumber = serverCapPlanning.FeatureNumber
+					}
 				}
 			}
 		}
@@ -202,11 +198,6 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 			var resourcePoolCapConverts []*ResponseCapConvert
 			for _, responseCapConvert := range responseCapConverts {
 				if responseCapConvert.ProductCode == productCode {
-					// （1）云产品没有选择DPDK规格，如果资源池开启了DPDK，则跳过 （2）云产品选择了DPDK规格，如果资源池没有开启DPDK，则跳过
-					_, ok := dpdkCloudProductCodeMap[productCode]
-					if (!ok && resourcePool.OpenDpdk == constant.OpenDpdk) || (ok && resourcePool.OpenDpdk == constant.CloseDpdk) {
-						continue
-					}
 					resourcePoolCapConverts = append(resourcePoolCapConverts, responseCapConvert)
 				}
 			}
