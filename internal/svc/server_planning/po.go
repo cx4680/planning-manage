@@ -60,7 +60,6 @@ type Server struct {
 type MixedNodeRole struct {
 	Id   int64  `gorm:"-" json:"id"`   // 混合节点角色id
 	Name string `gorm:"-" json:"name"` // 混合节点角色名称
-
 }
 
 type Baseline struct {
