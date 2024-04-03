@@ -76,8 +76,6 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 	// 平台升级维保：根据选择年限对应不同BOM
 	if softwareData.ServiceYear > 1 {
 		softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: ServiceYearBom[softwareData.ServiceYear-1], CloudService: ServiceYearName, ServiceCode: ServiceYearCode, Number: 1})
-	} else {
-		softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: ServiceYearBom[1], CloudService: ServiceYearName, ServiceCode: ServiceYearCode, Number: 0})
 	}
 	// 保存云产品规划bom表
 	if err = db.Delete(&entity.SoftwareBomPlanning{}, "plan_id = ?", planId).Error; err != nil {
@@ -401,7 +399,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
 					bomMap[softwareBomLicenseBaseline.BomId] = number
 				}
-				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance {
+				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
 					bomMap[softwareBomLicenseBaseline.BomId] = number * serviceYear
 				}
 			}
@@ -458,7 +456,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 						}
 					}
 				}
-				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance {
+				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
 					bomMap[softwareBomLicenseBaseline.BomId] = assetAccessNumber * serviceYear
 				}
 			}
@@ -483,7 +481,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
 						bomMap[softwareBom.BomId] = number
 					}
-					if softwareBom.SellType == constant.SoftwareBomMaintenance {
+					if softwareBom.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
 						bomMap[softwareBom.BomId] = number * serviceYear
 					}
 				}
@@ -491,7 +489,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
 						bomMap[softwareBom.BomId] += number
 					}
-					if softwareBom.SellType == constant.SoftwareBomMaintenance {
+					if softwareBom.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
 						bomMap[softwareBom.BomId] = number * serviceYear
 					}
 				}
@@ -499,7 +497,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
 						bomMap[softwareBom.BomId] += number
 					}
-					if softwareBom.SellType == constant.SoftwareBomMaintenance {
+					if softwareBom.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
 						bomMap[softwareBom.BomId] = number * serviceYear
 					}
 				}
@@ -538,7 +536,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense && number != 0 {
 					bomMap[softwareBomLicenseBaseline.BomId] = number
 				}
-				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && number != 0 {
+				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 && number != 0 {
 					bomMap[softwareBomLicenseBaseline.BomId] = number * serviceYear
 				}
 			}
@@ -572,7 +570,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
 						bomMap[softwareBomLicenseBaseline.BomId] = protectiveEcsTerminalNumber
 					}
-					if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance {
+					if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
 						bomMap[softwareBomLicenseBaseline.BomId] = protectiveEcsTerminalNumber * serviceYear
 					}
 				}
@@ -581,7 +579,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
 							bomMap[softwareBomLicenseBaseline.BomId] = protectiveContainerServiceNumber
 						}
-						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance {
+						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
 							bomMap[softwareBomLicenseBaseline.BomId] = protectiveContainerServiceNumber * serviceYear
 						}
 					}
@@ -591,7 +589,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
 							bomMap[softwareBomLicenseBaseline.BomId] = protectedWebsiteDirectoryNumber
 						}
-						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance {
+						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
 							bomMap[softwareBomLicenseBaseline.BomId] = protectedWebsiteDirectoryNumber * serviceYear
 						}
 					}
@@ -604,7 +602,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
 					bomMap[softwareBomLicenseBaseline.BomId] = number
 				}
-				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance {
+				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
 					bomMap[softwareBomLicenseBaseline.BomId] = number * serviceYear
 				}
 			}
