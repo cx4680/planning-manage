@@ -195,7 +195,9 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	// 按产品分类
 	var response []*ResponseCapClassification
 	for productCode, resourcePools := range productCodeResourcePoolMap {
-		responseCapClassification := &ResponseCapClassification{}
+		responseCapClassification := &ResponseCapClassification{
+			ResourcePoolList: resourcePools,
+		}
 		for _, resourcePool := range resourcePools {
 			responseCapConverts := resourcePoolCapConvertMap[resourcePool.Id]
 			var resourcePoolCapConverts []*ResponseCapConvert

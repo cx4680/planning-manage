@@ -10,6 +10,7 @@ import (
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
 	"code.cestc.cn/ccos/common/planning-manage/internal/data"
 	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/datetime"
 )
 
 func UpdateResourcePool(request *Request) error {
@@ -44,6 +45,14 @@ func CreateResourcePool(request *Request) error {
 	if count == 0 {
 		return errors.New("该方案和节点角色下没有资源池")
 	}
+	var defaultServerBaselineId int64
+	if err := data.DB.Table(entity.ServerNodeRoleRelTable).Select("server_id").Where("node_role_id = ?", nodeRoleBaseline.Id).Order("server_id asc").Limit(1).Find(&defaultServerBaselineId).Error; err != nil {
+		return err
+	}
+	var serverBaseline *entity.ServerBaseline
+	if err := data.DB.Where("id = ?", defaultServerBaselineId).Find(&serverBaseline).Error; err != nil {
+		return err
+	}
 	resourcePoolName := fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, count+1)
 	resourcePool := &entity.ResourcePool{
 		ResourcePoolName:    resourcePoolName,
@@ -52,9 +61,35 @@ func CreateResourcePool(request *Request) error {
 		OpenDpdk:            constant.CloseDpdk,
 		DefaultResourcePool: constant.No,
 	}
-	if err := data.DB.Create(&resourcePool).Error; err != nil {
+	if err := data.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&resourcePool).Error; err != nil {
+			return err
+		}
+		now := datetime.GetNow()
+		serverPlanning := &entity.ServerPlanning{
+			PlanId:           request.PlanId,
+			NodeRoleId:       request.NodeRoleId,
+			MixedNodeRoleId:  request.NodeRoleId,
+			ServerBaselineId: serverBaseline.Id,
+			Number:           nodeRoleBaseline.MinimumNum,
+			OpenDpdk:         constant.CloseDpdk,
+			NetworkInterface: serverBaseline.NetworkInterface,
+			CpuType:          serverBaseline.CpuType,
+			ResourcePoolId:   resourcePool.Id,
+			CreateUserId:     request.UserId,
+			UpdateUserId:     request.UserId,
+			CreateTime:       now,
+			UpdateTime:       now,
+		}
+		if err := tx.Create(&serverPlanning).Error; err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		log.Errorf("[createResourcePool] error, %v", err)
 		return err
 	}
+
 	return nil
 }
 

@@ -10,6 +10,7 @@ import (
 
 	"code.cestc.cn/ccos/common/planning-manage/internal/api/errorcodes"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/result"
+	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/user"
 	"code.cestc.cn/ccos/common/planning-manage/internal/pkg/util"
 )
 
@@ -40,6 +41,7 @@ func Create(c *gin.Context) {
 		result.Failure(c, errorcodes.InvalidParam, http.StatusBadRequest)
 		return
 	}
+	request.UserId = user.GetUserId(c)
 	if err := CreateResourcePool(request); err != nil {
 		log.Errorf("create resource pool error: %v", err)
 		result.Failure(c, err.Error(), http.StatusInternalServerError)

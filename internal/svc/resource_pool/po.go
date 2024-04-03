@@ -5,4 +5,5 @@ type Request struct {
 	ResourcePoolName string `form:"resourcePoolName"`
 	PlanId           int64  `form:"planId"`
 	NodeRoleId       int64  `form:"nodeRoleId"`
+	UserId           string
 }
