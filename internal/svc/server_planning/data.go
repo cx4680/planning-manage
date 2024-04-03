@@ -54,7 +54,7 @@ func ListServer(request *Request) ([]*Server, error) {
 		return nil, err
 	}
 	// 查询混合部署方式map
-	mixedNodeRoleMap, err := getMixedNodeRoleMap(db, nodeRoleIdList)
+	mixedNodeRoleMap, err := getMixedNodeRoleMap(db, nodeRoleBaselineList, request.PlanId)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,6 @@ func ListServer(request *Request) ([]*Server, error) {
 					serverPlanning.MixedNodeRoleList = mixedNodeRoleMap[nodeRoleBaseline.Id]
 					serverPlanning.NetworkInterface = serverBaseline.NetworkInterface
 					serverPlanning.CpuType = serverBaseline.CpuType
-					resourcePoolList = resourcePoolNodeRoleIdMap[nodeRoleBaseline.Id]
 					serverPlanning.ResourcePoolName = resourcePool.ResourcePoolName
 					serverPlanning.ResourcePoolId = resourcePool.Id
 					serverPlanning.DefaultResourcePool = resourcePool.DefaultResourcePool
@@ -405,43 +404,47 @@ func DownloadServer(planId int64) ([]ResponseDownloadServer, string, error) {
 	return response, fileName, nil
 }
 
-func getMixedNodeRoleMap(db *gorm.DB, nodeRoleIdList []int64) (map[int64][]*MixedNodeRole, error) {
-	var nodeRoleIdMap = make(map[int64]interface{})
-	var newNodeRoleId []int64
-	for _, nodeRoleId := range nodeRoleIdList {
-		if _, ok := nodeRoleIdMap[nodeRoleId]; !ok {
-			nodeRoleIdMap[nodeRoleId] = struct{}{}
-			newNodeRoleId = append(newNodeRoleId, nodeRoleId)
-		}
-	}
-	var nodeRoleMixedDeployList []*entity.NodeRoleMixedDeploy
-	if err := db.Where("node_role_id IN (?)", newNodeRoleId).Find(&nodeRoleMixedDeployList).Error; err != nil {
-		return nil, err
-	}
-	var mixedNodeRoleIdList []int64
-	for _, v := range nodeRoleMixedDeployList {
-		mixedNodeRoleIdList = append(mixedNodeRoleIdList, v.MixedNodeRoleId)
-	}
-	var mixedNodeRoleBaselineList []*entity.NodeRoleBaseline
-	if err := db.Where("id IN (?)", newNodeRoleId).Find(&mixedNodeRoleBaselineList).Error; err != nil {
-		return nil, err
-	}
+func getMixedNodeRoleMap(db *gorm.DB, nodeRoleBaselineList []*entity.NodeRoleBaseline, planId int64) (map[int64][]*MixedNodeRole, error) {
+	var nodeRoleIdList []int64
 	var nodeRoleBaselineMap = make(map[int64]*entity.NodeRoleBaseline)
-	for _, v := range mixedNodeRoleBaselineList {
-		nodeRoleBaselineMap[v.Id] = v
-	}
 	var mixedNodeRoleMap = make(map[int64][]*MixedNodeRole)
-	for _, v := range newNodeRoleId {
-		mixedNodeRoleMap[v] = append(mixedNodeRoleMap[v], &MixedNodeRole{
-			Id:   v,
+	for _, nodeRoleBaseline := range nodeRoleBaselineList {
+		nodeRoleId := nodeRoleBaseline.Id
+		nodeRoleIdList = append(nodeRoleIdList, nodeRoleId)
+		nodeRoleBaselineMap[nodeRoleId] = nodeRoleBaseline
+		mixedNodeRoleMap[nodeRoleId] = append(mixedNodeRoleMap[nodeRoleId], &MixedNodeRole{
+			Id:   nodeRoleId,
 			Name: "独立部署",
 		})
 	}
-	for _, v := range nodeRoleMixedDeployList {
-		mixedNodeRoleMap[v.NodeRoleId] = append(mixedNodeRoleMap[v.NodeRoleId], &MixedNodeRole{
-			Id:   nodeRoleBaselineMap[v.MixedNodeRoleId].Id,
-			Name: "混合部署：" + nodeRoleBaselineMap[v.MixedNodeRoleId].NodeRoleName,
-		})
+	var nodeRoleMixedDeployList []*entity.NodeRoleMixedDeploy
+	if err := db.Where("node_role_id IN (?)", nodeRoleIdList).Find(&nodeRoleMixedDeployList).Error; err != nil {
+		return nil, err
+	}
+	var mixedNodeRoleIdList []int64
+	for _, nodeRoleMixedDeploy := range nodeRoleMixedDeployList {
+		mixedNodeRoleIdList = append(mixedNodeRoleIdList, nodeRoleMixedDeploy.MixedNodeRoleId)
+	}
+	var resourcePoolList []*entity.ResourcePool
+	if err := db.Where("plan_id = ? and node_role_id IN (?)", planId, mixedNodeRoleIdList).Find(&resourcePoolList).Error; err != nil {
+		return nil, err
+	}
+	nodeRoleResourcePoolsMap := make(map[int64][]*entity.ResourcePool)
+	for _, resourcePool := range resourcePoolList {
+		nodeRoleResourcePoolsMap[resourcePool.NodeRoleId] = append(nodeRoleResourcePoolsMap[resourcePool.NodeRoleId], resourcePool)
+	}
+	for _, nodeRoleMixedDeploy := range nodeRoleMixedDeployList {
+		mixNodeRole := &MixedNodeRole{
+			Id:   nodeRoleBaselineMap[nodeRoleMixedDeploy.MixedNodeRoleId].Id,
+			Name: "混合部署：" + nodeRoleBaselineMap[nodeRoleMixedDeploy.MixedNodeRoleId].NodeRoleName,
+		}
+		for _, resourcePool := range nodeRoleResourcePoolsMap[nodeRoleMixedDeploy.MixedNodeRoleId] {
+			mixNodeRole.MixResourcePoolList = append(mixNodeRole.MixResourcePoolList, &MixedResourcePool{
+				ResourcePoolId:   resourcePool.Id,
+				ResourcePoolName: resourcePool.ResourcePoolName,
+			})
+		}
+		mixedNodeRoleMap[nodeRoleMixedDeploy.NodeRoleId] = append(mixedNodeRoleMap[nodeRoleMixedDeploy.NodeRoleId], mixNodeRole)
 	}
 	return mixedNodeRoleMap, nil
 }
