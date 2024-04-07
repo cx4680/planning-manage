@@ -156,7 +156,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 			}
 			serverCapPlanningResourceIdMap := productCodeServerCapResourcePoolIdMap[capConvertBaseline.ProductCode]
 			for i, productCodeResourcePool := range productCodeResourcePoolList {
-				// 判断是否该产品之前是否已保存容量规划，如果没有保存，则判断该产品是否使用DPDK资源池，如果是，默认选择DPDK资源池，如果部署，默认选择不是DPDK资源池
+				// 判断是否该产品之前是否已保存容量规划，如果没有保存，则判断该产品是否使用DPDK资源池，如果是，默认选择DPDK资源池，如果不是，默认选择不是DPDK资源池；不是DPDK资源池的默认为第一个，是DPDK资源池的默认为第2个
 				if len(serverCapPlanningResourceIdMap) == 0 {
 					if productCodeResourcePool.DefaultResourcePool == constant.No {
 						continue

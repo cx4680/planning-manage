@@ -350,4 +350,6 @@ const (
 
 	NFVResourcePoolNameKernel = "NFV-kernel资源池"
 	NFVResourcePoolNameDpdk   = "NFV-DPDK资源池"
+
+	NetworkDeviceRoleCodeOSWS = "OSW-S"
 )

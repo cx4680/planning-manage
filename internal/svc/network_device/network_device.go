@@ -121,8 +121,10 @@ func ListNetworkDevices(c *gin.Context) {
 	}
 	// 服务器规划数据转为map
 	var nodeRoleServerNumMap = make(map[int64]int)
-	for _, value := range serverPlanningList {
-		nodeRoleServerNumMap[value.NodeRoleId] = value.Number
+	var serverNumber int
+	for _, serverPlanning := range serverPlanningList {
+		nodeRoleServerNumMap[serverPlanning.NodeRoleId] = serverPlanning.Number
+		serverNumber += serverPlanning.Number
 	}
 	// 根据版本号查询出网络设备角色基线数据
 	deviceRoleBaseline, err := SearchDeviceRoleBaselineByVersionId(versionId)
@@ -135,7 +137,7 @@ func ListNetworkDevices(c *gin.Context) {
 		result.FailureWithMsg(c, errorcodes.SystemError, http.StatusInternalServerError, errorcodes.NetworkDeviceRoleBaselineEmpty)
 		return
 	}
-	response, err = transformNetworkDeviceList(versionId, request, deviceRoleBaseline, nodeRoleServerNumMap)
+	response, err = transformNetworkDeviceList(versionId, request, deviceRoleBaseline, nodeRoleServerNumMap, serverNumber)
 	if err != nil {
 		log.Errorf("[transformNetworkDeviceList] error, %v", err)
 		result.Failure(c, errorcodes.SystemError, http.StatusInternalServerError)
@@ -341,7 +343,7 @@ func checkRequest(request *Request) error {
 }
 
 // 匹配组网模型处理网络设备清单数据
-func transformNetworkDeviceList(versionId int64, request *Request, roleBaseLine []entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int) ([]NetworkDevices, error) {
+func transformNetworkDeviceList(versionId int64, request *Request, roleBaseLine []entity.NetworkDeviceRoleBaseline, nodeRoleServerNumMap map[int64]int, serverNumber int) ([]NetworkDevices, error) {
 	var response []NetworkDevices
 	networkModel := request.NetworkModel
 	/**
@@ -357,6 +359,10 @@ func transformNetworkDeviceList(versionId int64, request *Request, roleBaseLine 
 	aswNum := make(map[int64]int)
 	// TODO roleBaseLine把OASW这条数据移到最后处理
 	for _, deviceRole := range roleBaseLine {
+		// 服务器数量少于200时不要OSW-S交换机
+		if deviceRole.FuncCompoCode == constant.NetworkDeviceRoleCodeOSWS && serverNumber < 200 {
+			continue
+		}
 		if constant.SeparationOfTwoNetworks == networkModel {
 			// 两网分离
 			model = deviceRole.TwoNetworkIso
