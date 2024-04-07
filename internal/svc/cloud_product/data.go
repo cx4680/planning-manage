@@ -335,6 +335,11 @@ func HandleResourcePoolAndServerPlanning(db *gorm.DB, planId int64, cloudProduct
 		return err
 	}
 	if err = db.Where("plan_id = ?", planId).Delete(&entity.ServerPlanning{}).Error; err != nil {
+		log.Errorf("delete server planning error: %v", err)
+		return err
+	}
+	if err = db.Table(entity.ServerCapPlanningTable).Where("plan_id = ? and resource_pool_id not in (?)", planId, resourceIdList).Delete(&entity.ServerCapPlanning{}).Error; err != nil {
+		log.Errorf("delete server cap planning error: %v", err)
 		return err
 	}
 	now := datetime.GetNow()
