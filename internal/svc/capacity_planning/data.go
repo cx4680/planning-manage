@@ -132,72 +132,71 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 			}
 		}
 		key := fmt.Sprintf("%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.CapPlanningInput)
-		if _, ok := featureCapConvertBaselineMap[key]; ok {
-			continue
-		}
-		productCodeResourcePoolList := productCodeResourcePoolMap[capConvertBaseline.ProductCode]
-		if len(productCodeResourcePoolList) == 0 {
-			// 处理只用算BOM的容量规划输入数据，因为云产品没有关联节点角色导致需要额外处理
-			responseCapConvert := &ResponseCapConvert{
-				VersionId:        capConvertBaseline.VersionId,
-				ProductName:      capConvertBaseline.ProductName,
-				ProductCode:      capConvertBaseline.ProductCode,
-				ProductType:      cloudProductCodeBaselineMap[capConvertBaseline.ProductCode].ProductType,
-				SellSpecs:        capConvertBaseline.SellSpecs,
-				CapPlanningInput: capConvertBaseline.CapPlanningInput,
-				Unit:             capConvertBaseline.Unit,
-				FeatureId:        capConvertBaseline.Id,
-				FeatureMode:      capConvertBaseline.FeaturesMode,
-				Description:      capConvertBaseline.Description,
-			}
-			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", 0, capConvertBaseline.Id)]
-			if serverCapPlanning != nil {
-				responseCapConvert.Number = serverCapPlanning.Number
-			}
-			extraProductCodeResponseCapConvertMap[capConvertBaseline.ProductCode] = append(extraProductCodeResponseCapConvertMap[capConvertBaseline.ProductCode], responseCapConvert)
-		}
-		serverCapPlanningResourceIdMap := productCodeServerCapResourcePoolIdMap[capConvertBaseline.ProductCode]
-		for i, productCodeResourcePool := range productCodeResourcePoolList {
-			// 判断是否该产品之前是否已保存容量规划，如果没有保存，则判断该产品是否使用DPDK资源池，如果是，默认选择DPDK资源池，如果部署，默认选择不是DPDK资源池
-			if len(serverCapPlanningResourceIdMap) == 0 {
-				if productCodeResourcePool.DefaultResourcePool == constant.No {
-					continue
+		if _, ok := featureCapConvertBaselineMap[key]; !ok {
+			productCodeResourcePoolList := productCodeResourcePoolMap[capConvertBaseline.ProductCode]
+			if len(productCodeResourcePoolList) == 0 {
+				// 处理只用算BOM的容量规划输入数据，因为云产品没有关联节点角色导致需要额外处理
+				responseCapConvert := &ResponseCapConvert{
+					VersionId:        capConvertBaseline.VersionId,
+					ProductName:      capConvertBaseline.ProductName,
+					ProductCode:      capConvertBaseline.ProductCode,
+					ProductType:      cloudProductCodeBaselineMap[capConvertBaseline.ProductCode].ProductType,
+					SellSpecs:        capConvertBaseline.SellSpecs,
+					CapPlanningInput: capConvertBaseline.CapPlanningInput,
+					Unit:             capConvertBaseline.Unit,
+					FeatureId:        capConvertBaseline.Id,
+					FeatureMode:      capConvertBaseline.FeaturesMode,
+					Description:      capConvertBaseline.Description,
 				}
-				if dpdkCloudProductCodeMap[capConvertBaseline.ProductCode] != nil {
-					if i != 1 {
+				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", 0, capConvertBaseline.Id)]
+				if serverCapPlanning != nil {
+					responseCapConvert.Number = serverCapPlanning.Number
+				}
+				extraProductCodeResponseCapConvertMap[capConvertBaseline.ProductCode] = append(extraProductCodeResponseCapConvertMap[capConvertBaseline.ProductCode], responseCapConvert)
+			}
+			serverCapPlanningResourceIdMap := productCodeServerCapResourcePoolIdMap[capConvertBaseline.ProductCode]
+			for i, productCodeResourcePool := range productCodeResourcePoolList {
+				// 判断是否该产品之前是否已保存容量规划，如果没有保存，则判断该产品是否使用DPDK资源池，如果是，默认选择DPDK资源池，如果部署，默认选择不是DPDK资源池
+				if len(serverCapPlanningResourceIdMap) == 0 {
+					if productCodeResourcePool.DefaultResourcePool == constant.No {
 						continue
+					}
+					if dpdkCloudProductCodeMap[capConvertBaseline.ProductCode] != nil {
+						if i != 1 {
+							continue
+						}
+					} else {
+						if i != 0 {
+							continue
+						}
 					}
 				} else {
-					if i != 0 {
+					// 如果有保存的容量规划，但没有选择这个资源池，则跳过
+					if _, ok = serverCapPlanningResourceIdMap[productCodeResourcePool.Id]; !ok {
 						continue
 					}
 				}
-			} else {
-				// 如果有保存的容量规划，但没有选择这个资源池，则跳过
-				if _, ok := serverCapPlanningResourceIdMap[productCodeResourcePool.Id]; !ok {
-					continue
+				responseCapConvert := &ResponseCapConvert{
+					VersionId:        capConvertBaseline.VersionId,
+					ProductName:      capConvertBaseline.ProductName,
+					ProductCode:      capConvertBaseline.ProductCode,
+					ProductType:      cloudProductCodeBaselineMap[capConvertBaseline.ProductCode].ProductType,
+					SellSpecs:        capConvertBaseline.SellSpecs,
+					CapPlanningInput: capConvertBaseline.CapPlanningInput,
+					Unit:             capConvertBaseline.Unit,
+					FeatureId:        capConvertBaseline.Id,
+					FeatureMode:      capConvertBaseline.FeaturesMode,
+					Description:      capConvertBaseline.Description,
+					ResourcePoolId:   productCodeResourcePool.Id,
+					ResourcePoolName: productCodeResourcePool.ResourcePoolName,
 				}
+				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", productCodeResourcePool.Id, capConvertBaseline.Id)]
+				if serverCapPlanning != nil && serverCapPlanning.ResourcePoolId == productCodeResourcePool.Id {
+					responseCapConvert.FeatureId = serverCapPlanning.CapacityBaselineId
+					responseCapConvert.Number = serverCapPlanning.Number
+				}
+				resourcePoolCapConvertMap[productCodeResourcePool.Id] = append(resourcePoolCapConvertMap[productCodeResourcePool.Id], responseCapConvert)
 			}
-			responseCapConvert := &ResponseCapConvert{
-				VersionId:        capConvertBaseline.VersionId,
-				ProductName:      capConvertBaseline.ProductName,
-				ProductCode:      capConvertBaseline.ProductCode,
-				ProductType:      cloudProductCodeBaselineMap[capConvertBaseline.ProductCode].ProductType,
-				SellSpecs:        capConvertBaseline.SellSpecs,
-				CapPlanningInput: capConvertBaseline.CapPlanningInput,
-				Unit:             capConvertBaseline.Unit,
-				FeatureId:        capConvertBaseline.Id,
-				FeatureMode:      capConvertBaseline.FeaturesMode,
-				Description:      capConvertBaseline.Description,
-				ResourcePoolId:   productCodeResourcePool.Id,
-				ResourcePoolName: productCodeResourcePool.ResourcePoolName,
-			}
-			serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", productCodeResourcePool.Id, capConvertBaseline.Id)]
-			if serverCapPlanning != nil && serverCapPlanning.ResourcePoolId == productCodeResourcePool.Id {
-				responseCapConvert.FeatureId = serverCapPlanning.CapacityBaselineId
-				responseCapConvert.Number = serverCapPlanning.Number
-			}
-			resourcePoolCapConvertMap[productCodeResourcePool.Id] = append(resourcePoolCapConvertMap[productCodeResourcePool.Id], responseCapConvert)
 		}
 		if util.IsNotBlank(capConvertBaseline.Features) {
 			featureCapConvertBaselineMap[key] = append(featureCapConvertBaselineMap[key], &ResponseFeatures{Id: capConvertBaseline.Id, Name: capConvertBaseline.Features})
