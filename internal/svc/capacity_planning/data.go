@@ -132,9 +132,6 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 			}
 		}
 		key := fmt.Sprintf("%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.CapPlanningInput)
-		if util.IsNotBlank(capConvertBaseline.Features) {
-			featureCapConvertBaselineMap[key] = append(featureCapConvertBaselineMap[key], &ResponseFeatures{Id: capConvertBaseline.Id, Name: capConvertBaseline.Features})
-		}
 		if _, ok := featureCapConvertBaselineMap[key]; ok {
 			continue
 		}
@@ -201,6 +198,9 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 				responseCapConvert.Number = serverCapPlanning.Number
 			}
 			resourcePoolCapConvertMap[productCodeResourcePool.Id] = append(resourcePoolCapConvertMap[productCodeResourcePool.Id], responseCapConvert)
+		}
+		if util.IsNotBlank(capConvertBaseline.Features) {
+			featureCapConvertBaselineMap[key] = append(featureCapConvertBaselineMap[key], &ResponseFeatures{Id: capConvertBaseline.Id, Name: capConvertBaseline.Features})
 		}
 	}
 	// 整理容量指标的特性
