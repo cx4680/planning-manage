@@ -95,7 +95,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 
 	// 处理按照云产品编码与服务器规划的服务器关联关系
 	var resourcePoolList []*entity.ResourcePool
-	if err := db.Where("plan_id = ?", request.PlanId).Find(&resourcePoolList).Error; err != nil {
+	if err := db.Where("plan_id = ?", request.PlanId).Order("default_resource_pool desc, id asc").Find(&resourcePoolList).Error; err != nil {
 		return nil, err
 	}
 	nodeRoleIdResourcePoolMap := make(map[int64][]*entity.ResourcePool)
@@ -1060,8 +1060,6 @@ func handleServerPlanning(db *gorm.DB, serverPlanningList []*entity.ServerPlanni
 	}
 	return resourcePoolServerPlanningMap, nodeRoleCodeBaselineMap, nodeRoleIdBaselineMap, serverBaselineMap, nil
 }
-
-var SpecialProduct = map[string]interface{}{constant.ProductCodeCKE: nil}
 
 func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap map[string][]*entity.CapConvertBaseline, expendResCodeMap map[string]float64) {
 	for productCode, capConvertBaselineList := range productCapMap {
