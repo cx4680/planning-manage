@@ -1102,7 +1102,7 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 					backupDataCapacity = serverCapacityMap[capConvertBaseline.Id]
 				}
 			}
-			expendResCodeMap[constant.ExpendResCodeCBRDisk] += backupDataCapacity
+			expendResCodeMap[constant.ExpendResCodeCBRDisk] += backupDataCapacity * 1024
 			break
 		case constant.ProductCodeHPC:
 			var vCpu, memory, count, cluster float64

@@ -299,7 +299,6 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 			}
 		case constant.ProductCodeCBR:
-			// BOM单位是TiB，容量规划输入的是GiB，换算
 			serverPlannings := serverPlanningsMap[constant.NodeRoleCodeCBR]
 			if len(serverPlannings) == 0 {
 				continue
@@ -308,7 +307,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			for _, serverPlanning := range serverPlannings {
 				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputBackupDataCapacity)]
 				if serverCapPlanning != nil {
-					number += int(math.Ceil(float64(serverCapPlanning.Number) / 1024))
+					number += serverCapPlanning.Number
 				}
 			}
 			if number == 0 {
