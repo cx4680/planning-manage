@@ -330,6 +330,7 @@ func HandleResourcePoolAndServerPlanning(db *gorm.DB, planId int64, cloudProduct
 			list[i].Number = nodeRoleIdNodeRoleMap[server.NodeRoleId].MinimumNum
 		}
 	}
+	capacity_planning.HandleBmsGWServerNum(list, nodeRoleCodeBaselineMap, true)
 	if err = db.Table(entity.ResourcePoolTable).Where("plan_id = ? and id not in (?)", planId, resourceIdList).Delete(&entity.ResourcePool{}).Error; err != nil {
 		log.Errorf("delete resource pool error: %v", err)
 		return err

@@ -3,6 +3,7 @@ package server_planning
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -189,6 +190,10 @@ func ListServer(request *Request) ([]*Server, error) {
 		return nil, err
 	}
 	var resourceIdList []int64
+	var bmsServerNumber int
+	bmsNodeRoleBaseline := nodeRoleCodeBaselineMap[constant.NodeRoleCodeBMS]
+	bmsGWNodeRoleBaseline := nodeRoleCodeBaselineMap[constant.NodeRoleCodeBMSGW]
+	bmsGWServerPlanningIndex := -1
 	for i, server := range list {
 		resourceIdList = append(resourceIdList, server.ResourcePoolId)
 		if serverPlanning, ok := resourcePoolIdServerPlanningMap[server.ResourcePoolId]; ok && util.IsBlank(request.NetworkInterface) && util.IsBlank(request.CpuType) {
@@ -207,6 +212,20 @@ func ListServer(request *Request) ([]*Server, error) {
 			}
 		} else {
 			list[i].Number = nodeRoleIdNodeRoleMap[server.NodeRoleId].MinimumNum
+		}
+		if bmsNodeRoleBaseline != nil && bmsGWNodeRoleBaseline != nil {
+			if server.NodeRoleId == bmsNodeRoleBaseline.Id {
+				bmsServerNumber += server.Number
+			}
+			if server.NodeRoleId == bmsGWNodeRoleBaseline.Id {
+				bmsGWServerPlanningIndex = i
+			}
+		}
+	}
+	if bmsGWServerPlanningIndex != -1 {
+		bmsGWServerNumber := int(math.Ceil(float64(bmsServerNumber)/30)) * 2
+		if list[bmsGWServerPlanningIndex].Number < bmsGWServerNumber {
+			list[bmsGWServerPlanningIndex].Number = bmsGWServerNumber
 		}
 	}
 	return list, nil

@@ -379,6 +379,7 @@ func SaveServerCapacity(request *Request) error {
 			serverCapPlanningList = append(serverCapPlanningList, ecsServerCapPlanning)
 		}
 	}
+	HandleBmsGWServerNum(newServerPlanningList, nodeRoleCodeBaselineMap, false)
 	if err = db.Transaction(func(tx *gorm.DB) error {
 		// 保存服务器规划
 		if err = tx.Save(&newServerPlanningList).Error; err != nil {
@@ -403,6 +404,35 @@ func SaveServerCapacity(request *Request) error {
 		return err
 	}
 	return nil
+}
+
+func HandleBmsGWServerNum(serverPlanningList []*entity.ServerPlanning, nodeRoleCodeMap map[string]*entity.NodeRoleBaseline, compareOriginServerNum bool) {
+	var bmsServerNumber int
+	bmsNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeBMS]
+	bmsGWNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeBMSGW]
+	if bmsNodeRoleBaseline == nil || bmsGWNodeRoleBaseline == nil {
+		return
+	}
+	bmsGWServerPlanningIndex := -1
+	for i, serverPlanning := range serverPlanningList {
+		if serverPlanning.NodeRoleId == bmsNodeRoleBaseline.Id {
+			bmsServerNumber += serverPlanning.Number
+		}
+		if serverPlanning.NodeRoleId == bmsGWNodeRoleBaseline.Id {
+			bmsGWServerPlanningIndex = i
+		}
+	}
+	if bmsGWServerPlanningIndex != -1 {
+		bmsGWServerNumber := int(math.Ceil(float64(bmsServerNumber)/30)) * 2
+		if bmsGWServerNumber < bmsGWNodeRoleBaseline.MinimumNum {
+			bmsGWServerNumber = bmsGWNodeRoleBaseline.MinimumNum
+		}
+		// 是否和原始服务器数量比较，如果比较且之前的数据大于现有的数据，则不修改。此情况出现在手动加BMS网关节点数量
+		if compareOriginServerNum && serverPlanningList[bmsGWServerPlanningIndex].Number > bmsGWServerNumber {
+			return
+		}
+		serverPlanningList[bmsGWServerPlanningIndex].Number = bmsGWServerNumber
+	}
 }
 
 func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, error) {
