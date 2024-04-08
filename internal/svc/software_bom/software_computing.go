@@ -37,10 +37,27 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 	}
 	bomMap := ComputingSoftwareBom(softwareData)
 	var softwareBomPlanningList []*entity.SoftwareBomPlanning
+	var cpuNumber int
+	for _, serverPlannings := range softwareData.ServerPlanningsMap {
+		for _, serverPlanning := range serverPlannings {
+			serverBaseline := softwareData.ServerBaselineMap[serverPlanning.ServerBaselineId]
+			cpuNumber += serverPlanning.Number * serverBaseline.CpuNum
+		}
+	}
 	for k, v := range bomMap {
 		if k == DatabaseManagementBom {
 			// 默认输出数据库管理平台授权，BOM iD：0100115140403032，单位：套
 			softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: DatabaseManagementBom, CloudService: DatabaseManagementName, ServiceCode: DatabaseManagementCode, Number: v})
+			continue
+		}
+		if k == SecurityMaintenanceBom {
+			// 默认输出安全产品统一维保，BOM iD：0100115099084508，单位：年
+			softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: SecurityMaintenanceBom, CloudService: SecurityMaintenanceName, ServiceCode: SecurityMaintenanceCode, Number: softwareData.ServiceYear - 1})
+			continue
+		}
+		if k == CloudNativeSecurityBasicPkgBom {
+			// 默认输出云原生安全-基础安全包，BOM iD：0100115808142197，单位：颗
+			softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: CloudNativeSecurityBasicPkgBom, CloudService: CloudNativeSecurityBasicPkgName, ServiceCode: CloudNativeSecurityBasicPkgCode, Number: cpuNumber})
 			continue
 		}
 		softwareBomLicenseBaseline := softwareData.BomIdSoftwareBomLicenseBaselineMap[k]
@@ -59,13 +76,6 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 		})
 	}
 	// 平台规模授权：0100115148387809，按云平台下服务器数量计算，N=整网所有服务器的物理CPU数量之和-管理减免（10）；N大于等于0
-	var cpuNumber int
-	for _, serverPlannings := range softwareData.ServerPlanningsMap {
-		for _, serverPlanning := range serverPlannings {
-			serverBaseline := softwareData.ServerBaselineMap[serverPlanning.ServerBaselineId]
-			cpuNumber += serverPlanning.Number * serverBaseline.CpuNum
-		}
-	}
 	cpuNumber = cpuNumber - 10
 	if cpuNumber < 0 {
 		cpuNumber = 0
@@ -230,7 +240,6 @@ func getSoftwareBomPlanningData(db *gorm.DB, planId int64) (*SoftwareData, error
 func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 	// bomId为key，数量为value
 	var bomMap = make(map[string]int)
-	serviceYear := softwareData.ServiceYear - 1
 	serverPlanningsMap := softwareData.ServerPlanningsMap
 	serverBaselineMap := softwareData.ServerBaselineMap
 	serverCapPlanningMap := softwareData.ServerCapPlanningMap
@@ -384,6 +393,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
+			bomMap[SecurityMaintenanceBom] = 1
+			bomMap[CloudNativeSecurityBasicPkgBom] = 1
 			var number int
 			for _, serverPlanning := range serverPlannings {
 				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputFirewall)]
@@ -398,12 +409,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
 					bomMap[softwareBomLicenseBaseline.BomId] = number
 				}
-				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
-					bomMap[softwareBomLicenseBaseline.BomId] = number * serviceYear
-				}
 			}
 		case constant.ProductCodeCSOC:
-			// 是3个容量输入对应3个bom，日志存储空间不足500G的为第一档，每G一个bom，超过500G的为第二档，每500G一个bom
 			var assetAccessNumber int
 			var logStorageNumber int
 			var vulnerabilityScanningNumber int
@@ -411,6 +418,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
+			bomMap[SecurityMaintenanceBom] = 1
+			bomMap[CloudNativeSecurityBasicPkgBom] = 1
 			for _, serverPlanning := range serverPlannings {
 				assetAccess := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputAssetAccess)]
 				if assetAccess != nil {
@@ -437,26 +446,13 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 						bomMap[softwareBomLicenseBaseline.BomId] = assetAccessNumber
 					}
 					if softwareBomLicenseBaseline.AuthorizedUnit == constant.SoftwareBomAuthorizedUnitLogStorage {
-						if softwareBomLicenseBaseline.CalcMethod == constant.CSOCSoftwareBomCalcMethod500GPackage {
-							logStorageNumber = logStorageNumber / 500
-							if logStorageNumber > 0 {
-								bomMap[softwareBomLicenseBaseline.BomId] = logStorageNumber
-							}
-						} else {
-							logStorageNumber = logStorageNumber % 500
-							if logStorageNumber > 0 {
-								bomMap[softwareBomLicenseBaseline.BomId] = logStorageNumber
-							}
-						}
+						bomMap[softwareBomLicenseBaseline.BomId] = logStorageNumber
 					}
 					if softwareBomLicenseBaseline.ValueAddedService == constant.SoftwareBomValueAddedServiceVulnerabilityScanning {
 						if vulnerabilityScanningNumber != 0 {
 							bomMap[softwareBomLicenseBaseline.BomId] = vulnerabilityScanningNumber
 						}
 					}
-				}
-				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
-					bomMap[softwareBomLicenseBaseline.BomId] = assetAccessNumber * serviceYear
 				}
 			}
 		case constant.ProductCodeDSP:
@@ -466,6 +462,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
+			bomMap[SecurityMaintenanceBom] = 1
+			bomMap[CloudNativeSecurityBasicPkgBom] = 1
 			for _, serverPlanning := range serverPlannings {
 				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputDatabaseAudit)]
 				if serverCapPlanning != nil {
@@ -480,32 +478,24 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
 						bomMap[softwareBom.BomId] = number
 					}
-					if softwareBom.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
-						bomMap[softwareBom.BomId] = number * serviceYear
-					}
 				}
 				if softwareBom.CalcMethod == constant.DSPSoftwareBomCalcMethod6To30Instances && number >= 6 && number <= 30 {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
 						bomMap[softwareBom.BomId] += number
-					}
-					if softwareBom.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
-						bomMap[softwareBom.BomId] = number * serviceYear
 					}
 				}
 				if softwareBom.CalcMethod == constant.DSPSoftwareBomCalcMethodOver30Instances && number > 30 {
 					if softwareBom.SellType == constant.SoftwareBomLicense {
 						bomMap[softwareBom.BomId] += number
 					}
-					if softwareBom.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
-						bomMap[softwareBom.BomId] = number * serviceYear
-					}
 				}
 			}
 		case constant.ProductCodeCNBH:
+			bomMap[SecurityMaintenanceBom] = 1
+			bomMap[CloudNativeSecurityBasicPkgBom] = 1
 			// 根据包数量直接转换为bom数量
 			var oneHundredNumber int
 			var fiveHundredNumber int
-			var oneThousandNumber int
 			serverPlannings := serverPlanningsMap[constant.NodeRoleCodeCompute]
 			for _, serverPlanning := range serverPlannings {
 				oneHundredServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputOneHundred)]
@@ -516,10 +506,6 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				if fiveHundredServerCapPlanning != nil {
 					fiveHundredNumber += fiveHundredServerCapPlanning.Number
 				}
-				oneThousandServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputOneThousand)]
-				if oneThousandServerCapPlanning != nil {
-					oneThousandNumber += oneThousandServerCapPlanning.Number
-				}
 			}
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
 				var number int
@@ -529,14 +515,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				if softwareBomLicenseBaseline.SellSpecs == constant.CapPlanningInputFiveHundred {
 					number = fiveHundredNumber
 				}
-				if softwareBomLicenseBaseline.SellSpecs == constant.CapPlanningInputOneThousand {
-					number = oneThousandNumber
-				}
 				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense && number != 0 {
 					bomMap[softwareBomLicenseBaseline.BomId] = number
-				}
-				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 && number != 0 {
-					bomMap[softwareBomLicenseBaseline.BomId] = number * serviceYear
 				}
 			}
 		case constant.ProductCodeCWP:
@@ -547,6 +527,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
+			bomMap[SecurityMaintenanceBom] = 1
+			bomMap[CloudNativeSecurityBasicPkgBom] = 1
 			for _, serverPlanning := range serverPlannings {
 				protectiveEcsTerminal := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputProtectiveECSTerminal)]
 				if protectiveEcsTerminal != nil {
@@ -569,17 +551,11 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
 						bomMap[softwareBomLicenseBaseline.BomId] = protectiveEcsTerminalNumber
 					}
-					if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
-						bomMap[softwareBomLicenseBaseline.BomId] = protectiveEcsTerminalNumber * serviceYear
-					}
 				}
 				if softwareBomLicenseBaseline.ValueAddedService == constant.SoftwareBomValueAddedServiceContainerSafety {
 					if protectiveContainerServiceNumber != 0 {
 						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
 							bomMap[softwareBomLicenseBaseline.BomId] = protectiveContainerServiceNumber
-						}
-						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
-							bomMap[softwareBomLicenseBaseline.BomId] = protectiveContainerServiceNumber * serviceYear
 						}
 					}
 				}
@@ -588,21 +564,17 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
 							bomMap[softwareBomLicenseBaseline.BomId] = protectedWebsiteDirectoryNumber
 						}
-						if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
-							bomMap[softwareBomLicenseBaseline.BomId] = protectedWebsiteDirectoryNumber * serviceYear
-						}
 					}
 				}
 			}
 		case constant.ProductCodeDES:
+			bomMap[SecurityMaintenanceBom] = 1
+			bomMap[CloudNativeSecurityBasicPkgBom] = 1
 			// 没有输入，输出1
 			number := 1
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
 				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
 					bomMap[softwareBomLicenseBaseline.BomId] = number
-				}
-				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomMaintenance && serviceYear > 0 {
-					bomMap[softwareBomLicenseBaseline.BomId] = number * serviceYear
 				}
 			}
 		case constant.ProductCodeCEASQLTX, constant.ProductCodeMYSQL, constant.ProductCodeCEASQLDW, constant.ProductCodeCEASQLCK, constant.ProductCodeREDIS, constant.ProductCodePOSTGRESQL:
@@ -854,17 +826,23 @@ func handlePAASCapPlanningInput(resourcePoolId int64, serverCapPlanningMap map[s
 }
 
 const (
-	PlatformName           = "平台规模授权"
-	PlatformCode           = "Platform"
-	PlatformBom            = "0100115148387809"
-	SoftwareName           = "软件base"
-	SoftwareCode           = "SoftwareBase"
-	SoftwareBaseBom        = "0100115150861886"
-	ServiceYearName        = "平台升级维保"
-	ServiceYearCode        = "ServiceYear"
-	DatabaseManagementName = "数据库管理平台授权"
-	DatabaseManagementCode = "DatabaseManagementPlatform"
-	DatabaseManagementBom  = "0100115140403032"
+	PlatformName                    = "平台规模授权"
+	PlatformCode                    = "Platform"
+	PlatformBom                     = "0100115148387809"
+	SoftwareName                    = "软件base"
+	SoftwareCode                    = "SoftwareBase"
+	SoftwareBaseBom                 = "0100115150861886"
+	ServiceYearName                 = "平台升级维保"
+	ServiceYearCode                 = "ServiceYear"
+	DatabaseManagementName          = "数据库管理平台授权"
+	DatabaseManagementCode          = "DatabaseManagementPlatform"
+	DatabaseManagementBom           = "0100115140403032"
+	SecurityMaintenanceName         = "安全产品统一维保"
+	SecurityMaintenanceCode         = "SecurityMaintenance"
+	SecurityMaintenanceBom          = "0100115099084508"
+	CloudNativeSecurityBasicPkgName = "云原生安全-基础安全包"
+	CloudNativeSecurityBasicPkgCode = "CloudNativeSecurityBasicPkg"
+	CloudNativeSecurityBasicPkgBom  = "0100115808142197"
 )
 
 var ServiceYearBom = map[int]string{1: "0100115152958526", 2: "0100115153975617", 3: "0100115154780568", 4: "0100115155303482", 5: "0100115156784743"}
