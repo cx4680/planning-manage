@@ -90,7 +90,10 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 			continue
 		}
 		serverCapPlanningMap[fmt.Sprintf("%d-%d", serverCapPlanning.ResourcePoolId, serverCapPlanning.CapacityBaselineId)] = serverCapPlanning
-		productCodeServerCapResourcePoolIdMap[serverCapPlanning.ProductCode] = map[int64]int64{serverCapPlanning.ResourcePoolId: serverCapPlanning.ResourcePoolId}
+		if _, ok := productCodeServerCapResourcePoolIdMap[serverCapPlanning.ProductCode]; !ok {
+			productCodeServerCapResourcePoolIdMap[serverCapPlanning.ProductCode] = make(map[int64]int64)
+		}
+		productCodeServerCapResourcePoolIdMap[serverCapPlanning.ProductCode][serverCapPlanning.ResourcePoolId] = serverCapPlanning.ResourcePoolId
 	}
 
 	// 处理按照云产品编码与服务器规划的服务器关联关系
