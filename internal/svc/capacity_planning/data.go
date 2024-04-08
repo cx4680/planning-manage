@@ -823,9 +823,13 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 }
 
 func calcFixedNumber(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapacity, versionId int64, serverPlanning *entity.ServerPlanning, expendResCodeFeatureMap map[string]*ExpendResFeature, resourcePoolExpendResCodeMap map[string]float64, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline) error {
+	var resourcePool *entity.ResourcePool
+	if err := db.Where("id = ?", resourcePoolServerCapacity.ResourcePoolId).Find(&resourcePool).Error; err != nil {
+		return err
+	}
 	// 默认每个Region有ShareDNS服务，4C 4G，4副本；Cloud DNS，12C 12G，2副本；均消耗NFV kernel资源池。
 	nodeRoleBaseline := nodeRoleBaselineMap[constant.NodeRoleCodeNFV]
-	if nodeRoleBaseline != nil && serverPlanning.NodeRoleId == nodeRoleBaseline.Id && serverPlanning.OpenDpdk == 0 {
+	if nodeRoleBaseline != nil && resourcePool != nil && resourcePool.DefaultResourcePool == constant.Yes && serverPlanning.NodeRoleId == nodeRoleBaseline.Id && serverPlanning.OpenDpdk == 0 {
 		resourcePoolExpendResCodeMap[constant.ExpendResCodeNFVVCpu] += 40
 		resourcePoolExpendResCodeMap[constant.ExpendResCodeNFVMemory] += 40
 	}
@@ -845,7 +849,7 @@ func calcFixedNumber(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServer
 		}
 		for _, cloudProductNodeRoleId := range cloudProductNodeRoleIds {
 			// TODO 这里因为固定的几个产品都没用到DPDK，所以在这里先写死
-			if cloudProductNodeRoleId == serverPlanning.NodeRoleId && serverPlanning.OpenDpdk == 0 {
+			if resourcePool != nil && resourcePool.DefaultResourcePool == constant.Yes && cloudProductNodeRoleId == serverPlanning.NodeRoleId && serverPlanning.OpenDpdk == 0 {
 				extraCloudProductCodeResourcePoolIdMap[cloudProductBaseline.ProductCode] = resourcePoolServerCapacity.ResourcePoolId
 				// 加break是因为对于同一个节点角色，默认只算给第一个资源池
 				break
