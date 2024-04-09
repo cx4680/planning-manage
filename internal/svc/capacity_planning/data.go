@@ -367,20 +367,30 @@ func SaveServerCapacity(request *Request) error {
 		}
 		if ecsServerPlanning != nil {
 			newServerPlanningList = append(newServerPlanningList, ecsServerPlanning)
+			resourcePoolServerPlanningMap[resourcePoolId] = ecsServerPlanning
 		} else {
 			minimumNum := nodeRoleIdBaselineMap[serverPlanning.NodeRoleId].MinimumNum
 			if resourcePoolCapNum < minimumNum {
 				resourcePoolCapNum = minimumNum
 			}
 			serverPlanning.Number = resourcePoolCapNum
+			resourcePoolServerPlanningMap[resourcePoolId] = serverPlanning
 			newServerPlanningList = append(newServerPlanningList, serverPlanning)
 		}
 		if ecsServerCapPlanning != nil {
 			serverCapPlanningList = append(serverCapPlanningList, ecsServerCapPlanning)
 		}
 	}
-	if err = HandleBmsGWAndMasterServerNum(newServerPlanningList, nodeRoleCodeBaselineMap, false); err != nil {
+	var allNewServerPlanningList []*entity.ServerPlanning
+	for _, serverPlanning := range resourcePoolServerPlanningMap {
+		allNewServerPlanningList = append(allNewServerPlanningList, serverPlanning)
+	}
+	updateServerPlanningList, err := HandleBmsGWAndMasterServerNum(allNewServerPlanningList, nodeRoleCodeBaselineMap, false)
+	if err != nil {
 		return err
+	}
+	if len(updateServerPlanningList) > 0 {
+		newServerPlanningList = append(newServerPlanningList, updateServerPlanningList...)
 	}
 	if err = db.Transaction(func(tx *gorm.DB) error {
 		// 保存服务器规划
@@ -408,7 +418,7 @@ func SaveServerCapacity(request *Request) error {
 	return nil
 }
 
-func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, nodeRoleCodeMap map[string]*entity.NodeRoleBaseline, compareOriginServerNum bool) error {
+func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, nodeRoleCodeMap map[string]*entity.NodeRoleBaseline, compareOriginServerNum bool) ([]*entity.ServerPlanning, error) {
 	bmsNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeBMS]
 	bmsGWNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeBMSGW]
 	masterNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeMaster]
@@ -417,6 +427,7 @@ func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, 
 	masterServerPlanningIndex := -1
 	var planId int64
 	var serverNumber int
+	var updateServerPlanningList []*entity.ServerPlanning
 	for i, serverPlanning := range serverPlanningList {
 		planId = serverPlanning.PlanId
 		if bmsNodeRoleBaseline != nil && serverPlanning.NodeRoleId == bmsNodeRoleBaseline.Id {
@@ -438,16 +449,19 @@ func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, 
 		if bmsGWServerNumber < bmsGWNodeRoleBaseline.MinimumNum {
 			bmsGWServerNumber = bmsGWNodeRoleBaseline.MinimumNum
 		}
+		bmsGWServerPlanning := serverPlanningList[bmsGWServerPlanningIndex]
 		// 是否和原始服务器数量比较，如果比较且之前的数据大于现有的数据，则不修改。此情况出现在手动加BMS网关节点数量
-		if !compareOriginServerNum || serverPlanningList[bmsGWServerPlanningIndex].Number < bmsGWServerNumber {
+		if !compareOriginServerNum || bmsGWServerPlanning.Number < bmsGWServerNumber {
 			serverPlanningList[bmsGWServerPlanningIndex].Number = bmsGWServerNumber
+			bmsGWServerPlanning.Number = bmsGWServerNumber
+			updateServerPlanningList = append(updateServerPlanningList, bmsGWServerPlanning)
 		}
-		serverNumber += serverPlanningList[bmsGWServerPlanningIndex].Number
+		serverNumber += bmsGWServerPlanning.Number
 	}
 	if masterServerPlanningIndex != -1 {
 		var cloudProductBaselineList []*entity.CloudProductBaseline
 		if err := data.DB.Where("id in (select product_id from cloud_product_planning where plan_id = ?)", planId).Find(&cloudProductBaselineList).Error; err != nil {
-			return err
+			return nil, err
 		}
 		pureIaaS := true
 		for _, cloudProductBaseline := range cloudProductBaselineList {
@@ -460,15 +474,15 @@ func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, 
 		if pureIaaS {
 			var projectManage *entity.ProjectManage
 			if err := data.DB.Where("id = (select project_id from plan_manage where id = ?)", planId).Find(&projectManage).Error; err != nil {
-				return err
+				return nil, err
 			}
 			var azManageList []*entity.AzManage
 			if err := data.DB.Where("region_id = ?", projectManage.RegionId).Find(&azManageList).Error; err != nil {
-				return err
+				return nil, err
 			}
 			var cellManage *entity.CellManage
 			if err := data.DB.Where("id = ?", projectManage.CellId).Find(&cellManage).Error; err != nil {
-				return err
+				return nil, err
 			}
 			if len(azManageList) > 1 {
 				if cellManage.Type == constant.CellTypeControl {
@@ -512,12 +526,15 @@ func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, 
 				masterNumber = 15
 			}
 		}
+		masterServerPlanning := serverPlanningList[masterServerPlanningIndex]
 		// 是否和原始服务器数量比较，如果比较且之前的数据大于现有的数据，则不修改
-		if !compareOriginServerNum || serverPlanningList[masterServerPlanningIndex].Number < masterNumber {
+		if !compareOriginServerNum || masterServerPlanning.Number < masterNumber {
 			serverPlanningList[masterServerPlanningIndex].Number = masterNumber
+			masterServerPlanning.Number = masterNumber
+			updateServerPlanningList = append(updateServerPlanningList, masterServerPlanning)
 		}
 	}
-	return nil
+	return updateServerPlanningList, nil
 }
 
 func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, error) {

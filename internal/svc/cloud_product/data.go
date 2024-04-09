@@ -330,7 +330,7 @@ func HandleResourcePoolAndServerPlanning(db *gorm.DB, planId int64, cloudProduct
 			list[i].Number = nodeRoleIdNodeRoleMap[server.NodeRoleId].MinimumNum
 		}
 	}
-	if err = capacity_planning.HandleBmsGWAndMasterServerNum(list, nodeRoleCodeBaselineMap, true); err != nil {
+	if _, err = capacity_planning.HandleBmsGWAndMasterServerNum(list, nodeRoleCodeBaselineMap, true); err != nil {
 		return err
 	}
 	if err = db.Table(entity.ResourcePoolTable).Where("plan_id = ? and id not in (?)", planId, resourceIdList).Delete(&entity.ResourcePool{}).Error; err != nil {
