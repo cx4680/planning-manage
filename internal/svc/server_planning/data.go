@@ -191,9 +191,12 @@ func ListServer(request *Request) ([]*Server, error) {
 	}
 	var resourceIdList []int64
 	var bmsServerNumber int
+	var serverNumber int
 	bmsNodeRoleBaseline := nodeRoleCodeBaselineMap[constant.NodeRoleCodeBMS]
 	bmsGWNodeRoleBaseline := nodeRoleCodeBaselineMap[constant.NodeRoleCodeBMSGW]
+	masterNodeRoleBaseline := nodeRoleCodeBaselineMap[constant.NodeRoleCodeMaster]
 	bmsGWServerPlanningIndex := -1
+	masterServerPlanningIndex := -1
 	for i, server := range list {
 		resourceIdList = append(resourceIdList, server.ResourcePoolId)
 		if serverPlanning, ok := resourcePoolIdServerPlanningMap[server.ResourcePoolId]; ok && util.IsBlank(request.NetworkInterface) && util.IsBlank(request.CpuType) {
@@ -221,11 +224,92 @@ func ListServer(request *Request) ([]*Server, error) {
 				bmsGWServerPlanningIndex = i
 			}
 		}
+		if masterNodeRoleBaseline != nil && server.NodeRoleId == masterNodeRoleBaseline.Id {
+			masterServerPlanningIndex = i
+		} else {
+			if server.NodeRoleId != bmsGWNodeRoleBaseline.Id {
+				serverNumber += server.Number
+			}
+		}
 	}
 	if bmsGWServerPlanningIndex != -1 {
 		bmsGWServerNumber := int(math.Ceil(float64(bmsServerNumber)/30)) * 2
 		if list[bmsGWServerPlanningIndex].Number < bmsGWServerNumber {
 			list[bmsGWServerPlanningIndex].Number = bmsGWServerNumber
+		}
+		serverNumber += list[bmsGWServerPlanningIndex].Number
+	}
+	if masterServerPlanningIndex != -1 {
+		var cloudProductBaselineList []*entity.CloudProductBaseline
+		if err = data.DB.Where("id in (?)", productIdList).Find(&cloudProductBaselineList).Error; err != nil {
+			return nil, err
+		}
+		pureIaaS := true
+		for _, cloudProductBaseline := range cloudProductBaselineList {
+			if cloudProductBaseline.ProductType != constant.ProductTypeCompute && cloudProductBaseline.ProductType != constant.ProductTypeNetwork && cloudProductBaseline.ProductType != constant.ProductTypeStorage {
+				pureIaaS = false
+				break
+			}
+		}
+		var masterNumber int
+		if pureIaaS {
+			var projectManage *entity.ProjectManage
+			if err = data.DB.Where("id = (select project_id from plan_manage where id = ?)", request.PlanId).Find(&projectManage).Error; err != nil {
+				return nil, err
+			}
+			var azManageList []*entity.AzManage
+			if err = data.DB.Where("region_id = ?", projectManage.RegionId).Find(&azManageList).Error; err != nil {
+				return nil, err
+			}
+			var cellManage *entity.CellManage
+			if err = data.DB.Where("id = ?", projectManage.CellId).Find(&cellManage).Error; err != nil {
+				return nil, err
+			}
+			if len(azManageList) > 1 {
+				if cellManage.Type == constant.CellTypeControl {
+					if serverNumber <= 495 {
+						masterNumber = 5
+					} else if serverNumber <= 1991 {
+						masterNumber = 9
+					} else {
+						masterNumber = 15
+					}
+				} else {
+					if serverNumber <= 197 {
+						masterNumber = 3
+					} else if serverNumber <= 495 {
+						masterNumber = 5
+					} else if serverNumber <= 1991 {
+						masterNumber = 9
+					} else {
+						masterNumber = 15
+					}
+				}
+			} else {
+				if serverNumber <= 197 {
+					masterNumber = 3
+				} else if serverNumber <= 495 {
+					masterNumber = 5
+				} else if serverNumber <= 1991 {
+					masterNumber = 9
+				} else {
+					masterNumber = 15
+				}
+			}
+		} else {
+			if serverNumber <= 195 {
+				masterNumber = 5
+			} else if serverNumber <= 493 {
+				masterNumber = 7
+			} else if serverNumber <= 1991 {
+				masterNumber = 9
+			} else {
+				masterNumber = 15
+			}
+		}
+		// 是否和原始服务器数量比较，如果比较且之前的数据大于现有的数据，则不修改
+		if serverPlanningList[masterServerPlanningIndex].Number < masterNumber {
+			serverPlanningList[masterServerPlanningIndex].Number = masterNumber
 		}
 	}
 	return list, nil

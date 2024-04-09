@@ -298,6 +298,7 @@ const (
 	NodeRoleCodeCBR         = "CBR"
 	NodeRoleCodeBIGDATA     = "BIG-DATA"
 	NodeRoleCodeCOMPUTELD   = "COMPUTE-LD"
+	NodeRoleCodeMaster      = "MASTER"
 
 	SellSpecsStandardEdition = "标准版"
 	SellSpecsUltimateEdition = "旗舰版"
@@ -352,4 +353,8 @@ const (
 	NFVResourcePoolNameDpdk   = "NFV-DPDK资源池"
 
 	NetworkDeviceRoleCodeOSWS = "OSW-S"
+
+	ProductTypeCompute = "计算服务"
+	ProductTypeNetwork = "网络服务"
+	ProductTypeStorage = "存储服务"
 )
