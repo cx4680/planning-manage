@@ -234,10 +234,12 @@ func ListServer(request *Request) ([]*Server, error) {
 	}
 	if bmsGWServerPlanningIndex != -1 {
 		bmsGWServerNumber := int(math.Ceil(float64(bmsServerNumber)/30)) * 2
-		if list[bmsGWServerPlanningIndex].Number < bmsGWServerNumber {
+		bmsGWServerPlanning := list[bmsGWServerPlanningIndex]
+		if bmsGWServerPlanning.Number < bmsGWServerNumber {
+			bmsGWServerPlanning.Number = bmsGWServerNumber
 			list[bmsGWServerPlanningIndex].Number = bmsGWServerNumber
 		}
-		serverNumber += list[bmsGWServerPlanningIndex].Number
+		serverNumber += bmsGWServerPlanning.Number
 	}
 	if masterServerPlanningIndex != -1 {
 		var cloudProductBaselineList []*entity.CloudProductBaseline
