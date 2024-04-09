@@ -439,7 +439,7 @@ func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, 
 		if masterNodeRoleBaseline != nil && serverPlanning.NodeRoleId == masterNodeRoleBaseline.Id {
 			masterServerPlanningIndex = i
 		} else {
-			if serverPlanning.NodeRoleId != bmsGWNodeRoleBaseline.Id {
+			if bmsGWNodeRoleBaseline == nil || serverPlanning.NodeRoleId != bmsGWNodeRoleBaseline.Id {
 				serverNumber += serverPlanning.Number
 			}
 		}

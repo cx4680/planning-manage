@@ -227,7 +227,7 @@ func ListServer(request *Request) ([]*Server, error) {
 		if masterNodeRoleBaseline != nil && server.NodeRoleId == masterNodeRoleBaseline.Id {
 			masterServerPlanningIndex = i
 		} else {
-			if server.NodeRoleId != bmsGWNodeRoleBaseline.Id {
+			if bmsGWNodeRoleBaseline == nil || server.NodeRoleId != bmsGWNodeRoleBaseline.Id {
 				serverNumber += server.Number
 			}
 		}
