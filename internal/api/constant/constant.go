@@ -342,15 +342,15 @@ const (
 
 	CopyPlanEndOfName = "的副本"
 
-	SellSpecDPDK = "DPDK"
+	SellSpecHighPerformanceType = "高性能型"
 
 	ResourcePoolDefaultName = "资源池"
 
 	CloseDpdk = 0
 	OpenDpdk  = 1
 
-	NFVResourcePoolNameKernel = "NFV-kernel资源池"
-	NFVResourcePoolNameDpdk   = "NFV-DPDK资源池"
+	NFVResourcePoolNameKernel = "NFV-普通资源池"
+	NFVResourcePoolNameDpdk   = "NFV-高性能资源池"
 
 	NetworkDeviceRoleCodeOSWS = "OSW-S"
 

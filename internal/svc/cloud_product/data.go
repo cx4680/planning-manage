@@ -137,8 +137,19 @@ func HandleResourcePoolAndServerPlanning(db *gorm.DB, planId int64, cloudProduct
 	dpdkCloudProductMap := make(map[int64]*entity.CloudProductPlanning)
 	for _, cloudProductPlanning := range cloudProductPlanningList {
 		productIdList = append(productIdList, cloudProductPlanning.ProductId)
-		if strings.Contains(cloudProductPlanning.SellSpec, constant.SellSpecDPDK) {
+		if cloudProductPlanning.SellSpec == constant.SellSpecHighPerformanceType {
 			dpdkCloudProductMap[cloudProductPlanning.ProductId] = cloudProductPlanning
+		}
+	}
+	if len(dpdkCloudProductMap) > 0 {
+		var cloudProductBaselineList []*entity.CloudProductBaseline
+		if err := db.Where("id IN (?)", productIdList).Find(&cloudProductBaselineList).Error; err != nil {
+			return err
+		}
+		for _, cloudProductBaseline := range cloudProductBaselineList {
+			if _, ok := dpdkCloudProductMap[cloudProductBaseline.Id]; ok && cloudProductBaseline.ProductType != constant.ProductTypeNetwork {
+				delete(dpdkCloudProductMap, cloudProductBaseline.Id)
+			}
 		}
 	}
 	// 查询云产品和角色关联表
@@ -214,10 +225,8 @@ func HandleResourcePoolAndServerPlanning(db *gorm.DB, planId int64, cloudProduct
 					resourcePoolName := fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, i+1)
 					if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
 						resourcePoolName = constant.NFVResourcePoolNameKernel
-					}
-					if serverPlanning.OpenDpdk == constant.OpenDpdk {
-						openDpdk = constant.OpenDpdk
-						if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
+						if serverPlanning.OpenDpdk == constant.OpenDpdk {
+							openDpdk = constant.OpenDpdk
 							resourcePoolName = constant.NFVResourcePoolNameDpdk
 						}
 					}
@@ -425,14 +434,10 @@ func addDpdkServerPlanning(db *gorm.DB, planId int64, nodeRoleBaseline *entity.N
 		CpuType:          serverBaseline.CpuType,
 		OpenDpdk:         constant.OpenDpdk,
 	}
-	resourcePoolName := fmt.Sprintf("%s-%s-%d", nodeRoleBaseline.NodeRoleName, constant.ResourcePoolDefaultName, 2)
-	if nodeRoleBaseline.NodeRoleCode == constant.NodeRoleCodeNFV {
-		resourcePoolName = constant.NFVResourcePoolNameDpdk
-	}
 	resourcePool := &entity.ResourcePool{
 		PlanId:              planId,
 		NodeRoleId:          nodeRoleBaseline.Id,
-		ResourcePoolName:    resourcePoolName,
+		ResourcePoolName:    constant.NFVResourcePoolNameDpdk,
 		OpenDpdk:            constant.OpenDpdk,
 		DefaultResourcePool: constant.Yes,
 	}

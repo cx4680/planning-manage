@@ -32,7 +32,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	dpdkCloudProductIdMap := make(map[int64]*entity.CloudProductPlanning)
 	for _, cloudProductPlanning := range cloudProductPlanningList {
 		cloudProductIdList = append(cloudProductIdList, cloudProductPlanning.ProductId)
-		if strings.Contains(cloudProductPlanning.SellSpec, constant.SellSpecDPDK) {
+		if cloudProductPlanning.SellSpec == constant.SellSpecHighPerformanceType {
 			dpdkCloudProductIdMap[cloudProductPlanning.ProductId] = cloudProductPlanning
 		}
 	}
@@ -49,7 +49,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		cloudProductCodeList = append(cloudProductCodeList, cloudProductBaseline.ProductCode)
 		cloudProductIdBaselineMap[cloudProductBaseline.Id] = cloudProductBaseline
 		cloudProductCodeBaselineMap[cloudProductBaseline.ProductCode] = cloudProductBaseline
-		if _, ok := dpdkCloudProductIdMap[cloudProductBaseline.Id]; ok {
+		if _, ok := dpdkCloudProductIdMap[cloudProductBaseline.Id]; ok && cloudProductBaseline.ProductType == constant.ProductTypeNetwork {
 			dpdkCloudProductCodeMap[cloudProductBaseline.ProductCode] = cloudProductBaseline
 		}
 	}
