@@ -1030,11 +1030,10 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 					cluster = float64(requestCapacity.Number)
 				}
 			}
-			waterLevel, _ := strconv.ParseFloat(capServerCalcBaselineMap[constant.ExpendResCodeECSVCpu].WaterLevel, 64)
 			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 				CpuNumber:    16,
 				MemoryNumber: 32,
-				Count:        int(math.Ceil(vCpu/waterLevel/14.6 + cluster*3)),
+				Count:        int(math.Ceil(vCpu/0.7/14.6 + cluster*3)),
 			})
 		case constant.ProductCodeCNBH:
 			// 前面已经算好了CNBH每个资产类型的数量，这里不需要计算了
@@ -1109,8 +1108,8 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 		height := float64(v.MemoryNumber) + extraMemorySpent/1024
 		items = append(items, util.Item{Size: util.Rectangle{Width: width, Height: height}, Number: v.Count})
 	}
-	// 节点固定开销5C8G，则单节点可用vCPU=(节点总vCPU*-5）*70%*超分系数N；单节点可用内存=(节点总内存*-8）*70%，为大箱子的长宽
-	var boxSize = util.Rectangle{Width: float64((serverBaseline.Cpu-5)*ecsCapacity.FeatureNumber) * 0.7, Height: float64(serverBaseline.Memory-8) * 0.7}
+	// 节点固定开销5C8G，则单节点可用vCPU=(节点总vCPU*-5）*90%*超分系数N；单节点可用内存=(节点总内存*-8）*90%，为大箱子的长宽
+	var boxSize = util.Rectangle{Width: float64((serverBaseline.Cpu-5)*ecsCapacity.FeatureNumber) * 0.9, Height: float64(serverBaseline.Memory-8) * 0.9}
 	boxes := util.Pack(items, boxSize)
 	// TODO 如果不是单独部署，则不能使用最小数量
 	if minimumNumber > len(boxes) {
