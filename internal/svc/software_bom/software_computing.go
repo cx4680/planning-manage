@@ -52,7 +52,9 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 		}
 		if k == SecurityMaintenanceBom {
 			// 默认输出安全产品统一维保，BOM iD：0100115099084508，单位：年
-			softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: SecurityMaintenanceBom, CloudService: SecurityMaintenanceName, ServiceCode: SecurityMaintenanceCode, Number: softwareData.ServiceYear - 1})
+			if softwareData.ServiceYear > 1 {
+				softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: SecurityMaintenanceBom, CloudService: SecurityMaintenanceName, ServiceCode: SecurityMaintenanceCode, Number: softwareData.ServiceYear - 1})
+			}
 			continue
 		}
 		if k == CloudNativeSecurityBasicPkgBom {

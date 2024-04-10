@@ -569,7 +569,7 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 	switch nodeRoleBaseline.NodeRoleCode {
 	case constant.NodeRoleCodeCompute:
 		// 添加容量规划基线的表1和表2对不上的数据(CNBH)和CKE的容器集群数
-		extraProductCodes = []string{constant.ProductCodeCKE, constant.ProductCodeCNBH, constant.ProductCodeHPC}
+		extraProductCodes = []string{constant.ProductCodeCKE, constant.ProductCodeCNBH, constant.ProductCodeHPC, constant.ProductCodeCCR}
 		break
 	case constant.NodeRoleCodePAASData:
 		extraProductCodes = []string{constant.ProductCodeKAFKA, constant.ProductCodeROCKETMQ, constant.ProductCodeRABBITMQ, constant.ProductCodeCLS}
@@ -604,12 +604,7 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 			return nil, err
 		}
 	}
-	for _, extraCapConvertBaseline := range extraCapConvertBaselines {
-		if extraCapConvertBaseline.ProductCode == constant.ProductCodeCKE && (extraCapConvertBaseline.CapPlanningInput == constant.CapPlanningInputVCpu || extraCapConvertBaseline.CapPlanningInput == constant.CapPlanningInputMemory) {
-			continue
-		}
-		capConvertBaselines = append(capConvertBaselines, extraCapConvertBaseline)
-	}
+	capConvertBaselines = append(capConvertBaselines, extraCapConvertBaselines...)
 	capConvertBaselineIdMap := make(map[int64]*entity.CapConvertBaseline)
 	for _, capConvertBaseline := range capConvertBaselines {
 		capConvertBaselineIdMap[capConvertBaseline.Id] = capConvertBaseline
