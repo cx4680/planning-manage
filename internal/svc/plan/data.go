@@ -382,17 +382,17 @@ func buildServerFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 
 	var planList []entity.ServerPlanningSelect
 	if err := data.DB.Table(entity.ServerPlanningTable).
-		Select("plan_id, server_baseline_id, SUM(number) as number, classify").
+		Select("plan_id, server_baseline_id, SUM(number) as number, classify, node_role_code").
 		Joins("LEFT JOIN node_role_baseline on server_planning.node_role_id = node_role_baseline.id ").
 		Where("plan_id = ? and delete_state = 0", planId).
-		Group("plan_id, server_baseline_id, classify").
+		Group("plan_id, server_baseline_id, classify, node_role_code").
 		Find(&planList).Error; err != nil {
 		return nil, err
 	}
 
 	for _, plan := range planList {
 		// TODO 暂时不需要同步存储设备到BOM，后期要做的时候再放开
-		if plan.Classify == constant.NodeRoleClassifyStorage {
+		if plan.NodeRoleCode == constant.NodeRoleCodeEBS || plan.NodeRoleCode == constant.NodeRoleCodeEFS || plan.NodeRoleCode == constant.NodeRoleCodeOSS {
 			continue
 		}
 		// bomId

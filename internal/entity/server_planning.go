@@ -95,4 +95,5 @@ type ServerPlanningSelect struct {
 	ServerBaselineId int64  `gorm:"column:server_baseline_id" json:"serverBaselineId"` // 服务器基线表id
 	Number           int    `gorm:"column:number" json:"number"`                       // 数量
 	Classify         string `gorm:"column:classify" json:"classify"`
+	NodeRoleCode     string `gorm:"column:node_role_code" json:"nodeRoleCode"`
 }
