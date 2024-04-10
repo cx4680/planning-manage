@@ -87,7 +87,6 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 			var ecsCapacity *EcsCapacity
 			util.ToObject(serverCapPlanning.Special, &ecsCapacity)
 			resourcePoolIdEcsCapacityMap[serverCapPlanning.ResourcePoolId] = ecsCapacity
-			continue
 		}
 		serverCapPlanningMap[fmt.Sprintf("%d-%d", serverCapPlanning.ResourcePoolId, serverCapPlanning.CapacityBaselineId)] = serverCapPlanning
 		if _, ok := productCodeServerCapResourcePoolIdMap[serverCapPlanning.ProductCode]; !ok {
@@ -1083,7 +1082,9 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 		case constant.ProductCodeCCR:
 			var instanceNumber int
 			for _, requestCapacity := range commonServerCapacity {
-				instanceNumber += requestCapacity.Number
+				if capConvertBaselineMap[requestCapacity.Id].CapPlanningInput == constant.CapPlanningInputInstances {
+					instanceNumber += requestCapacity.Number
+				}
 			}
 			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 				CpuNumber:    4,
