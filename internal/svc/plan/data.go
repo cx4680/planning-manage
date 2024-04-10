@@ -391,6 +391,10 @@ func buildServerFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 	}
 
 	for _, plan := range planList {
+		// TODO 暂时不需要同步存储设备到BOM，后期要做的时候再放开
+		if plan.Classify == constant.NodeRoleClassifyStorage {
+			continue
+		}
 		// bomId
 		var baseLine entity.ServerBaseline
 		if err := data.DB.Model(&entity.ServerBaseline{}).Where("id = ? ", plan.ServerBaselineId).Find(&baseLine).Error; err != nil {

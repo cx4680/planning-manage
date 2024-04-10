@@ -357,4 +357,6 @@ const (
 	ProductTypeCompute = "计算服务"
 	ProductTypeNetwork = "网络服务"
 	ProductTypeStorage = "存储服务"
+
+	NodeRoleClassifyStorage = "存储区"
 )
