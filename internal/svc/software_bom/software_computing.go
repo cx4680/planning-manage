@@ -670,7 +670,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 				if softwareBom.CalcMethod == constant.CSPSoftwareBomCalcMethodExpansionPackage {
 					if number-500 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
+						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-500) / 100))
 					}
 				}
 			}
