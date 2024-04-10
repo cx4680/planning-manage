@@ -663,7 +663,7 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 		return nil, err
 	}
 	if ecsServerPlanning != nil {
-		resourcePoolCapNumber += ecsServerPlanning.Number
+		resourcePoolCapNumber = ecsServerPlanning.Number
 	}
 	if resourcePoolCapNumber < nodeRoleBaseline.MinimumNum {
 		resourcePoolCapNumber = nodeRoleBaseline.MinimumNum
@@ -720,9 +720,10 @@ func GetResourcePoolCapMap(db *gorm.DB, request *Request, resourcePoolServerPlan
 		if err != nil {
 			return nil, err
 		}
-		resourcePoolCapNumberMap[resourcePoolId] += capNumber
 		if ecsServerPlanning != nil {
 			resourcePoolCapNumberMap[resourcePoolId] += ecsServerPlanning.Number
+		} else {
+			resourcePoolCapNumberMap[resourcePoolId] += capNumber
 		}
 	}
 	return resourcePoolCapNumberMap, nil
