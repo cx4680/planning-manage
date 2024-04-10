@@ -310,8 +310,8 @@ func ListServer(request *Request) ([]*Server, error) {
 			}
 		}
 		// 是否和原始服务器数量比较，如果比较且之前的数据大于现有的数据，则不修改
-		if serverPlanningList[masterServerPlanningIndex].Number < masterNumber {
-			serverPlanningList[masterServerPlanningIndex].Number = masterNumber
+		if list[masterServerPlanningIndex].Number < masterNumber {
+			list[masterServerPlanningIndex].Number = masterNumber
 		}
 	}
 	return list, nil
