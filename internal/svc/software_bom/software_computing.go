@@ -266,7 +266,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 	for _, v := range softwareData.CloudProductBaselineList {
 		productCode := v.ProductCode
 		softwareBomLicenseBaselineList := softwareData.ServiceCodeSoftwareBomLicenseBaselineMap[productCode]
-		if len(softwareBomLicenseBaselineList) == 0 {
+		if len(softwareBomLicenseBaselineList) == 0 && productCode != constant.ProductCodeCIK {
 			continue
 		}
 		switch productCode {
