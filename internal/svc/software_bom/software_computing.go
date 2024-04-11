@@ -742,7 +742,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			var number int
 			for _, serverPlanning := range serverPlannings {
 				_, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, _ := handlePAASCapPlanningInput(serverPlanning.ResourcePoolId, serverCapPlanningMap, productCode)
-				number += standardEditionNumber*4 + professionalEditionNumber*8 + enterpriseEditionNumber*24
+				number += standardEditionNumber*40 + professionalEditionNumber*80 + enterpriseEditionNumber*120
 			}
 			for _, softwareBom := range softwareBomLicenseBaselineList {
 				if softwareBom.CalcMethod == constant.CONNECTSoftwareBomCalcMethodBasePackage {
