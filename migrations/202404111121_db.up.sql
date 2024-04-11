@@ -1,0 +1,1 @@
+insert into `feature_name_code_rel` (`feature_name`, `feature_code`, `feature_type`) values ("PaaS", "PaaS", "cloud_product");

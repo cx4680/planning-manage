@@ -1,0 +1,1 @@
+DELETE FROM `feature_name_code_rel` WHERE `feature_name` = 'PaaS';
