@@ -62,6 +62,23 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 			softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: CloudNativeSecBasicPkgBom, CloudService: CloudNativeSecBasicPkgName, ServiceCode: CloudNativeSecBasicPkgCode, Number: cpuNumber})
 			continue
 		}
+		if k == BigDataManagementBom {
+			// 默认输出中电云大数据开发管理平台，BOM iD：0100115228973107，单位：套
+			softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: BigDataManagementBom, CloudService: BigDataManagementName, ServiceCode: BigDataManagementCode, Number: v})
+			continue
+		}
+		if k == BigDataMaintenanceBom {
+			// 默认输出中电云大数据平台(维保服务)，BOM iD：0100115230260255，单位：年
+			if softwareData.ServiceYear > 1 {
+				softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: BigDataMaintenanceBom, CloudService: BigDataMaintenanceName, ServiceCode: BigDataMaintenanceCode, Number: softwareData.ServiceYear - 1})
+			}
+			continue
+		}
+		if k == BigDataPlatformScaleBom {
+			// 默认输出大数据CeaInsight-平台规模授权，BOM iD：0100115139411762，单位：vCPU
+			softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: BigDataPlatformScaleBom, CloudService: BigDataPlatformScaleName, ServiceCode: BigDataPlatformScaleCode, Number: v})
+			continue
+		}
 		softwareBomLicenseBaseline := softwareData.BomIdSoftwareBomLicenseBaselineMap[k]
 		softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{
 			PlanId:             planId,
@@ -579,7 +596,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					bomMap[softwareBomLicenseBaseline.BomId] = number
 				}
 			}
-		case constant.ProductCodeCEASQLTX, constant.ProductCodeMYSQL, constant.ProductCodeCEASQLDW, constant.ProductCodeCEASQLCK, constant.ProductCodeREDIS, constant.ProductCodePOSTGRESQL:
+		case constant.ProductCodeCEASQLTX, constant.ProductCodeMYSQL, constant.ProductCodeCEASQLDW, constant.ProductCodeCEASQLCK, constant.ProductCodeREDIS, constant.ProductCodePOSTGRESQL, constant.ProductCodeMONGODB, constant.ProductCodeINFLUXDB:
 			serverPlannings := serverPlanningsMap[constant.NodeRoleCodeDATABASE]
 			if len(serverPlannings) == 0 {
 				continue
@@ -598,17 +615,18 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					copyNumber = copyServerCapPlanning.Number
 				}
 				if vCpuNumber != 0 && copyNumber != 0 {
-					serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
-					if serverBaseline.Arch == constant.CpuArchX86 {
-						number += int(math.Ceil(float64(vCpuNumber*copyNumber) / 2))
-					}
-					if serverBaseline.Arch == constant.CpuArchARM {
-						number += vCpuNumber * copyNumber
-					}
+					// serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
+					// if serverBaseline.Arch == constant.CpuArchX86 {
+					// 	number += int(math.Ceil(float64(vCpuNumber*copyNumber) / 2))
+					// }
+					// if serverBaseline.Arch == constant.CpuArchARM {
+					// 	number += vCpuNumber * copyNumber
+					// }
+					number += vCpuNumber * copyNumber
 				}
 			}
-			if number == 0 {
-				number = 1
+			if number == 0 || number < 192 {
+				number = 192
 			}
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
 				bomMap[softwareBomLicenseBaseline.BomId] = number
@@ -732,7 +750,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 				if softwareBom.CalcMethod == constant.CONNECTSoftwareBomCalcMethodExpansionPackage {
 					if number-200 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
+						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 50))
 					}
 				}
 			}
@@ -797,6 +815,58 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					}
 				}
 			}
+		case constant.ProductCodeES:
+			serverPlannings := serverPlanningsMap[constant.NodeRoleCodeDATABASE]
+			if len(serverPlannings) == 0 {
+				continue
+			}
+			bomMap[BigDataManagementBom] = 1
+			bomMap[BigDataMaintenanceBom] = 1
+			var number int
+			for _, serverPlanning := range serverPlannings {
+				var vCpuNumber int
+				var copyNumber int
+				vCpuServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputVCpuTotal)]
+				copyServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputCopy)]
+				if vCpuServerCapPlanning != nil {
+					vCpuNumber = vCpuServerCapPlanning.Number
+				}
+				if copyServerCapPlanning != nil {
+					copyNumber = copyServerCapPlanning.Number
+				}
+				if vCpuNumber != 0 && copyNumber != 0 {
+					// serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
+					// if serverBaseline.Arch == constant.CpuArchX86 {
+					// 	number += int(math.Ceil(float64(vCpuNumber*copyNumber) / 2))
+					// }
+					// if serverBaseline.Arch == constant.CpuArchARM {
+					// 	number += vCpuNumber * copyNumber
+					// }
+					number += vCpuNumber * copyNumber
+				}
+			}
+			if number == 0 || number < 100 {
+				number = 100
+			}
+			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
+				bomMap[softwareBomLicenseBaseline.BomId] = number
+			}
+		case constant.ProductCodeCIK:
+			serverPlannings := serverPlanningsMap[constant.NodeRoleCodeBIGDATA]
+			if len(serverPlannings) == 0 {
+				continue
+			}
+			bomMap[BigDataManagementBom] = 1
+			bomMap[BigDataMaintenanceBom] = 1
+			var number int
+			for _, serverPlanning := range serverPlannings {
+				serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
+				number += serverPlanning.Number * serverBaseline.Cpu
+			}
+			if number == 0 || number < 300 {
+				number = 300
+			}
+			bomMap[BigDataPlatformScaleBom] = number
 		}
 	}
 	return bomMap
@@ -845,6 +915,15 @@ const (
 	CloudNativeSecBasicPkgName = "云原生安全-基础安全包"
 	CloudNativeSecBasicPkgCode = "CloudNativeSecurityBasicPkg"
 	CloudNativeSecBasicPkgBom  = "0100115808142197"
+	BigDataManagementName      = "中电云大数据开发管理平台"
+	BigDataManagementCode      = "BigDataManagementPlatform"
+	BigDataManagementBom       = "0100115228973107"
+	BigDataMaintenanceName     = "中电云大数据平台(维保服务)"
+	BigDataMaintenanceCode     = "BigDataMaintenance"
+	BigDataMaintenanceBom      = "0100115230260255"
+	BigDataPlatformScaleName   = "大数据CeaInsight-平台规模授权"
+	BigDataPlatformScaleCode   = "BigDataPlatformScale"
+	BigDataPlatformScaleBom    = "0100115139411762"
 )
 
 var ServiceYearBom = map[int]string{1: "0100115152958526", 2: "0100115153975617", 3: "0100115154780568", 4: "0100115155303482", 5: "0100115156784743"}

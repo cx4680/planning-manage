@@ -359,8 +359,8 @@ func transformNetworkDeviceList(versionId int64, request *Request, roleBaseLine 
 	aswNum := make(map[int64]int)
 	// TODO roleBaseLine把OASW这条数据移到最后处理
 	for _, deviceRole := range roleBaseLine {
-		// 服务器数量少于200时不要OSW-S交换机
-		if deviceRole.FuncCompoCode == constant.NetworkDeviceRoleCodeOSWS && serverNumber < 200 {
+		// 服务器数量少于1200时不要OSW-S交换机
+		if deviceRole.FuncCompoCode == constant.NetworkDeviceRoleCodeOSWS && serverNumber < 1200 {
 			continue
 		}
 		if constant.SeparationOfTwoNetworks == networkModel {

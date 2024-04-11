@@ -1075,18 +1075,18 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 					})
 				}
 			}
-		case constant.ProductCodeCCR:
-			var instanceNumber int
-			for _, requestCapacity := range commonServerCapacity {
-				if capConvertBaselineMap[requestCapacity.Id].CapPlanningInput == constant.CapPlanningInputInstances {
-					instanceNumber += requestCapacity.Number
-				}
-			}
-			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
-				CpuNumber:    4,
-				MemoryNumber: 4,
-				Count:        instanceNumber,
-			})
+		// case constant.ProductCodeCCR:
+		// 	var instanceNumber int
+		// 	for _, requestCapacity := range commonServerCapacity {
+		// 		if capConvertBaselineMap[requestCapacity.Id].CapPlanningInput == constant.CapPlanningInputInstances {
+		// 			instanceNumber += requestCapacity.Number
+		// 		}
+		// 	}
+		// 	ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
+		// 		CpuNumber:    4,
+		// 		MemoryNumber: 4,
+		// 		Count:        instanceNumber,
+		// 	})
 		case constant.ProductCodeHPC:
 			var vCpu, memory, cluster, count int
 			for _, requestCapacity := range commonServerCapacity {
@@ -1214,18 +1214,20 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 			expendResCodeMap[constant.ExpendResCodeECSMemory] += 96*cluster + 32*memory/0.7/29.4
 			break
 		case constant.ProductCodeCCR:
-			var instanceNumber, singleInstanceCapacity float64
+			// var instanceNumber, imageDepositoryCapacity float64
+			var imageDepositoryCapacity float64
 			for _, capConvertBaseline := range capConvertBaselineList {
-				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputInstances {
-					instanceNumber = serverCapacityMap[capConvertBaseline.Id]
-				}
-				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputSingleInstanceCapacity {
-					singleInstanceCapacity = serverCapacityMap[capConvertBaseline.Id]
+				// if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputInstances {
+				// 	instanceNumber = serverCapacityMap[capConvertBaseline.Id]
+				// }
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputImageDepositoryCapacity {
+					imageDepositoryCapacity = serverCapacityMap[capConvertBaseline.Id]
 				}
 			}
-			expendResCodeMap[constant.ExpendResCodeECSVCpu] += 4 * instanceNumber
-			expendResCodeMap[constant.ExpendResCodeECSMemory] += 4 * instanceNumber
-			expendResCodeMap[constant.ExpendResCodeOSSDisk] += instanceNumber * singleInstanceCapacity
+			// expendResCodeMap[constant.ExpendResCodeECSVCpu] += 4 * instanceNumber
+			// expendResCodeMap[constant.ExpendResCodeECSMemory] += 4 * instanceNumber
+			// expendResCodeMap[constant.ExpendResCodeOSSDisk] += instanceNumber * imageDepositoryCapacity
+			expendResCodeMap[constant.ExpendResCodeOSSDisk] += imageDepositoryCapacity
 			break
 		case constant.ProductCodeCBR:
 			var backupDataCapacity float64
