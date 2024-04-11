@@ -57,9 +57,9 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 			}
 			continue
 		}
-		if k == CloudNativeSecurityBasicPkgBom {
+		if k == CloudNativeSecBasicPkgBom {
 			// 默认输出云原生安全-基础安全包，BOM iD：0100115808142197，单位：颗
-			softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: CloudNativeSecurityBasicPkgBom, CloudService: CloudNativeSecurityBasicPkgName, ServiceCode: CloudNativeSecurityBasicPkgCode, Number: cpuNumber})
+			softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: CloudNativeSecBasicPkgBom, CloudService: CloudNativeSecBasicPkgName, ServiceCode: CloudNativeSecBasicPkgCode, Number: cpuNumber})
 			continue
 		}
 		softwareBomLicenseBaseline := softwareData.BomIdSoftwareBomLicenseBaselineMap[k]
@@ -396,7 +396,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				continue
 			}
 			bomMap[SecurityMaintenanceBom] = 1
-			bomMap[CloudNativeSecurityBasicPkgBom] = 1
+			bomMap[CloudNativeSecBasicPkgBom] = 1
 			var number int
 			for _, serverPlanning := range serverPlannings {
 				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputFirewall)]
@@ -421,7 +421,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				continue
 			}
 			bomMap[SecurityMaintenanceBom] = 1
-			bomMap[CloudNativeSecurityBasicPkgBom] = 1
+			bomMap[CloudNativeSecBasicPkgBom] = 1
 			for _, serverPlanning := range serverPlannings {
 				assetAccess := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputAssetAccess)]
 				if assetAccess != nil {
@@ -465,7 +465,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				continue
 			}
 			bomMap[SecurityMaintenanceBom] = 1
-			bomMap[CloudNativeSecurityBasicPkgBom] = 1
+			bomMap[CloudNativeSecBasicPkgBom] = 1
 			for _, serverPlanning := range serverPlannings {
 				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputDatabaseAudit)]
 				if serverCapPlanning != nil {
@@ -494,7 +494,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 		case constant.ProductCodeCNBH:
 			bomMap[SecurityMaintenanceBom] = 1
-			bomMap[CloudNativeSecurityBasicPkgBom] = 1
+			bomMap[CloudNativeSecBasicPkgBom] = 1
 			// 根据包数量直接转换为bom数量
 			var oneHundredNumber int
 			var fiveHundredNumber int
@@ -530,7 +530,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				continue
 			}
 			bomMap[SecurityMaintenanceBom] = 1
-			bomMap[CloudNativeSecurityBasicPkgBom] = 1
+			bomMap[CloudNativeSecBasicPkgBom] = 1
 			for _, serverPlanning := range serverPlannings {
 				protectiveEcsTerminal := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputProtectiveECSTerminal)]
 				if protectiveEcsTerminal != nil {
@@ -571,7 +571,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 		case constant.ProductCodeDES:
 			bomMap[SecurityMaintenanceBom] = 1
-			bomMap[CloudNativeSecurityBasicPkgBom] = 1
+			bomMap[CloudNativeSecBasicPkgBom] = 1
 			// 没有输入，输出1
 			number := 1
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
@@ -828,23 +828,23 @@ func handlePAASCapPlanningInput(resourcePoolId int64, serverCapPlanningMap map[s
 }
 
 const (
-	PlatformName                    = "平台规模授权"
-	PlatformCode                    = "Platform"
-	PlatformBom                     = "0100115148387809"
-	SoftwareName                    = "软件base"
-	SoftwareCode                    = "SoftwareBase"
-	SoftwareBaseBom                 = "0100115150861886"
-	ServiceYearName                 = "平台升级维保"
-	ServiceYearCode                 = "ServiceYear"
-	DatabaseManagementName          = "数据库管理平台授权"
-	DatabaseManagementCode          = "DatabaseManagementPlatform"
-	DatabaseManagementBom           = "0100115140403032"
-	SecurityMaintenanceName         = "安全产品统一维保"
-	SecurityMaintenanceCode         = "SecurityMaintenance"
-	SecurityMaintenanceBom          = "0100115099084508"
-	CloudNativeSecurityBasicPkgName = "云原生安全-基础安全包"
-	CloudNativeSecurityBasicPkgCode = "CloudNativeSecurityBasicPkg"
-	CloudNativeSecurityBasicPkgBom  = "0100115808142197"
+	PlatformName               = "平台规模授权"
+	PlatformCode               = "Platform"
+	PlatformBom                = "0100115148387809"
+	SoftwareName               = "软件base"
+	SoftwareCode               = "SoftwareBase"
+	SoftwareBaseBom            = "0100115150861886"
+	ServiceYearName            = "平台升级维保"
+	ServiceYearCode            = "ServiceYear"
+	DatabaseManagementName     = "数据库管理平台授权"
+	DatabaseManagementCode     = "DatabaseManagementPlatform"
+	DatabaseManagementBom      = "0100115140403032"
+	SecurityMaintenanceName    = "安全产品统一维保"
+	SecurityMaintenanceCode    = "SecurityMaintenance"
+	SecurityMaintenanceBom     = "0100115099084508"
+	CloudNativeSecBasicPkgName = "云原生安全-基础安全包"
+	CloudNativeSecBasicPkgCode = "CloudNativeSecurityBasicPkg"
+	CloudNativeSecBasicPkgBom  = "0100115808142197"
 )
 
 var ServiceYearBom = map[int]string{1: "0100115152958526", 2: "0100115153975617", 3: "0100115154780568", 4: "0100115155303482", 5: "0100115156784743"}
