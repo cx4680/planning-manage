@@ -643,13 +643,13 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				middleServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputMiddle)]
 				largeServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputLarge)]
 				if smallServerCapPlanning != nil {
-					number += smallServerCapPlanning.Number * 5
+					number += smallServerCapPlanning.Number
 				}
 				if middleServerCapPlanning != nil {
-					number += middleServerCapPlanning.Number * 8
+					number += middleServerCapPlanning.Number
 				}
 				if largeServerCapPlanning != nil {
-					number += largeServerCapPlanning.Number * 14
+					number += largeServerCapPlanning.Number
 				}
 			}
 			if number == 0 {
