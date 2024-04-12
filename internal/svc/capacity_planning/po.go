@@ -53,6 +53,7 @@ type ResponseCapClassification struct {
 	ProductCode             string                    `json:"productCode"`    // 产品编码
 	ProductType             string                    `json:"productType"`    // 产品类型
 	ResourcePoolCapConverts []*ResourcePoolCapConvert `json:"resourcePoolCapConverts"`
+	ResourcePoolList        []*entity.ResourcePool    `json:"resourcePoolList"`
 }
 
 type ResponseCapCount struct {

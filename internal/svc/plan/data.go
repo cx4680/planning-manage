@@ -240,10 +240,18 @@ func SendPlan(planId int64) (*SendBomsResponse, error) {
 		return nil, err
 	}
 
+	var versionId int64
+	if err := data.DB.Table(entity.CloudProductPlanningTable).Select("version_id").
+		Where("plan_id = ?", planId).
+		Limit(1).
+		Find(&versionId).Error; err != nil {
+		return nil, err
+	}
+
 	stepProductRequest := SendBomsRequestStep{
 		StepName: "Step1 - 云产品配置",
 	}
-	productFeatures, err := buildCloudProductFeatures(planId)
+	productFeatures, err := buildCloudProductFeatures(planId, versionId)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +263,7 @@ func SendPlan(planId int64) (*SendBomsResponse, error) {
 	stepServerRequest := SendBomsRequestStep{
 		StepName: "Step2 - 服务器规划",
 	}
-	serverFeatures, err := buildServerFeatures(planId)
+	serverFeatures, err := buildServerFeatures(planId, versionId)
 	if err != nil {
 		return nil, err
 	}
@@ -313,48 +321,69 @@ func SendPlan(planId int64) (*SendBomsResponse, error) {
 	return &responseData, nil
 }
 
-func buildCloudProductFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
+func buildCloudProductFeatures(planId int64, versionId int64) ([]*SendBomsRequestFeature, error) {
 	featureMap := make(map[string]*SendBomsRequestFeature)
 	var planList []entity.SoftwareBomPlanning
 	if err := data.DB.Model(&entity.SoftwareBomPlanning{}).Where("plan_id = ?", planId).Find(&planList).Error; err != nil {
 		return nil, err
 	}
-	for _, plan := range planList {
-		// bomId
-		var baseLine entity.SoftwareBomLicenseBaseline
-		if err := data.DB.Model(&entity.SoftwareBomLicenseBaseline{}).Where("id = ?", plan.SoftwareBaselineId).Find(&baseLine).Error; err != nil {
-			return nil, err
-		}
 
+	// var softwareBomBaselineList []*entity.SoftwareBomLicenseBaseline
+	// if err := data.DB.Where("version_id = ?", versionId).Find(&softwareBomBaselineList).Error; err != nil {
+	// 	return nil, err
+	// }
+	// softwareBomBaselineMap := make(map[int64]*entity.SoftwareBomLicenseBaseline)
+	// for _, softwareBomLicenseBaseline := range softwareBomBaselineList {
+	// 	softwareBomBaselineMap[softwareBomLicenseBaseline.Id] = softwareBomLicenseBaseline
+	// }
+
+	var featureNameCodeRelList []*entity.FeatureNameCodeRel
+	if err := data.DB.Where("feature_type = ?", constant.FeatureTypeCloudProduct).Find(&featureNameCodeRelList).Error; err != nil {
+		return nil, err
+	}
+	featureNameCodeRelMap := make(map[string]*entity.FeatureNameCodeRel)
+	for _, featureNameCodeRel := range featureNameCodeRelList {
+		featureNameCodeRelMap[featureNameCodeRel.FeatureName] = featureNameCodeRel
+	}
+
+	var cloudProductBaselineList []*entity.CloudProductBaseline
+	if err := data.DB.Where("version_id = ?", versionId).Find(&cloudProductBaselineList).Error; err != nil {
+		return nil, err
+	}
+	productCodeFeatureNameCodeRelMap := make(map[string]*entity.FeatureNameCodeRel)
+	for _, cloudProductBaseline := range cloudProductBaselineList {
+		if featureNameCodeRel, ok := featureNameCodeRelMap[cloudProductBaseline.ProductType]; ok {
+			productCodeFeatureNameCodeRelMap[cloudProductBaseline.ProductCode] = featureNameCodeRel
+		}
+	}
+
+	for _, plan := range planList {
 		if plan.BomId == "" {
 			continue
 		}
-
-		// feature code/name
-		var featureInfo entity.FeatureNameCodeRel
-		if err := data.DB.Table("cloud_product_baseline cpb").Select("f.feature_name, f.feature_code").
-			Joins("left join feature_name_code_rel f on cpb.product_type = f.feature_name").
-			Where("cpb.product_code = ?", plan.ServiceCode).
-			Find(&featureInfo).Error; err != nil {
-			return nil, err
-		}
+		// _, ok := softwareBomBaselineMap[plan.SoftwareBaselineId]
+		// if !ok {
+		// 	return nil, errors.New("软件BOM不存在")
+		// }
 
 		// 如果没查到所属类别，用自己的ServiceCode作为featureCode
-		if featureInfo.FeatureCode == "" || featureInfo.FeatureName == "" {
-			featureInfo.FeatureCode = plan.ServiceCode
-			featureInfo.FeatureName = plan.CloudService
+		featureCode := plan.ServiceCode
+		featureName := plan.CloudService
+		if featureNameCodeRel, ok := productCodeFeatureNameCodeRelMap[plan.ServiceCode]; ok {
+			featureCode = featureNameCodeRel.FeatureCode
+			featureName = featureNameCodeRel.FeatureName
 		}
 
 		// 拼request先用字典
-		if _, flag := featureMap[featureInfo.FeatureCode]; flag {
-			featureMap[featureInfo.FeatureCode].Boms = append(featureMap[featureInfo.FeatureCode].Boms, &SendBomsRequestBom{
+		if _, flag := featureMap[featureCode]; flag {
+			featureMap[featureCode].Boms = append(featureMap[featureCode].Boms, &SendBomsRequestBom{
 				Code:  plan.BomId,
 				Count: plan.Number,
 			})
 		} else {
-			featureMap[featureInfo.FeatureCode] = &SendBomsRequestFeature{
-				FeatureCode: featureInfo.FeatureCode,
-				FeatureName: featureInfo.FeatureName,
+			featureMap[featureCode] = &SendBomsRequestFeature{
+				FeatureCode: featureCode,
+				FeatureName: featureName,
 				Boms: []*SendBomsRequestBom{
 					{
 						Code:  plan.BomId,
@@ -371,61 +400,65 @@ func buildCloudProductFeatures(planId int64) ([]*SendBomsRequestFeature, error) 
 	return result, nil
 }
 
-func buildServerFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
+func buildServerFeatures(planId int64, versionId int64) ([]*SendBomsRequestFeature, error) {
 	featureMap := make(map[string]*SendBomsRequestFeature)
 
-	// 该方案按照node_role分组，同一个feature会有相同的bom_id，改为按照role的classify分组
-	// var planList []entity.ServerPlanning
-	// if err := data.DB.Model(&entity.ServerPlanning{}).Where("plan_id = ? and delete_state = 0", planId).Find(&planList).Error; err != nil {
-	//	return nil, err
-	// }
-
+	// TODO 暂时不需要同步存储设备到BOM，后期要做的时候再放开
 	var planList []entity.ServerPlanningSelect
-	if err := data.DB.Table(entity.ServerPlanningTable).
-		Select("plan_id, server_baseline_id, SUM(number) as number, classify").
-		Joins("LEFT JOIN node_role_baseline on server_planning.node_role_id = node_role_baseline.id ").
-		Where("plan_id = ? and delete_state = 0", planId).
-		Group("plan_id, server_baseline_id, classify").
+	if err := data.DB.Table(entity.ServerPlanningTable+" sp").
+		Select("sp.plan_id, sp.server_baseline_id, SUM(sp.number) as number, nrb.classify").
+		Joins("LEFT JOIN node_role_baseline nrb on sp.node_role_id = nrb.id ").
+		Where("sp.plan_id = ? and sp.delete_state = 0 and nrb.version_id = ? and nrb.node_role_code not in (?)", planId, versionId, []string{constant.NodeRoleCodeEBS, constant.NodeRoleCodeEFS, constant.NodeRoleCodeOSS}).
+		Group("sp.plan_id, sp.server_baseline_id, nrb.classify").
 		Find(&planList).Error; err != nil {
 		return nil, err
 	}
 
+	var serverBaselineList []*entity.ServerBaseline
+	if err := data.DB.Where("version_id = ?", versionId).Find(&serverBaselineList).Error; err != nil {
+		return nil, err
+	}
+	serverBaselineMap := make(map[int64]*entity.ServerBaseline)
+	for _, serverBaseline := range serverBaselineList {
+		serverBaselineMap[serverBaseline.Id] = serverBaseline
+	}
+
+	var featureNameCodeRelList []*entity.FeatureNameCodeRel
+	if err := data.DB.Where("feature_type = ?", constant.FeatureTypeServerNode).Find(&featureNameCodeRelList).Error; err != nil {
+		return nil, err
+	}
+	featureNameCodeRelMap := make(map[string]*entity.FeatureNameCodeRel)
+	for _, featureNameCodeRel := range featureNameCodeRelList {
+		featureNameCodeRelMap[featureNameCodeRel.FeatureName] = featureNameCodeRel
+	}
+
 	for _, plan := range planList {
-		// bomId
-		var baseLine entity.ServerBaseline
-		if err := data.DB.Model(&entity.ServerBaseline{}).Where("id = ? ", plan.ServerBaselineId).Find(&baseLine).Error; err != nil {
-			return nil, err
+		serverBaseLine, ok := serverBaselineMap[plan.ServerBaselineId]
+		if !ok {
+			return nil, errors.New("server baseline not found")
 		}
 
-		if baseLine.BomCode == "" {
+		if serverBaseLine.BomCode == "" {
 			continue
 		}
 
-		// feature code/name
-		var featureInfo entity.FeatureNameCodeRel
-		if err := data.DB.Model(&entity.FeatureNameCodeRel{}).Where("feature_name = ?", plan.Classify).Find(&featureInfo).Error; err != nil {
-			return nil, err
+		featureNameCodeRel, ok := featureNameCodeRelMap[plan.Classify]
+		if !ok {
+			return nil, errors.New("feature name code rel not found")
 		}
 
-		// if err := data.DB.Table("node_role_baseline").Select("f.feature_name, f.feature_code").
-		//	Joins("LEFT JOIN feature_name_code_rel f on node_role_baseline.classify = f.feature_name").
-		//	Where("node_role_baseline.id = ?", plan.NodeRoleId).
-		//	Find(&featureInfo).Error; err != nil {
-		//	return nil, err
-		// }
-
-		if _, flag := featureMap[featureInfo.FeatureCode]; flag {
-			featureMap[featureInfo.FeatureCode].Boms = append(featureMap[featureInfo.FeatureCode].Boms, &SendBomsRequestBom{
-				Code:  baseLine.BomCode,
+		if _, flag := featureMap[featureNameCodeRel.FeatureCode]; flag {
+			featureMap[featureNameCodeRel.FeatureCode].Boms = append(featureMap[featureNameCodeRel.FeatureCode].Boms, &SendBomsRequestBom{
+				Code:  serverBaseLine.BomCode,
 				Count: plan.Number,
 			})
 		} else {
-			featureMap[featureInfo.FeatureCode] = &SendBomsRequestFeature{
-				FeatureCode: featureInfo.FeatureCode,
-				FeatureName: featureInfo.FeatureName,
+			featureMap[featureNameCodeRel.FeatureCode] = &SendBomsRequestFeature{
+				FeatureCode: featureNameCodeRel.FeatureCode,
+				FeatureName: featureNameCodeRel.FeatureName,
 				Boms: []*SendBomsRequestBom{
 					{
-						Code:  baseLine.BomCode,
+						Code:  serverBaseLine.BomCode,
 						Count: plan.Number,
 					},
 				},

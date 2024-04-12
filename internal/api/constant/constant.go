@@ -95,6 +95,11 @@ const (
 	NodeRoleSupportDPDKCn    = "是"
 	NodeRoleNotSupportDPDKCn = "否"
 
+	NodeRoleSupportMultiResourcePool      = 1
+	NodeRoleNotSupportMultiResourcePool   = 0
+	NodeRoleSupportMultiResourcePoolCn    = "是"
+	NodeRoleNotSupportMultiResourcePoolCn = "否"
+
 	NodeWastageCalcTypeNumCn         = "数量"
 	NodeWastageCalcTypePercentCn     = "百分比"
 	NodeWastageCalcTypeDataDiskNumCn = "数据盘数量"
@@ -222,7 +227,7 @@ const (
 	CapPlanningInputMicroservice               = "微服务实例"
 	CapPlanningInputMonitoringNode             = "监控节点数量"
 	CapPlanningInputInstances                  = "实例数量"
-	CapPlanningInputSingleInstanceCapacity     = "单实例存储容量"
+	CapPlanningInputImageDepositoryCapacity    = "镜像仓库总容量"
 	CapPlanningInputBackupDataCapacity         = "备份数据容量"
 	CapPlanningInputBasicType                  = "基础型"
 	CapPlanningInputStandardType               = "标准型"
@@ -293,6 +298,7 @@ const (
 	NodeRoleCodeCBR         = "CBR"
 	NodeRoleCodeBIGDATA     = "BIG-DATA"
 	NodeRoleCodeCOMPUTELD   = "COMPUTE-LD"
+	NodeRoleCodeMaster      = "MASTER"
 
 	SellSpecsStandardEdition = "标准版"
 	SellSpecsUltimateEdition = "旗舰版"
@@ -324,7 +330,7 @@ const (
 	APIMSoftwareBomCalcMethodBasePackage           = "基础包，200vCPU"
 	APIMSoftwareBomCalcMethodExpansionPackage      = "扩容包，100vCPU"
 	CONNECTSoftwareBomCalcMethodBasePackage        = "基础包，200个集成流"
-	CONNECTSoftwareBomCalcMethodExpansionPackage   = "扩容包，100个集成流"
+	CONNECTSoftwareBomCalcMethodExpansionPackage   = "扩容包，50个集成流"
 	CLCPSoftwareBomCalcMethodBasePackage           = "基础包，48C32个应用"
 	CLCPSoftwareBomCalcMethodExpansionPackage      = "扩展包，16C8个应用"
 	CLCPSoftwareBomCalcMethodBITool                = "BI工具"
@@ -336,13 +342,22 @@ const (
 
 	CopyPlanEndOfName = "的副本"
 
-	SellSpecDPDK = "DPDK"
+	SellSpecHighPerformanceType = "高性能型"
 
 	ResourcePoolDefaultName = "资源池"
 
 	CloseDpdk = 0
 	OpenDpdk  = 1
 
-	NFVResourcePoolNameKernel = "NFV-kernel资源池"
-	NFVResourcePoolNameDpdk   = "NFV-DPDK资源池"
+	NFVResourcePoolNameKernel = "NFV-普通资源池"
+	NFVResourcePoolNameDpdk   = "NFV-高性能资源池"
+
+	NetworkDeviceRoleCodeOSWS = "OSW-S"
+
+	ProductTypeCompute = "计算服务"
+	ProductTypeNetwork = "网络服务"
+	ProductTypeStorage = "存储服务"
+
+	FeatureTypeCloudProduct = "cloud_product"
+	FeatureTypeServerNode   = "server_node"
 )

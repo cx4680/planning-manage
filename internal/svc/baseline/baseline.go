@@ -369,20 +369,25 @@ func ImportNodeRoleBaseline(context *gin.Context, versionId int64, f *excelize.F
 			if nodeRoleBaselineExcelList[i].SupportDPDK == constant.NodeRoleSupportDPDKCn {
 				supportDPDK = constant.NodeRoleSupportDPDK
 			}
+			supportMultiResourcePool := constant.NodeRoleNotSupportMultiResourcePool
+			if nodeRoleBaselineExcelList[i].SupportMultiResourcePool == constant.NodeRoleSupportMultiResourcePoolCn {
+				supportMultiResourcePool = constant.NodeRoleSupportMultiResourcePool
+			}
 			nodeRoleBaselines = append(nodeRoleBaselines, entity.NodeRoleBaseline{
-				VersionId:    versionId,
-				NodeRoleCode: nodeRoleBaselineExcelList[i].NodeRoleCode,
-				NodeRoleName: nodeRoleBaselineExcelList[i].NodeRoleName,
-				MinimumNum:   nodeRoleBaselineExcelList[i].MinimumCount,
-				DeployMethod: nodeRoleBaselineExcelList[i].DeployMethod,
-				SupportDPDK:  supportDPDK,
-				Classify:     nodeRoleBaselineExcelList[i].Classify,
-				Annotation:   nodeRoleBaselineExcelList[i].Annotation,
-				BusinessType: nodeRoleBaselineExcelList[i].BusinessType,
+				VersionId:                versionId,
+				NodeRoleCode:             nodeRoleBaselineExcelList[i].NodeRoleCode,
+				NodeRoleName:             nodeRoleBaselineExcelList[i].NodeRoleName,
+				MinimumNum:               nodeRoleBaselineExcelList[i].MinimumCount,
+				DeployMethod:             nodeRoleBaselineExcelList[i].DeployMethod,
+				SupportDPDK:              supportDPDK,
+				Classify:                 nodeRoleBaselineExcelList[i].Classify,
+				Annotation:               nodeRoleBaselineExcelList[i].Annotation,
+				BusinessType:             nodeRoleBaselineExcelList[i].BusinessType,
+				SupportMultiResourcePool: supportMultiResourcePool,
 			})
 		}
 		originNodeRoleBaselines, err := QueryNodeRoleBaselineByVersionId(versionId)
-		if err != nil && err != gorm.ErrRecordNotFound {
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			log.Error(err)
 			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
 			return true

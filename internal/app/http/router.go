@@ -290,6 +290,8 @@ func Router(engine *gin.Engine) {
 		resourcePoolGroup := api.Group("/resourcePool")
 		{
 			resourcePoolGroup.PUT("/update/:id", middleware.OperatorLog(DefaultEventOpInfo("修改资源池", "updateResourcePool", middleware.UPDATE, middleware.INFO)), resource_pool.Update)
+			resourcePoolGroup.POST("/create", middleware.OperatorLog(DefaultEventOpInfo("新增资源池", "createResourcePool", middleware.CREATE, middleware.INFO)), resource_pool.Create)
+			resourcePoolGroup.DELETE("/delete/:id", middleware.OperatorLog(DefaultEventOpInfo("删除资源池", "deleteResourcePool", middleware.DELETE, middleware.INFO)), resource_pool.Delete)
 		}
 
 	}

@@ -43,23 +43,30 @@ type RequestServerCapacityCount struct {
 
 type Server struct {
 	entity.ServerPlanning
-	NodeRoleName       string           `gorm:"-" json:"nodeRoleName"`       // 节点角色名称
-	NodeRoleClassify   string           `gorm:"-" json:"nodeRoleClassify"`   // 节点角色分类
-	NodeRoleAnnotation string           `gorm:"-" json:"nodeRoleAnnotation"` // 节点说明
-	SupportDpdk        int              `gorm:"-" json:"supportDpdk"`        // 是否支持DPDK, 0:否，1：是
-	ServerBomCode      string           `gorm:"-" json:"serverBomCode"`      // BOM编码
-	ServerArch         string           `gorm:"-" json:"serverArch"`         // 架构
-	ServerBaselineList []*Baseline      `gorm:"-" json:"serverBaselineList"` // 可选择机型列表
-	MixedNodeRoleList  []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`  // 可混合部署角色列表
-	Upload             int              `gorm:"-" json:"upload"`             // 是否已上传
-	ResourcePoolName   string           `gorm:"-" json:"resourcePoolName"`   // 资源池名称
+	NodeRoleName             string           `gorm:"-" json:"nodeRoleName"`             // 节点角色名称
+	NodeRoleClassify         string           `gorm:"-" json:"nodeRoleClassify"`         // 节点角色分类
+	NodeRoleAnnotation       string           `gorm:"-" json:"nodeRoleAnnotation"`       // 节点说明
+	SupportDpdk              int              `gorm:"-" json:"supportDpdk"`              // 是否支持DPDK, 0:否，1：是
+	ServerBomCode            string           `gorm:"-" json:"serverBomCode"`            // BOM编码
+	ServerArch               string           `gorm:"-" json:"serverArch"`               // 架构
+	ServerBaselineList       []*Baseline      `gorm:"-" json:"serverBaselineList"`       // 可选择机型列表
+	MixedNodeRoleList        []*MixedNodeRole `gorm:"-" json:"mixedNodeRoleList"`        // 可混合部署角色列表
+	Upload                   int              `gorm:"-" json:"upload"`                   // 是否已上传
+	ResourcePoolName         string           `gorm:"-" json:"resourcePoolName"`         // 资源池名称
+	SupportMultiResourcePool int              `gorm:"-" json:"supportMultiResourcePool"` // 是否支持多资源池
+	DefaultResourcePool      int              `gorm:"-" json:"defaultResourcePool"`      // 是否为默认资源池
 	// EditDpdk           int              `gorm:"-" json:"editDpdk"`           // 是否可编辑DPDK, 0:可编辑，1：不可编辑
 }
 
 type MixedNodeRole struct {
-	Id   int64  `gorm:"-" json:"id"`   // 混合节点角色id
-	Name string `gorm:"-" json:"name"` // 混合节点角色名称
+	Id                  int64                `gorm:"-" json:"id"`                  // 混合节点角色id
+	Name                string               `gorm:"-" json:"name"`                // 混合节点角色名称
+	MixResourcePoolList []*MixedResourcePool `gorm:"-" json:"mixResourcePoolList"` // 混合部署资源池列表
+}
 
+type MixedResourcePool struct {
+	ResourcePoolId   int64  `gorm:"-" json:"resourcePoolId"`   // 混合部署资源池id
+	ResourcePoolName string `gorm:"-" json:"resourcePoolName"` // 混合部署资源池名称
 }
 
 type Baseline struct {

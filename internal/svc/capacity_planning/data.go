@@ -32,7 +32,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	dpdkCloudProductIdMap := make(map[int64]*entity.CloudProductPlanning)
 	for _, cloudProductPlanning := range cloudProductPlanningList {
 		cloudProductIdList = append(cloudProductIdList, cloudProductPlanning.ProductId)
-		if strings.Contains(cloudProductPlanning.SellSpec, constant.SellSpecDPDK) {
+		if cloudProductPlanning.SellSpec == constant.SellSpecHighPerformanceType {
 			dpdkCloudProductIdMap[cloudProductPlanning.ProductId] = cloudProductPlanning
 		}
 	}
@@ -49,7 +49,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		cloudProductCodeList = append(cloudProductCodeList, cloudProductBaseline.ProductCode)
 		cloudProductIdBaselineMap[cloudProductBaseline.Id] = cloudProductBaseline
 		cloudProductCodeBaselineMap[cloudProductBaseline.ProductCode] = cloudProductBaseline
-		if _, ok := dpdkCloudProductIdMap[cloudProductBaseline.Id]; ok {
+		if _, ok := dpdkCloudProductIdMap[cloudProductBaseline.Id]; ok && cloudProductBaseline.ProductType == constant.ProductTypeNetwork {
 			dpdkCloudProductCodeMap[cloudProductBaseline.ProductCode] = cloudProductBaseline
 		}
 	}
@@ -78,7 +78,8 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	if err := db.Where("plan_id = ?", request.PlanId).Find(&serverCapPlanningList).Error; err != nil {
 		return nil, err
 	}
-	var serverCapPlanningMap = make(map[int64]*entity.ServerCapPlanning)
+	var serverCapPlanningMap = make(map[string]*entity.ServerCapPlanning)
+	var productCodeServerCapResourcePoolIdMap = make(map[string]map[int64]int64)
 	// 单独处理ecs产品指标
 	resourcePoolIdEcsCapacityMap := make(map[int64]*EcsCapacity)
 	for _, serverCapPlanning := range serverCapPlanningList {
@@ -86,14 +87,17 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 			var ecsCapacity *EcsCapacity
 			util.ToObject(serverCapPlanning.Special, &ecsCapacity)
 			resourcePoolIdEcsCapacityMap[serverCapPlanning.ResourcePoolId] = ecsCapacity
-			continue
 		}
-		serverCapPlanningMap[serverCapPlanning.CapacityBaselineId] = serverCapPlanning
+		serverCapPlanningMap[fmt.Sprintf("%d-%d", serverCapPlanning.ResourcePoolId, serverCapPlanning.CapacityBaselineId)] = serverCapPlanning
+		if _, ok := productCodeServerCapResourcePoolIdMap[serverCapPlanning.ProductCode]; !ok {
+			productCodeServerCapResourcePoolIdMap[serverCapPlanning.ProductCode] = make(map[int64]int64)
+		}
+		productCodeServerCapResourcePoolIdMap[serverCapPlanning.ProductCode][serverCapPlanning.ResourcePoolId] = serverCapPlanning.ResourcePoolId
 	}
 
 	// 处理按照云产品编码与服务器规划的服务器关联关系
 	var resourcePoolList []*entity.ResourcePool
-	if err := db.Where("plan_id = ?", request.PlanId).Find(&resourcePoolList).Error; err != nil {
+	if err := db.Where("plan_id = ?", request.PlanId).Order("default_resource_pool desc, id asc").Find(&resourcePoolList).Error; err != nil {
 		return nil, err
 	}
 	nodeRoleIdResourcePoolMap := make(map[int64][]*entity.ResourcePool)
@@ -111,7 +115,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 		productCodeResourcePoolMap[productCode] = append(productCodeResourcePoolMap[productCode], nodeRoleIdResourcePoolMap[cloudProductNodeRoleRel.NodeRoleId]...)
 	}
 
-	capConvertBaselineMap := make(map[string][]*ResponseFeatures)
+	featureCapConvertBaselineMap := make(map[string][]*ResponseFeatures)
 	resourcePoolCapConvertMap := make(map[int64][]*ResponseCapConvert)
 	extraProductCodeResponseCapConvertMap := make(map[string][]*ResponseCapConvert)
 	for _, capConvertBaseline := range capConvertBaselineList {
@@ -130,7 +134,7 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 			}
 		}
 		key := fmt.Sprintf("%v-%v", capConvertBaseline.ProductCode, capConvertBaseline.CapPlanningInput)
-		if _, ok := capConvertBaselineMap[key]; !ok {
+		if _, ok := featureCapConvertBaselineMap[key]; !ok {
 			productCodeResourcePoolList := productCodeResourcePoolMap[capConvertBaseline.ProductCode]
 			if len(productCodeResourcePoolList) == 0 {
 				// 处理只用算BOM的容量规划输入数据，因为云产品没有关联节点角色导致需要额外处理
@@ -146,12 +150,34 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 					FeatureMode:      capConvertBaseline.FeaturesMode,
 					Description:      capConvertBaseline.Description,
 				}
-				if serverCapPlanningMap[capConvertBaseline.Id] != nil {
-					responseCapConvert.Number = serverCapPlanningMap[capConvertBaseline.Id].Number
+				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", 0, capConvertBaseline.Id)]
+				if serverCapPlanning != nil {
+					responseCapConvert.Number = serverCapPlanning.Number
 				}
 				extraProductCodeResponseCapConvertMap[capConvertBaseline.ProductCode] = append(extraProductCodeResponseCapConvertMap[capConvertBaseline.ProductCode], responseCapConvert)
 			}
-			for _, productCodeResourcePool := range productCodeResourcePoolList {
+			serverCapPlanningResourceIdMap := productCodeServerCapResourcePoolIdMap[capConvertBaseline.ProductCode]
+			for i, productCodeResourcePool := range productCodeResourcePoolList {
+				// 判断是否该产品之前是否已保存容量规划，如果没有保存，则判断该产品是否使用DPDK资源池，如果是，默认选择DPDK资源池，如果不是，默认选择不是DPDK资源池；不是DPDK资源池的默认为第一个，是DPDK资源池的默认为第2个
+				if len(serverCapPlanningResourceIdMap) == 0 {
+					if productCodeResourcePool.DefaultResourcePool == constant.No {
+						continue
+					}
+					if dpdkCloudProductCodeMap[capConvertBaseline.ProductCode] != nil {
+						if i != 1 {
+							continue
+						}
+					} else {
+						if i != 0 {
+							continue
+						}
+					}
+				} else {
+					// 如果有保存的容量规划，但没有选择这个资源池，则跳过
+					if _, ok = serverCapPlanningResourceIdMap[productCodeResourcePool.Id]; !ok {
+						continue
+					}
+				}
 				responseCapConvert := &ResponseCapConvert{
 					VersionId:        capConvertBaseline.VersionId,
 					ProductName:      capConvertBaseline.ProductName,
@@ -166,28 +192,34 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 					ResourcePoolId:   productCodeResourcePool.Id,
 					ResourcePoolName: productCodeResourcePool.ResourcePoolName,
 				}
-				if serverCapPlanningMap[capConvertBaseline.Id] != nil {
-					responseCapConvert.Number = serverCapPlanningMap[capConvertBaseline.Id].Number
+				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", productCodeResourcePool.Id, capConvertBaseline.Id)]
+				if serverCapPlanning != nil && serverCapPlanning.ResourcePoolId == productCodeResourcePool.Id {
+					responseCapConvert.FeatureId = serverCapPlanning.CapacityBaselineId
+					responseCapConvert.Number = serverCapPlanning.Number
 				}
 				resourcePoolCapConvertMap[productCodeResourcePool.Id] = append(resourcePoolCapConvertMap[productCodeResourcePool.Id], responseCapConvert)
 			}
 		}
 		if util.IsNotBlank(capConvertBaseline.Features) {
-			capConvertBaselineMap[key] = append(capConvertBaselineMap[key], &ResponseFeatures{Id: capConvertBaseline.Id, Name: capConvertBaseline.Features})
+			featureCapConvertBaselineMap[key] = append(featureCapConvertBaselineMap[key], &ResponseFeatures{Id: capConvertBaseline.Id, Name: capConvertBaseline.Features})
 		}
 	}
 	// 整理容量指标的特性
 	for _, responseCapConverts := range resourcePoolCapConvertMap {
 		for i, responseCapConvert := range responseCapConverts {
-			key := fmt.Sprintf("%v-%v", responseCapConvert.ProductCode, responseCapConvert.CapPlanningInput)
-			responseCapConverts[i].Features = capConvertBaselineMap[key]
+			responseFeatures := featureCapConvertBaselineMap[fmt.Sprintf("%v-%v", responseCapConvert.ProductCode, responseCapConvert.CapPlanningInput)]
+			responseCapConverts[i].Features = responseFeatures
 			// 回显容量规划数据
-			for _, feature := range capConvertBaselineMap[key] {
-				if serverCapPlanningMap[feature.Id] != nil {
+			for _, feature := range responseFeatures {
+				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", responseCapConvert.ResourcePoolId, feature.Id)]
+				if serverCapPlanning != nil {
 					responseCapConverts[i].FeatureId = feature.Id
 					// 处理特性的输入值
-					responseCapConverts[i].Number = serverCapPlanningMap[feature.Id].Number
-					responseCapConverts[i].FeatureNumber = serverCapPlanningMap[feature.Id].FeatureNumber
+					if serverCapPlanning.ResourcePoolId == responseCapConvert.ResourcePoolId {
+						responseCapConverts[i].Number = serverCapPlanning.Number
+						responseCapConverts[i].FeatureNumber = serverCapPlanning.FeatureNumber
+					}
+					break
 				}
 			}
 		}
@@ -196,17 +228,14 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	// 按产品分类
 	var response []*ResponseCapClassification
 	for productCode, resourcePools := range productCodeResourcePoolMap {
-		responseCapClassification := &ResponseCapClassification{}
+		responseCapClassification := &ResponseCapClassification{
+			ResourcePoolList: resourcePools,
+		}
 		for _, resourcePool := range resourcePools {
 			responseCapConverts := resourcePoolCapConvertMap[resourcePool.Id]
 			var resourcePoolCapConverts []*ResponseCapConvert
 			for _, responseCapConvert := range responseCapConverts {
 				if responseCapConvert.ProductCode == productCode {
-					// （1）云产品没有选择DPDK规格，如果资源池开启了DPDK，则跳过 （2）云产品选择了DPDK规格，如果资源池没有开启DPDK，则跳过
-					_, ok := dpdkCloudProductCodeMap[productCode]
-					if (!ok && resourcePool.OpenDpdk == constant.OpenDpdk) || (ok && resourcePool.OpenDpdk == constant.CloseDpdk) {
-						continue
-					}
 					resourcePoolCapConverts = append(resourcePoolCapConverts, responseCapConvert)
 				}
 			}
@@ -234,15 +263,16 @@ func ListServerCapacity(request *Request) ([]*ResponseCapClassification, error) 
 	for productCode, responseCapConverts := range extraProductCodeResponseCapConvertMap {
 		responseCapClassification := &ResponseCapClassification{}
 		for i, responseCapConvert := range responseCapConverts {
-			key := fmt.Sprintf("%v-%v", responseCapConvert.ProductCode, responseCapConvert.CapPlanningInput)
-			responseCapConverts[i].Features = capConvertBaselineMap[key]
+			responseFeatures := featureCapConvertBaselineMap[fmt.Sprintf("%v-%v", responseCapConvert.ProductCode, responseCapConvert.CapPlanningInput)]
+			responseCapConverts[i].Features = responseFeatures
 			// 回显容量规划数据
-			for _, feature := range capConvertBaselineMap[key] {
-				if serverCapPlanningMap[feature.Id] != nil {
+			for _, feature := range responseFeatures {
+				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%d-%d", responseCapConvert.ResourcePoolId, feature.Id)]
+				if serverCapPlanning != nil {
 					responseCapConverts[i].FeatureId = feature.Id
 					// 处理特性的输入值
-					responseCapConverts[i].Number = serverCapPlanningMap[feature.Id].Number
-					responseCapConverts[i].FeatureNumber = serverCapPlanningMap[feature.Id].FeatureNumber
+					responseCapConverts[i].Number = serverCapPlanning.Number
+					responseCapConverts[i].FeatureNumber = serverCapPlanning.FeatureNumber
 				}
 			}
 		}
@@ -336,17 +366,30 @@ func SaveServerCapacity(request *Request) error {
 		}
 		if ecsServerPlanning != nil {
 			newServerPlanningList = append(newServerPlanningList, ecsServerPlanning)
+			resourcePoolServerPlanningMap[resourcePoolId] = ecsServerPlanning
 		} else {
 			minimumNum := nodeRoleIdBaselineMap[serverPlanning.NodeRoleId].MinimumNum
 			if resourcePoolCapNum < minimumNum {
 				resourcePoolCapNum = minimumNum
 			}
 			serverPlanning.Number = resourcePoolCapNum
+			resourcePoolServerPlanningMap[resourcePoolId] = serverPlanning
 			newServerPlanningList = append(newServerPlanningList, serverPlanning)
 		}
 		if ecsServerCapPlanning != nil {
 			serverCapPlanningList = append(serverCapPlanningList, ecsServerCapPlanning)
 		}
+	}
+	var allNewServerPlanningList []*entity.ServerPlanning
+	for _, serverPlanning := range resourcePoolServerPlanningMap {
+		allNewServerPlanningList = append(allNewServerPlanningList, serverPlanning)
+	}
+	updateServerPlanningList, err := HandleBmsGWAndMasterServerNum(allNewServerPlanningList, nodeRoleCodeBaselineMap, false)
+	if err != nil {
+		return err
+	}
+	if len(updateServerPlanningList) > 0 {
+		newServerPlanningList = append(newServerPlanningList, updateServerPlanningList...)
 	}
 	if err = db.Transaction(func(tx *gorm.DB) error {
 		// 保存服务器规划
@@ -372,6 +415,125 @@ func SaveServerCapacity(request *Request) error {
 		return err
 	}
 	return nil
+}
+
+func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, nodeRoleCodeMap map[string]*entity.NodeRoleBaseline, compareOriginServerNum bool) ([]*entity.ServerPlanning, error) {
+	bmsNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeBMS]
+	bmsGWNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeBMSGW]
+	masterNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeMaster]
+	var bmsServerNumber int
+	bmsGWServerPlanningIndex := -1
+	masterServerPlanningIndex := -1
+	var planId int64
+	var serverNumber int
+	var updateServerPlanningList []*entity.ServerPlanning
+	for i, serverPlanning := range serverPlanningList {
+		planId = serverPlanning.PlanId
+		if bmsNodeRoleBaseline != nil && serverPlanning.NodeRoleId == bmsNodeRoleBaseline.Id {
+			bmsServerNumber += serverPlanning.Number
+		}
+		if bmsGWNodeRoleBaseline != nil && serverPlanning.NodeRoleId == bmsGWNodeRoleBaseline.Id {
+			bmsGWServerPlanningIndex = i
+		}
+		if masterNodeRoleBaseline != nil && serverPlanning.NodeRoleId == masterNodeRoleBaseline.Id {
+			masterServerPlanningIndex = i
+		} else {
+			if bmsGWNodeRoleBaseline == nil || serverPlanning.NodeRoleId != bmsGWNodeRoleBaseline.Id {
+				serverNumber += serverPlanning.Number
+			}
+		}
+	}
+	if bmsGWServerPlanningIndex != -1 {
+		bmsGWServerNumber := int(math.Ceil(float64(bmsServerNumber)/30)) * 2
+		if bmsGWServerNumber < bmsGWNodeRoleBaseline.MinimumNum {
+			bmsGWServerNumber = bmsGWNodeRoleBaseline.MinimumNum
+		}
+		bmsGWServerPlanning := serverPlanningList[bmsGWServerPlanningIndex]
+		// 是否和原始服务器数量比较，如果比较且之前的数据大于现有的数据，则不修改。此情况出现在手动加BMS网关节点数量
+		if !compareOriginServerNum || bmsGWServerPlanning.Number < bmsGWServerNumber {
+			serverPlanningList[bmsGWServerPlanningIndex].Number = bmsGWServerNumber
+			bmsGWServerPlanning.Number = bmsGWServerNumber
+			updateServerPlanningList = append(updateServerPlanningList, bmsGWServerPlanning)
+		}
+		serverNumber += bmsGWServerPlanning.Number
+	}
+	if masterServerPlanningIndex != -1 {
+		var cloudProductBaselineList []*entity.CloudProductBaseline
+		if err := data.DB.Where("id in (select product_id from cloud_product_planning where plan_id = ?)", planId).Find(&cloudProductBaselineList).Error; err != nil {
+			return nil, err
+		}
+		pureIaaS := true
+		for _, cloudProductBaseline := range cloudProductBaselineList {
+			if cloudProductBaseline.ProductType != constant.ProductTypeCompute && cloudProductBaseline.ProductType != constant.ProductTypeNetwork && cloudProductBaseline.ProductType != constant.ProductTypeStorage {
+				pureIaaS = false
+				break
+			}
+		}
+		var masterNumber int
+		if pureIaaS {
+			var projectManage *entity.ProjectManage
+			if err := data.DB.Where("id = (select project_id from plan_manage where id = ?)", planId).Find(&projectManage).Error; err != nil {
+				return nil, err
+			}
+			var azManageList []*entity.AzManage
+			if err := data.DB.Where("region_id = ?", projectManage.RegionId).Find(&azManageList).Error; err != nil {
+				return nil, err
+			}
+			var cellManage *entity.CellManage
+			if err := data.DB.Where("id = ?", projectManage.CellId).Find(&cellManage).Error; err != nil {
+				return nil, err
+			}
+			if len(azManageList) > 1 {
+				if cellManage.Type == constant.CellTypeControl {
+					if serverNumber <= 495 {
+						masterNumber = 5
+					} else if serverNumber <= 1991 {
+						masterNumber = 9
+					} else {
+						masterNumber = 15
+					}
+				} else {
+					if serverNumber <= 197 {
+						masterNumber = 3
+					} else if serverNumber <= 495 {
+						masterNumber = 5
+					} else if serverNumber <= 1991 {
+						masterNumber = 9
+					} else {
+						masterNumber = 15
+					}
+				}
+			} else {
+				if serverNumber <= 197 {
+					masterNumber = 3
+				} else if serverNumber <= 495 {
+					masterNumber = 5
+				} else if serverNumber <= 1991 {
+					masterNumber = 9
+				} else {
+					masterNumber = 15
+				}
+			}
+		} else {
+			if serverNumber <= 195 {
+				masterNumber = 5
+			} else if serverNumber <= 493 {
+				masterNumber = 7
+			} else if serverNumber <= 1991 {
+				masterNumber = 9
+			} else {
+				masterNumber = 15
+			}
+		}
+		masterServerPlanning := serverPlanningList[masterServerPlanningIndex]
+		// 是否和原始服务器数量比较，如果比较且之前的数据大于现有的数据，则不修改
+		if !compareOriginServerNum || masterServerPlanning.Number < masterNumber {
+			serverPlanningList[masterServerPlanningIndex].Number = masterNumber
+			masterServerPlanning.Number = masterNumber
+			updateServerPlanningList = append(updateServerPlanningList, masterServerPlanning)
+		}
+	}
+	return updateServerPlanningList, nil
 }
 
 func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, error) {
@@ -407,7 +569,7 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 	switch nodeRoleBaseline.NodeRoleCode {
 	case constant.NodeRoleCodeCompute:
 		// 添加容量规划基线的表1和表2对不上的数据(CNBH)和CKE的容器集群数
-		extraProductCodes = []string{constant.ProductCodeCKE, constant.ProductCodeCNBH, constant.ProductCodeHPC}
+		extraProductCodes = []string{constant.ProductCodeCKE, constant.ProductCodeCNBH, constant.ProductCodeHPC, constant.ProductCodeCCR}
 		break
 	case constant.NodeRoleCodePAASData:
 		extraProductCodes = []string{constant.ProductCodeKAFKA, constant.ProductCodeROCKETMQ, constant.ProductCodeRABBITMQ, constant.ProductCodeCLS}
@@ -442,12 +604,7 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 			return nil, err
 		}
 	}
-	for _, extraCapConvertBaseline := range extraCapConvertBaselines {
-		if extraCapConvertBaseline.ProductCode == constant.ProductCodeCKE && (extraCapConvertBaseline.CapPlanningInput == constant.CapPlanningInputVCpu || extraCapConvertBaseline.CapPlanningInput == constant.CapPlanningInputMemory) {
-			continue
-		}
-		capConvertBaselines = append(capConvertBaselines, extraCapConvertBaseline)
-	}
+	capConvertBaselines = append(capConvertBaselines, extraCapConvertBaselines...)
 	capConvertBaselineIdMap := make(map[int64]*entity.CapConvertBaseline)
 	for _, capConvertBaseline := range capConvertBaselines {
 		capConvertBaselineIdMap[capConvertBaseline.Id] = capConvertBaseline
@@ -501,7 +658,7 @@ func SingleComputing(request *RequestServerCapacityCount) (*ResponseCapCount, er
 		return nil, err
 	}
 	if ecsServerPlanning != nil {
-		resourcePoolCapNumber += ecsServerPlanning.Number
+		resourcePoolCapNumber = ecsServerPlanning.Number
 	}
 	if resourcePoolCapNumber < nodeRoleBaseline.MinimumNum {
 		resourcePoolCapNumber = nodeRoleBaseline.MinimumNum
@@ -558,9 +715,10 @@ func GetResourcePoolCapMap(db *gorm.DB, request *Request, resourcePoolServerPlan
 		if err != nil {
 			return nil, err
 		}
-		resourcePoolCapNumberMap[resourcePoolId] += capNumber
 		if ecsServerPlanning != nil {
 			resourcePoolCapNumberMap[resourcePoolId] += ecsServerPlanning.Number
+		} else {
+			resourcePoolCapNumberMap[resourcePoolId] += capNumber
 		}
 	}
 	return resourcePoolCapNumberMap, nil
@@ -762,9 +920,13 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 }
 
 func calcFixedNumber(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapacity, versionId int64, serverPlanning *entity.ServerPlanning, expendResCodeFeatureMap map[string]*ExpendResFeature, resourcePoolExpendResCodeMap map[string]float64, nodeRoleBaselineMap map[string]*entity.NodeRoleBaseline) error {
+	var resourcePool *entity.ResourcePool
+	if err := db.Where("id = ?", resourcePoolServerCapacity.ResourcePoolId).Find(&resourcePool).Error; err != nil {
+		return err
+	}
 	// 默认每个Region有ShareDNS服务，4C 4G，4副本；Cloud DNS，12C 12G，2副本；均消耗NFV kernel资源池。
 	nodeRoleBaseline := nodeRoleBaselineMap[constant.NodeRoleCodeNFV]
-	if nodeRoleBaseline != nil && serverPlanning.NodeRoleId == nodeRoleBaseline.Id && serverPlanning.OpenDpdk == 0 {
+	if nodeRoleBaseline != nil && resourcePool != nil && resourcePool.DefaultResourcePool == constant.Yes && serverPlanning.NodeRoleId == nodeRoleBaseline.Id && serverPlanning.OpenDpdk == 0 {
 		resourcePoolExpendResCodeMap[constant.ExpendResCodeNFVVCpu] += 40
 		resourcePoolExpendResCodeMap[constant.ExpendResCodeNFVMemory] += 40
 	}
@@ -784,7 +946,7 @@ func calcFixedNumber(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServer
 		}
 		for _, cloudProductNodeRoleId := range cloudProductNodeRoleIds {
 			// TODO 这里因为固定的几个产品都没用到DPDK，所以在这里先写死
-			if cloudProductNodeRoleId == serverPlanning.NodeRoleId && serverPlanning.OpenDpdk == 0 {
+			if resourcePool != nil && resourcePool.DefaultResourcePool == constant.Yes && cloudProductNodeRoleId == serverPlanning.NodeRoleId && serverPlanning.OpenDpdk == 0 {
 				extraCloudProductCodeResourcePoolIdMap[cloudProductBaseline.ProductCode] = resourcePoolServerCapacity.ResourcePoolId
 				// 加break是因为对于同一个节点角色，默认只算给第一个资源池
 				break
@@ -880,11 +1042,10 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 					cluster = float64(requestCapacity.Number)
 				}
 			}
-			waterLevel, _ := strconv.ParseFloat(capServerCalcBaselineMap[constant.ExpendResCodeECSVCpu].WaterLevel, 64)
 			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 				CpuNumber:    16,
 				MemoryNumber: 32,
-				Count:        int(math.Ceil(vCpu/waterLevel/14.6 + cluster*3)),
+				Count:        int(math.Ceil(vCpu/0.7/14.6 + cluster*3)),
 			})
 		case constant.ProductCodeCNBH:
 			// 前面已经算好了CNBH每个资产类型的数量，这里不需要计算了
@@ -914,16 +1075,18 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 					})
 				}
 			}
-		case constant.ProductCodeCCR:
-			var instanceNumber int
-			for _, requestCapacity := range commonServerCapacity {
-				instanceNumber += requestCapacity.Number
-			}
-			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
-				CpuNumber:    4,
-				MemoryNumber: 4,
-				Count:        instanceNumber,
-			})
+		// case constant.ProductCodeCCR:
+		// 	var instanceNumber int
+		// 	for _, requestCapacity := range commonServerCapacity {
+		// 		if capConvertBaselineMap[requestCapacity.Id].CapPlanningInput == constant.CapPlanningInputInstances {
+		// 			instanceNumber += requestCapacity.Number
+		// 		}
+		// 	}
+		// 	ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
+		// 		CpuNumber:    4,
+		// 		MemoryNumber: 4,
+		// 		Count:        instanceNumber,
+		// 	})
 		case constant.ProductCodeHPC:
 			var vCpu, memory, cluster, count int
 			for _, requestCapacity := range commonServerCapacity {
@@ -959,8 +1122,8 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 		height := float64(v.MemoryNumber) + extraMemorySpent/1024
 		items = append(items, util.Item{Size: util.Rectangle{Width: width, Height: height}, Number: v.Count})
 	}
-	// 节点固定开销5C8G，则单节点可用vCPU=(节点总vCPU*-5）*70%*超分系数N；单节点可用内存=(节点总内存*-8）*70%，为大箱子的长宽
-	var boxSize = util.Rectangle{Width: float64((serverBaseline.Cpu-5)*ecsCapacity.FeatureNumber) * 0.7, Height: float64(serverBaseline.Memory-8) * 0.7}
+	// 节点固定开销5C8G，则单节点可用vCPU=(节点总vCPU*-5）*90%*超分系数N；单节点可用内存=(节点总内存*-8）*90%，为大箱子的长宽
+	var boxSize = util.Rectangle{Width: float64((serverBaseline.Cpu-5)*ecsCapacity.FeatureNumber) * 0.9, Height: float64(serverBaseline.Memory-8) * 0.9}
 	boxes := util.Pack(items, boxSize)
 	// TODO 如果不是单独部署，则不能使用最小数量
 	if minimumNumber > len(boxes) {
@@ -1032,8 +1195,6 @@ func handleServerPlanning(db *gorm.DB, serverPlanningList []*entity.ServerPlanni
 	return resourcePoolServerPlanningMap, nodeRoleCodeBaselineMap, nodeRoleIdBaselineMap, serverBaselineMap, nil
 }
 
-var SpecialProduct = map[string]interface{}{constant.ProductCodeCKE: nil}
-
 func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap map[string][]*entity.CapConvertBaseline, expendResCodeMap map[string]float64) {
 	for productCode, capConvertBaselineList := range productCapMap {
 		switch productCode {
@@ -1053,18 +1214,20 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 			expendResCodeMap[constant.ExpendResCodeECSMemory] += 96*cluster + 32*memory/0.7/29.4
 			break
 		case constant.ProductCodeCCR:
-			var instanceNumber, singleInstanceCapacity float64
+			// var instanceNumber, imageDepositoryCapacity float64
+			var imageDepositoryCapacity float64
 			for _, capConvertBaseline := range capConvertBaselineList {
-				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputInstances {
-					instanceNumber = serverCapacityMap[capConvertBaseline.Id]
-				}
-				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputSingleInstanceCapacity {
-					singleInstanceCapacity = serverCapacityMap[capConvertBaseline.Id]
+				// if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputInstances {
+				// 	instanceNumber = serverCapacityMap[capConvertBaseline.Id]
+				// }
+				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputImageDepositoryCapacity {
+					imageDepositoryCapacity = serverCapacityMap[capConvertBaseline.Id]
 				}
 			}
-			expendResCodeMap[constant.ExpendResCodeECSVCpu] += 4 * instanceNumber
-			expendResCodeMap[constant.ExpendResCodeECSMemory] += 4 * instanceNumber
-			expendResCodeMap[constant.ExpendResCodeOSSDisk] += instanceNumber * singleInstanceCapacity
+			// expendResCodeMap[constant.ExpendResCodeECSVCpu] += 4 * instanceNumber
+			// expendResCodeMap[constant.ExpendResCodeECSMemory] += 4 * instanceNumber
+			// expendResCodeMap[constant.ExpendResCodeOSSDisk] += instanceNumber * imageDepositoryCapacity
+			expendResCodeMap[constant.ExpendResCodeOSSDisk] += imageDepositoryCapacity
 			break
 		case constant.ProductCodeCBR:
 			var backupDataCapacity float64
@@ -1073,7 +1236,7 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 					backupDataCapacity = serverCapacityMap[capConvertBaseline.Id]
 				}
 			}
-			expendResCodeMap[constant.ExpendResCodeCBRDisk] += backupDataCapacity
+			expendResCodeMap[constant.ExpendResCodeCBRDisk] += backupDataCapacity * 1024
 			break
 		case constant.ProductCodeHPC:
 			var vCpu, memory, count, cluster float64
