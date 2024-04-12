@@ -359,15 +359,16 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 			var number int
 			for _, serverPlanning := range serverPlannings {
-				serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
+				// serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputStorageCapacity)]
 				if serverCapPlanning != nil {
-					if serverCapPlanning.Features == constant.FeaturesNameThreeCopies {
-						number += int(math.Ceil(float64(serverPlanning.Number*serverBaseline.StorageDiskNum*serverBaseline.StorageDiskCapacity) / 1024 * 0.9 * 0.91 * 1 / 3))
-					}
-					if serverCapPlanning.Features == constant.FeaturesNameEC {
-						number += int(math.Ceil(float64(serverPlanning.Number*serverBaseline.StorageDiskNum*serverBaseline.StorageDiskCapacity) / 1024 * 0.9 * 0.91 * 2 / 3))
-					}
+					// if serverCapPlanning.Features == constant.FeaturesNameThreeCopies {
+					// 	number += int(math.Ceil(float64(serverPlanning.Number*serverBaseline.StorageDiskNum*serverBaseline.StorageDiskCapacity) / 1024 * 0.9 * 0.91 * 1 / 3))
+					// }
+					// if serverCapPlanning.Features == constant.FeaturesNameEC {
+					// 	number += int(math.Ceil(float64(serverPlanning.Number*serverBaseline.StorageDiskNum*serverBaseline.StorageDiskCapacity) / 1024 * 0.9 * 0.91 * 2 / 3))
+					// }
+					number += int(math.Ceil(float64(serverCapPlanning.Number / 1024)))
 				}
 			}
 			if number == 0 {
