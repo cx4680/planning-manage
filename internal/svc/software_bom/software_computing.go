@@ -368,7 +368,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					// if serverCapPlanning.Features == constant.FeaturesNameEC {
 					// 	number += int(math.Ceil(float64(serverPlanning.Number*serverBaseline.StorageDiskNum*serverBaseline.StorageDiskCapacity) / 1024 * 0.9 * 0.91 * 2 / 3))
 					// }
-					number += int(math.Ceil(float64(serverCapPlanning.Number / 1024)))
+					number += int(math.Ceil(float64(serverCapPlanning.Number) / 1024))
 				}
 			}
 			if number == 0 {
