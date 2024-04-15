@@ -384,7 +384,7 @@ func SaveServerCapacity(request *Request) error {
 	for _, serverPlanning := range resourcePoolServerPlanningMap {
 		allNewServerPlanningList = append(allNewServerPlanningList, serverPlanning)
 	}
-	updateServerPlanningList, err := HandleBmsGWAndMasterServerNum(allNewServerPlanningList, nodeRoleCodeBaselineMap, false)
+	updateServerPlanningList, err := HandleBmsGWAndMasterServerNum(allNewServerPlanningList, nodeRoleCodeBaselineMap, false, nil)
 	if err != nil {
 		return err
 	}
@@ -417,7 +417,7 @@ func SaveServerCapacity(request *Request) error {
 	return nil
 }
 
-func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, nodeRoleCodeMap map[string]*entity.NodeRoleBaseline, compareOriginServerNum bool) ([]*entity.ServerPlanning, error) {
+func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, nodeRoleCodeMap map[string]*entity.NodeRoleBaseline, compareOriginServerNum bool, productIdList []int64) ([]*entity.ServerPlanning, error) {
 	bmsNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeBMS]
 	bmsGWNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeBMSGW]
 	masterNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeMaster]
@@ -459,8 +459,14 @@ func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, 
 	}
 	if masterServerPlanningIndex != -1 {
 		var cloudProductBaselineList []*entity.CloudProductBaseline
-		if err := data.DB.Where("id in (select product_id from cloud_product_planning where plan_id = ?)", planId).Find(&cloudProductBaselineList).Error; err != nil {
-			return nil, err
+		if len(productIdList) > 0 {
+			if err := data.DB.Where("id in (?)", productIdList).Find(&cloudProductBaselineList).Error; err != nil {
+				return nil, err
+			}
+		} else {
+			if err := data.DB.Where("id in (select product_id from cloud_product_planning where plan_id = ?)", planId).Find(&cloudProductBaselineList).Error; err != nil {
+				return nil, err
+			}
 		}
 		pureIaaS := true
 		for _, cloudProductBaseline := range cloudProductBaselineList {
