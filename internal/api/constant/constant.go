@@ -205,6 +205,7 @@ const (
 	ProductCodeCIK        = "CIK"
 	ProductCodeRDSDM      = "RDSDM"
 	ProductCodeHPC        = "HPC"
+	ProductCodeCDP        = "CDP"
 
 	CapPlanningInputVCpu                       = "vCPU"
 	CapPlanningInputMemory                     = "内存"
@@ -248,6 +249,7 @@ const (
 	CapPlanningInputProtectiveECSTerminal      = "防护ECS终端数"
 	CapPlanningInputProtectiveContainerService = "防护容器服务数"
 	CapPlanningInputProtectiveWebsiteDirectory = "防护网站目录数"
+	CapPlanningInputUser                       = "用户数"
 
 	CapPlanningInputOneHundred     = "100"
 	CapPlanningInputOneHundredInt  = 100
@@ -316,6 +318,7 @@ const (
 	SoftwareBomValueAddedServiceVulnerabilityScanning   = "漏洞扫描"
 	SoftwareBomValueAddedServiceContainerSafety         = "容器安全"
 	SoftwareBomValueAddedServiceWebPageTamperPrevention = "网页防篡改版"
+	SoftwareBomValueAddedServiceBenchmarkPkg            = "标杆项目落地实践套餐"
 
 	CSOCSoftwareBomCalcMethod500GPackage           = "500G"
 	DSPSoftwareBomCalcMethod1To5Instances          = "1-5实例"
@@ -339,6 +342,8 @@ const (
 	COSSoftwareBomCalcMethodExpansionPackage       = "扩容包，200个监控节点"
 	CLSSoftwareBomCalcMethodBasePackage            = "基础包，10T"
 	CLSSoftwareBomCalcMethodExpansionPackage       = "扩容包，5T"
+	CDPSoftwareBomCalcMethodBasePackage            = "基础包，100用户"
+	CDPSoftwareBomCalcMethodExpansionPackage       = "扩展包，50用户"
 
 	CopyPlanEndOfName = "的副本"
 

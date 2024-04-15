@@ -184,8 +184,8 @@ func getSoftwareBomPlanningData(db *gorm.DB, planId int64) (*SoftwareData, error
 	}
 	var serverCapPlanningMap = make(map[string]*entity.ServerCapPlanning)
 	for _, serverCapPlanning := range serverCapPlanningList {
-		// 由于CSP和COS云产品没有关联节点角色，所以不加资源池id过滤
-		if serverCapPlanning.ProductCode == constant.ProductCodeCSP || serverCapPlanning.ProductCode == constant.ProductCodeCOS {
+		// 由于CSP、COS、CDP云产品没有关联节点角色，所以不加资源池id过滤
+		if serverCapPlanning.ProductCode == constant.ProductCodeCSP || serverCapPlanning.ProductCode == constant.ProductCodeCOS || serverCapPlanning.ProductCode == constant.ProductCodeCDP {
 			serverCapPlanningMap[fmt.Sprintf("%v-%v", serverCapPlanning.ProductCode, serverCapPlanning.CapPlanningInput)] = serverCapPlanning
 			continue
 		}
@@ -868,6 +868,25 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				number = 300
 			}
 			bomMap[BigDataPlatformScaleBom] = number
+		case constant.ProductCodeCDP:
+			var userNumber int
+			user := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputUser)]
+			if user != nil {
+				userNumber = user.Number
+			}
+			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
+				if softwareBomLicenseBaseline.CalcMethod == constant.CDPSoftwareBomCalcMethodBasePackage {
+					bomMap[softwareBomLicenseBaseline.BomId] = 1
+				}
+				if softwareBomLicenseBaseline.CalcMethod == constant.CDPSoftwareBomCalcMethodExpansionPackage {
+					if userNumber-100 > 0 {
+						bomMap[softwareBomLicenseBaseline.BomId] = int(math.Ceil(float64(userNumber-100) / 50))
+					}
+				}
+				if softwareBomLicenseBaseline.ValueAddedService == constant.SoftwareBomValueAddedServiceBenchmarkPkg && softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
+					bomMap[softwareBomLicenseBaseline.BomId] = 1
+				}
+			}
 		}
 	}
 	return bomMap
