@@ -248,7 +248,7 @@ func ListServer(request *Request) ([]*Server, error) {
 		}
 		pureIaaS := true
 		for _, cloudProductBaseline := range cloudProductBaselineList {
-			if cloudProductBaseline.ProductType != constant.ProductTypeCompute && cloudProductBaseline.ProductType != constant.ProductTypeNetwork && cloudProductBaseline.ProductType != constant.ProductTypeStorage {
+			if cloudProductBaseline.ProductType != constant.ProductTypeOps && cloudProductBaseline.ProductType != constant.ProductTypeCompute && cloudProductBaseline.ProductType != constant.ProductTypeNetwork && cloudProductBaseline.ProductType != constant.ProductTypeStorage {
 				pureIaaS = false
 				break
 			}
@@ -260,7 +260,7 @@ func ListServer(request *Request) ([]*Server, error) {
 				return nil, err
 			}
 			var azManageList []*entity.AzManage
-			if err = data.DB.Where("region_id = ?", projectManage.RegionId).Find(&azManageList).Error; err != nil {
+			if err = data.DB.Where("region_id = ? and delete_state = ?", projectManage.RegionId, 0).Find(&azManageList).Error; err != nil {
 				return nil, err
 			}
 			var cellManage *entity.CellManage

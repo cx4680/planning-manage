@@ -357,6 +357,7 @@ const (
 	ProductTypeCompute = "计算服务"
 	ProductTypeNetwork = "网络服务"
 	ProductTypeStorage = "存储服务"
+	ProductTypeOps     = "运营运维"
 
 	FeatureTypeCloudProduct = "cloud_product"
 	FeatureTypeServerNode   = "server_node"

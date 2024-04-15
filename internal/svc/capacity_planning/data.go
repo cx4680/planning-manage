@@ -464,7 +464,7 @@ func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, 
 		}
 		pureIaaS := true
 		for _, cloudProductBaseline := range cloudProductBaselineList {
-			if cloudProductBaseline.ProductType != constant.ProductTypeCompute && cloudProductBaseline.ProductType != constant.ProductTypeNetwork && cloudProductBaseline.ProductType != constant.ProductTypeStorage {
+			if cloudProductBaseline.ProductType != constant.ProductTypeOps && cloudProductBaseline.ProductType != constant.ProductTypeCompute && cloudProductBaseline.ProductType != constant.ProductTypeNetwork && cloudProductBaseline.ProductType != constant.ProductTypeStorage {
 				pureIaaS = false
 				break
 			}
