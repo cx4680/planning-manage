@@ -212,14 +212,19 @@ func getSoftwareBomPlanningData(db *gorm.DB, planId int64) (*SoftwareData, error
 	var screenCloudProductSellSpecMap = make(map[string]interface{})
 	var screenCloudProductValueAddedServiceMap = make(map[string]interface{})
 	for _, cloudProductPlanning := range cloudProductPlanningList {
+		cloudProductBaseline := cloudProductBaselineMap[cloudProductPlanning.ProductId]
 		// 根据产品编码-售卖规格
 		if util.IsNotBlank(cloudProductPlanning.SellSpec) {
-			screenCloudProductSellSpecMap[fmt.Sprintf("%s-%s", cloudProductBaselineMap[cloudProductPlanning.ProductId].ProductCode, cloudProductPlanning.SellSpec)] = nil
+			screenCloudProductSellSpecMap[fmt.Sprintf("%s-%s", cloudProductBaseline.ProductCode, cloudProductPlanning.SellSpec)] = nil
 		}
 		// 产品编码-增值服务
 		if util.IsNotBlank(cloudProductPlanning.ValueAddedService) {
 			for _, valueAddedService := range strings.Split(cloudProductPlanning.ValueAddedService, ",") {
-				screenCloudProductValueAddedServiceMap[fmt.Sprintf("%s-%s", cloudProductBaselineMap[cloudProductPlanning.ProductId].ProductCode, valueAddedService)] = nil
+				// 如果是CLCP产品，版本是旗舰版，则不给增值服务的BOM
+				if (valueAddedService == constant.SoftwareBomValueAddedServiceBITool || valueAddedService == constant.SoftwareBomValueAddedServiceVisualLargeScreenTool) && cloudProductBaseline != nil && cloudProductBaseline.ProductCode == constant.ProductCodeCLCP && cloudProductPlanning.SellSpec == constant.SellSpecsUltimateEdition {
+					continue
+				}
+				screenCloudProductValueAddedServiceMap[fmt.Sprintf("%s-%s", cloudProductBaseline.ProductCode, valueAddedService)] = nil
 			}
 		}
 	}
