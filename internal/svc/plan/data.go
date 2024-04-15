@@ -194,6 +194,13 @@ func checkBusiness(request *Request, isCreate bool) error {
 		if projectCount == 0 {
 			return errors.New("项目不存在")
 		}
+		var planCount int64
+		if err := data.DB.Model(&entity.PlanManage{}).Where("project_id = ? AND delete_state = ?", request.ProjectId, 0).Count(&planCount).Error; err != nil {
+			return err
+		}
+		if planCount >= constant.PlanMaxCount {
+			return errors.New("方案数量不能超过5个")
+		}
 	} else {
 		// 校验planId
 		var planCount int64

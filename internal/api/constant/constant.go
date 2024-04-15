@@ -361,4 +361,6 @@ const (
 
 	FeatureTypeCloudProduct = "cloud_product"
 	FeatureTypeServerNode   = "server_node"
+
+	PlanMaxCount = 5
 )
