@@ -319,6 +319,8 @@ const (
 	SoftwareBomValueAddedServiceContainerSafety         = "容器安全"
 	SoftwareBomValueAddedServiceWebPageTamperPrevention = "网页防篡改版"
 	SoftwareBomValueAddedServiceBenchmarkPkg            = "标杆项目落地实践套餐"
+	SoftwareBomValueAddedServiceBITool                  = "BI工具"
+	SoftwareBomValueAddedServiceVisualLargeScreenTool   = "可视化大屏工具"
 
 	CSOCSoftwareBomCalcMethod500GPackage           = "500G"
 	DSPSoftwareBomCalcMethod1To5Instances          = "1-5实例"

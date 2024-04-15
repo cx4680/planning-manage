@@ -765,17 +765,22 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				_, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, _ := handlePAASCapPlanningInput(serverPlanning.ResourcePoolId, serverCapPlanningMap, productCode)
 				number += standardEditionNumber*16 + professionalEditionNumber*64 + enterpriseEditionNumber*96
 			}
-			for _, softwareBom := range softwareBomLicenseBaselineList {
-				if softwareBom.CalcMethod == constant.CLCPSoftwareBomCalcMethodBasePackage {
-					bomMap[softwareBom.BomId] = 1
+			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
+				if softwareBomLicenseBaseline.CalcMethod == constant.CLCPSoftwareBomCalcMethodBasePackage {
+					bomMap[softwareBomLicenseBaseline.BomId] = 1
 				}
-				if softwareBom.CalcMethod == constant.CLCPSoftwareBomCalcMethodExpansionPackage {
+				if softwareBomLicenseBaseline.CalcMethod == constant.CLCPSoftwareBomCalcMethodExpansionPackage {
 					if number-48 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-48) / 16))
+						bomMap[softwareBomLicenseBaseline.BomId] = int(math.Ceil(float64(number-48) / 16))
 					}
 				}
-				if softwareBom.CalcMethod == constant.CLCPSoftwareBomCalcMethodBITool || softwareBom.CalcMethod == constant.CLCPSoftwareBomCalcMethodVisualLargeScreenTool {
-					bomMap[softwareBom.BomId] = 1
+				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
+					if softwareBomLicenseBaseline.ValueAddedService == constant.SoftwareBomValueAddedServiceBITool {
+						bomMap[softwareBomLicenseBaseline.BomId] = 1
+					}
+					if softwareBomLicenseBaseline.ValueAddedService == constant.SoftwareBomValueAddedServiceVisualLargeScreenTool {
+						bomMap[softwareBomLicenseBaseline.BomId] = 1
+					}
 				}
 			}
 		case constant.ProductCodeCOS:
