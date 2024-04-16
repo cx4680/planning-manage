@@ -90,13 +90,17 @@ func CreateDevicePlan(request *Request) error {
 	return nil
 }
 
-func GetBrandsByVersionId(versionId int64) ([]string, error) {
-	var brands []string
-	if err := data.DB.Model(&entity.NetworkDeviceBaseline{}).Distinct("manufacturer").Where("version_id = ?", versionId).Find(&brands).Error; err != nil {
+func GetBrandsByVersionId(versionId int64) (map[int][]string, error) {
+	var networkDeviceBaselines []*entity.NetworkDeviceBaseline
+	if err := data.DB.Model(&entity.NetworkDeviceBaseline{}).Select("manufacturer, device_type").Where("version_id = ?", versionId).Group("manufacturer, device_type").Order("device_type, manufacturer").Find(&networkDeviceBaselines).Error; err != nil {
 		log.Errorf("[getBrandsByVersionIdAndNetworkVersion] query device brands error, %v", err)
 		return nil, err
 	}
-	return brands, nil
+	deviceTypeBrandsMap := make(map[int][]string)
+	for _, networkDeviceBaseline := range networkDeviceBaselines {
+		deviceTypeBrandsMap[networkDeviceBaseline.DeviceType] = append(deviceTypeBrandsMap[networkDeviceBaseline.DeviceType], networkDeviceBaseline.Manufacturer)
+	}
+	return deviceTypeBrandsMap, nil
 }
 
 func getDeviceRoleGroupNumByPlanId(tx *gorm.DB, planId int64) ([]*DeviceRoleGroupNum, error) {
