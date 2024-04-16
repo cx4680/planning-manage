@@ -50,7 +50,7 @@ func GetDevicePlanByPlanId(c *gin.Context) {
 		devicePlan.Ipv6 = "0"
 		devicePlan.NetworkModel = 1
 		devicePlan.TotalBoxNum = 4
-		devicePlan.Brand = "华为"
+		devicePlan.Brand = "H3C"
 	}
 	result.Success(c, devicePlan)
 	return
