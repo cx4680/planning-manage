@@ -375,4 +375,12 @@ const (
 
 	// CalcNfvServerNumberOnOff 计算NFV服务器数量开关，true：使用范围计算，false：使用容量规划输入计算
 	CalcNfvServerNumberOnOff = true
+
+	DefaultCloudPlatformName = "云平台1"
+	DefaultCloudPlatformType = "delivery"
+	DefaultRegionName        = "region1"
+	DefaultRegionCode        = "region1"
+	DefaultRegionType        = "manage"
+	DefaultAZCode            = "zone1"
+	DefaultCellName          = "cell1"
 )

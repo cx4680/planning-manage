@@ -215,8 +215,8 @@ func searchCustomerByName(customerName string) ([]entity.CustomerManage, error) 
 func CreateCloudPlatformByCustomerId(db *gorm.DB, customerId int64, userId string) (*CreateCloudPlatform, error) {
 	now := datetime.GetNow()
 	cloudPlatformEntity := &entity.CloudPlatformManage{
-		Name:         "云平台1",
-		Type:         "delivery",
+		Name:         constant.DefaultCloudPlatformName,
+		Type:         constant.DefaultCloudPlatformType,
 		CustomerId:   customerId,
 		CreateUserId: userId,
 		CreateTime:   now,
@@ -225,9 +225,9 @@ func CreateCloudPlatformByCustomerId(db *gorm.DB, customerId int64, userId strin
 		DeleteState:  0,
 	}
 	regionEntity := &entity.RegionManage{
-		Name:         "region1",
-		Code:         "region1",
-		Type:         "manage",
+		Name:         constant.DefaultRegionName,
+		Code:         constant.DefaultRegionCode,
+		Type:         constant.DefaultRegionType,
 		CreateUserId: userId,
 		CreateTime:   now,
 		UpdateUserId: userId,
@@ -235,7 +235,7 @@ func CreateCloudPlatformByCustomerId(db *gorm.DB, customerId int64, userId strin
 		DeleteState:  0,
 	}
 	azEntity := &entity.AzManage{
-		Code:         "zone1",
+		Code:         constant.DefaultAZCode,
 		CreateUserId: userId,
 		CreateTime:   now,
 		UpdateUserId: userId,
@@ -243,7 +243,7 @@ func CreateCloudPlatformByCustomerId(db *gorm.DB, customerId int64, userId strin
 		DeleteState:  0,
 	}
 	cellEntity := &entity.CellManage{
-		Name:         "cell1",
+		Name:         constant.DefaultCellName,
 		Type:         constant.CellTypeControl,
 		CreateUserId: userId,
 		CreateTime:   now,
