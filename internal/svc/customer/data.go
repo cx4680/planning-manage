@@ -227,7 +227,7 @@ func CreateCloudPlatformByCustomerId(db *gorm.DB, customerId int64, userId strin
 	regionEntity := &entity.RegionManage{
 		Name:         "region1",
 		Code:         "region1",
-		Type:         "merge",
+		Type:         "manage",
 		CreateUserId: userId,
 		CreateTime:   now,
 		UpdateUserId: userId,
