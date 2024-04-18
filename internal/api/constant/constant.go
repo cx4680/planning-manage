@@ -370,4 +370,9 @@ const (
 	FeatureTypeServerNode   = "server_node"
 
 	PlanMaxCount = 5
+
+	NfvDpdkServerNumber = 2
+
+	// CalcNfvServerNumberOnOff 计算NFV服务器数量开关，true：使用范围计算，false：使用容量规划输入计算
+	CalcNfvServerNumberOnOff = true
 )

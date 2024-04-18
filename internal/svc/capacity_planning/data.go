@@ -421,9 +421,11 @@ func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, 
 	bmsNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeBMS]
 	bmsGWNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeBMSGW]
 	masterNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeMaster]
+	nfvNodeRoleBaseline := nodeRoleCodeMap[constant.NodeRoleCodeNFV]
 	var bmsServerNumber int
 	bmsGWServerPlanningIndex := -1
 	masterServerPlanningIndex := -1
+	nfvServerPlanningIndex := -1
 	var planId int64
 	var serverNumber int
 	var updateServerPlanningList []*entity.ServerPlanning
@@ -435,12 +437,38 @@ func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, 
 		if bmsGWNodeRoleBaseline != nil && serverPlanning.NodeRoleId == bmsGWNodeRoleBaseline.Id {
 			bmsGWServerPlanningIndex = i
 		}
+		if nfvNodeRoleBaseline != nil && serverPlanning.NodeRoleId == nfvNodeRoleBaseline.Id {
+			if constant.CalcNfvServerNumberOnOff && serverPlanning.OpenDpdk == constant.CloseDpdk {
+				nfvServerPlanningIndex = i
+				var nfvServerNumber int
+				if serverNumber <= 198 {
+					nfvServerNumber = 2
+				} else if serverNumber <= 496 {
+					nfvServerNumber = 4
+				} else if serverNumber <= 1992 {
+					nfvServerNumber = 8
+				} else {
+					nfvServerNumber = 16
+				}
+				if !compareOriginServerNum || serverPlanning.Number < nfvServerNumber {
+					serverNumber += nfvServerNumber
+				} else {
+					serverNumber += serverPlanning.Number
+				}
+				continue
+			}
+			if serverPlanning.OpenDpdk == constant.OpenDpdk && !compareOriginServerNum {
+				serverPlanning.Number = nfvNodeRoleBaseline.MinimumNum
+				serverPlanningList[i].Number = nfvNodeRoleBaseline.MinimumNum
+				updateServerPlanningList = append(updateServerPlanningList, serverPlanning)
+			}
+		}
 		if masterNodeRoleBaseline != nil && serverPlanning.NodeRoleId == masterNodeRoleBaseline.Id {
 			masterServerPlanningIndex = i
-		} else {
-			if bmsGWNodeRoleBaseline == nil || serverPlanning.NodeRoleId != bmsGWNodeRoleBaseline.Id {
-				serverNumber += serverPlanning.Number
-			}
+			continue
+		}
+		if bmsGWNodeRoleBaseline == nil || serverPlanning.NodeRoleId != bmsGWNodeRoleBaseline.Id {
+			serverNumber += serverPlanning.Number
 		}
 	}
 	if bmsGWServerPlanningIndex != -1 {
@@ -537,6 +565,17 @@ func HandleBmsGWAndMasterServerNum(serverPlanningList []*entity.ServerPlanning, 
 			serverPlanningList[masterServerPlanningIndex].Number = masterNumber
 			masterServerPlanning.Number = masterNumber
 			updateServerPlanningList = append(updateServerPlanningList, masterServerPlanning)
+		} else {
+			masterNumber = masterServerPlanning.Number
+		}
+		if constant.CalcNfvServerNumberOnOff && nfvServerPlanningIndex != -1 {
+			nfvServerNumber := util.CalcNfvServerNumber(serverNumber, masterNumber)
+			nfvServerPlanning := serverPlanningList[nfvServerPlanningIndex]
+			if !compareOriginServerNum || nfvServerPlanning.Number < nfvServerNumber {
+				serverPlanningList[nfvServerPlanningIndex].Number = nfvServerNumber
+				nfvServerPlanning.Number = nfvServerNumber
+				updateServerPlanningList = append(updateServerPlanningList, nfvServerPlanning)
+			}
 		}
 	}
 	return updateServerPlanningList, nil

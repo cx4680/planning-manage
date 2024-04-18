@@ -195,8 +195,10 @@ func ListServer(request *Request) ([]*Server, error) {
 	bmsNodeRoleBaseline := nodeRoleCodeBaselineMap[constant.NodeRoleCodeBMS]
 	bmsGWNodeRoleBaseline := nodeRoleCodeBaselineMap[constant.NodeRoleCodeBMSGW]
 	masterNodeRoleBaseline := nodeRoleCodeBaselineMap[constant.NodeRoleCodeMaster]
+	nfvNodeRoleBaseline := nodeRoleCodeBaselineMap[constant.NodeRoleCodeNFV]
 	bmsGWServerPlanningIndex := -1
 	masterServerPlanningIndex := -1
+	nfvServerPlanningIndex := -1
 	for i, server := range list {
 		resourceIdList = append(resourceIdList, server.ResourcePoolId)
 		if serverPlanning, ok := resourcePoolIdServerPlanningMap[server.ResourcePoolId]; ok && util.IsBlank(request.NetworkInterface) && util.IsBlank(request.CpuType) {
@@ -224,12 +226,33 @@ func ListServer(request *Request) ([]*Server, error) {
 				bmsGWServerPlanningIndex = i
 			}
 		}
+		if nfvNodeRoleBaseline != nil && server.NodeRoleId == nfvNodeRoleBaseline.Id {
+			if server.OpenDpdk == constant.CloseDpdk && constant.CalcNfvServerNumberOnOff {
+				nfvServerPlanningIndex = i
+				var nfvServerNumber int
+				if serverNumber <= 198 {
+					nfvServerNumber = 2
+				} else if serverNumber <= 496 {
+					nfvServerNumber = 4
+				} else if serverNumber <= 1992 {
+					nfvServerNumber = 8
+				} else {
+					nfvServerNumber = 16
+				}
+				if server.Number < nfvServerNumber {
+					serverNumber += nfvServerNumber
+				} else {
+					serverNumber += server.Number
+				}
+				continue
+			}
+		}
 		if masterNodeRoleBaseline != nil && server.NodeRoleId == masterNodeRoleBaseline.Id {
 			masterServerPlanningIndex = i
-		} else {
-			if bmsGWNodeRoleBaseline == nil || server.NodeRoleId != bmsGWNodeRoleBaseline.Id {
-				serverNumber += server.Number
-			}
+			continue
+		}
+		if bmsGWNodeRoleBaseline == nil || server.NodeRoleId != bmsGWNodeRoleBaseline.Id {
+			serverNumber += server.Number
 		}
 	}
 	if bmsGWServerPlanningIndex != -1 {
@@ -312,6 +335,14 @@ func ListServer(request *Request) ([]*Server, error) {
 		// 是否和原始服务器数量比较，如果比较且之前的数据大于现有的数据，则不修改
 		if list[masterServerPlanningIndex].Number < masterNumber {
 			list[masterServerPlanningIndex].Number = masterNumber
+		} else {
+			masterNumber = list[masterServerPlanningIndex].Number
+		}
+		if constant.CalcNfvServerNumberOnOff && nfvServerPlanningIndex != -1 {
+			nfvServerNumber := util.CalcNfvServerNumber(serverNumber, masterNumber)
+			if list[nfvServerPlanningIndex].Number < nfvServerNumber {
+				list[nfvServerPlanningIndex].Number = nfvServerNumber
+			}
 		}
 	}
 	return list, nil

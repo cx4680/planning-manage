@@ -66,3 +66,39 @@ func (r ByArea) Less(i, j int) bool {
 }
 
 type ByArea []Item
+
+// CalcNfvServerNumber 计算NFV节点数量
+func CalcNfvServerNumber(serverNumber int, masterNumber int) int {
+	var nfvServerNumber int
+	if serverNumber <= 200 {
+		if serverNumber+masterNumber <= 200 {
+			nfvServerNumber = 2
+		} else if serverNumber+masterNumber > 200 && serverNumber+masterNumber <= 500 {
+			nfvServerNumber = 4
+		} else if serverNumber+masterNumber > 500 && serverNumber+masterNumber <= 2000 {
+			nfvServerNumber = 8
+		} else {
+			nfvServerNumber = 16
+		}
+	}
+	if serverNumber > 200 && serverNumber <= 500 {
+		if serverNumber+masterNumber > 200 && serverNumber+masterNumber <= 500 {
+			nfvServerNumber = 4
+		} else if serverNumber+masterNumber > 500 && serverNumber+masterNumber <= 2000 {
+			nfvServerNumber = 8
+		} else {
+			nfvServerNumber = 16
+		}
+	}
+	if serverNumber > 500 && serverNumber <= 2000 {
+		if serverNumber+masterNumber > 500 && serverNumber+masterNumber <= 2000 {
+			nfvServerNumber = 8
+		} else {
+			nfvServerNumber = 16
+		}
+	}
+	if serverNumber >= 2000 {
+		nfvServerNumber = 16
+	}
+	return nfvServerNumber
+}
