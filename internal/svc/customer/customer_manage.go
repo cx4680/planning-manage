@@ -39,21 +39,27 @@ func Page(context *gin.Context) {
 	}
 	// 封装权限成员
 	var responseList []CustomerResponse
+	var customerIdList []int64
 	for _, customer := range customerResponseList {
-		members, err := searchMembersByCustomerId(customer.ID)
-		if err != nil {
-			log.Errorf("[page] customer search members error, %v", err)
-			result.Failure(context, errorcodes.SystemError, http.StatusInternalServerError)
-			return
+		customerIdList = append(customerIdList, customer.ID)
+	}
+	memberList, err := searchMembersByCustomerIdList(customerIdList)
+	membersMap := make(map[int64][]entity.PermissionsManage)
+	for _, member := range memberList {
+		membersMap[member.CustomerId] = append(membersMap[member.CustomerId], member)
+	}
+	for _, customer := range customerResponseList {
+		members, ok := membersMap[customer.ID]
+		if ok {
+			var memberIds []string
+			var memberNames []string
+			for _, member := range members {
+				memberIds = append(memberIds, member.UserId)
+				memberNames = append(memberNames, member.UserName)
+			}
+			customer.MembersId = memberIds
+			customer.MembersName = memberNames
 		}
-		var memberIds []string
-		var memberNames []string
-		for _, member := range members {
-			memberIds = append(memberIds, member.UserId)
-			memberNames = append(memberNames, member.UserName)
-		}
-		customer.MembersId = memberIds
-		customer.MembersName = memberNames
 		responseList = append(responseList, customer)
 	}
 	result.SuccessPage(context, count, responseList)

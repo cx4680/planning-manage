@@ -82,6 +82,9 @@ func pageCustomer(customerPageParam PageCustomerRequest, currentUserId string) (
 	if roleManage.Role != "admin" {
 		db.Where("cm.leader_id = ? OR pm.user_id = ?", currentUserId, currentUserId)
 	}
+	if customerPageParam.OrderBy == "" {
+		customerPageParam.OrderBy = "create_time desc"
+	}
 	if err := db.Joins("LEFT JOIN (select * from permissions_manage where delete_state = 0) pm ON pm.customer_id = cm.id").
 		Order(customerPageParam.OrderBy).
 		Limit(customerPageParam.Size).
@@ -188,6 +191,15 @@ func updateCustomer(customerParam UpdateCustomerRequest, currentUserId string) e
 func searchMembersByCustomerId(customerId int64) ([]entity.PermissionsManage, error) {
 	var members []entity.PermissionsManage
 	if err := data.DB.Table(entity.PermissionsManageTable).Where("customer_id=? and delete_state=0", customerId).Scan(&members).Error; err != nil {
+		log.Errorf("[updateCustomer] query customer members error, %v", err)
+		return nil, err
+	}
+	return members, nil
+}
+
+func searchMembersByCustomerIdList(customerIdList []int64) ([]entity.PermissionsManage, error) {
+	var members []entity.PermissionsManage
+	if err := data.DB.Table(entity.PermissionsManageTable).Where("customer_id in (?) and delete_state=0", customerIdList).Scan(&members).Error; err != nil {
 		log.Errorf("[updateCustomer] query customer members error, %v", err)
 		return nil, err
 	}
