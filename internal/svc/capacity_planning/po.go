@@ -35,9 +35,9 @@ type ResourcePoolServerCapacity struct {
 }
 
 type RequestServerCapacity struct {
-	Id            int64 `form:"id"`
-	Number        int   `form:"number"`
-	FeatureNumber int   `form:"featureNumber"`
+	Id            int64   `form:"id"`
+	Number        float64 `form:"number"`
+	FeatureNumber int     `form:"featureNumber"`
 }
 
 type RequestServerCapacityCount struct {
@@ -74,7 +74,7 @@ type ResponseCapConvert struct {
 	ProductType      string              `json:"productType"`      // 产品分类
 	SellSpecs        string              `json:"sellSpecs"`        // 售卖规格
 	CapPlanningInput string              `json:"capPlanningInput"` // 容量规划输入
-	Number           int                 `json:"number"`           // 数量
+	Number           float64             `json:"number"`           // 数量
 	Unit             string              `json:"unit"`             // 单位
 	FeatureId        int64               `json:"featureId"`        // 特性id
 	FeatureMode      string              `json:"featureMode"`      // 特性模式

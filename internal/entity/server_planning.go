@@ -35,24 +35,24 @@ func (entity *ServerPlanning) TableName() string {
 }
 
 type ServerCapPlanning struct {
-	Id                 int64  `gorm:"column:id" json:"id"`                                   // 容量规划id
-	PlanId             int64  `gorm:"column:plan_id" json:"planId"`                          // 方案id
-	Type               int    `gorm:"column:type" json:"type"`                               // 类型，1:按总量计算，2：按规格数量计算
-	CapacityBaselineId int64  `gorm:"column:capacity_baseline_id" json:"capacityBaselineId"` // 容量指标id
-	ResourcePoolId     int64  `gorm:"column:resource_pool_id" json:"resourcePoolId"`         // 资源池id
-	Number             int    `gorm:"column:number" json:"number"`                           // 数量
-	FeatureNumber      int    `gorm:"column:feature_number" json:"featureNumber"`            // 特性数量
-	VersionId          int64  `gorm:"column:version_id" json:"versionId"`                    // 版本id
-	ProductName        string `gorm:"column:product_name" json:"productName"`                // 产品名称
-	ProductCode        string `gorm:"column:product_code" json:"productCode"`                // 产品编码
-	SellSpecs          string `gorm:"column:sell_specs" json:"sellSpecs"`                    // 售卖规格
-	CapPlanningInput   string `gorm:"column:cap_planning_input" json:"capPlanningInput"`     // 容量规划输入
-	Unit               string `gorm:"column:unit" json:"unit"`                               // 单位
-	FeaturesMode       string `gorm:"column:features_mode" json:"featuresMode"`              // 特性模式
-	Features           string `gorm:"column:features" json:"features"`                       // 特性
-	ExpendResCode      string `gorm:"column:expend_res_code" json:"expendResCode"`           // 消耗资源编码
-	ValueAddedService  string `gorm:"column:value_added_service" json:"valueAddedService"`   // 增值服务
-	Special            string `gorm:"column:special" json:"special"`                         // 特殊数据：ECS规格数据
+	Id                 int64   `gorm:"column:id" json:"id"`                                   // 容量规划id
+	PlanId             int64   `gorm:"column:plan_id" json:"planId"`                          // 方案id
+	Type               int     `gorm:"column:type" json:"type"`                               // 类型，1:按总量计算，2：按规格数量计算
+	CapacityBaselineId int64   `gorm:"column:capacity_baseline_id" json:"capacityBaselineId"` // 容量指标id
+	ResourcePoolId     int64   `gorm:"column:resource_pool_id" json:"resourcePoolId"`         // 资源池id
+	Number             float64 `gorm:"column:number" json:"number"`                           // 数量
+	FeatureNumber      int     `gorm:"column:feature_number" json:"featureNumber"`            // 特性数量
+	VersionId          int64   `gorm:"column:version_id" json:"versionId"`                    // 版本id
+	ProductName        string  `gorm:"column:product_name" json:"productName"`                // 产品名称
+	ProductCode        string  `gorm:"column:product_code" json:"productCode"`                // 产品编码
+	SellSpecs          string  `gorm:"column:sell_specs" json:"sellSpecs"`                    // 售卖规格
+	CapPlanningInput   string  `gorm:"column:cap_planning_input" json:"capPlanningInput"`     // 容量规划输入
+	Unit               string  `gorm:"column:unit" json:"unit"`                               // 单位
+	FeaturesMode       string  `gorm:"column:features_mode" json:"featuresMode"`              // 特性模式
+	Features           string  `gorm:"column:features" json:"features"`                       // 特性
+	ExpendResCode      string  `gorm:"column:expend_res_code" json:"expendResCode"`           // 消耗资源编码
+	ValueAddedService  string  `gorm:"column:value_added_service" json:"valueAddedService"`   // 增值服务
+	Special            string  `gorm:"column:special" json:"special"`                         // 特殊数据：ECS规格数据
 }
 
 func (entity *ServerCapPlanning) TableName() string {

@@ -457,7 +457,7 @@ func buildServerFeatures(planId int64, versionId int64) ([]*SendBomsRequestFeatu
 		if _, flag := featureMap[featureNameCodeRel.FeatureCode]; flag {
 			featureMap[featureNameCodeRel.FeatureCode].Boms = append(featureMap[featureNameCodeRel.FeatureCode].Boms, &SendBomsRequestBom{
 				Code:  serverBaseLine.BomCode,
-				Count: plan.Number,
+				Count: float64(plan.Number),
 			})
 		} else {
 			featureMap[featureNameCodeRel.FeatureCode] = &SendBomsRequestFeature{
@@ -466,7 +466,7 @@ func buildServerFeatures(planId int64, versionId int64) ([]*SendBomsRequestFeatu
 				Boms: []*SendBomsRequestBom{
 					{
 						Code:  serverBaseLine.BomCode,
-						Count: plan.Number,
+						Count: float64(plan.Number),
 					},
 				},
 			}
@@ -497,7 +497,7 @@ func buildNetDeviceFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 		if _, flag := featureMap[plan.NetworkDeviceRole]; flag {
 			featureMap[plan.NetworkDeviceRole].Boms = append(featureMap[plan.NetworkDeviceRole].Boms, &SendBomsRequestBom{
 				Code:  plan.BomId,
-				Count: plan.Number,
+				Count: float64(plan.Number),
 			})
 		} else {
 			featureMap[plan.NetworkDeviceRole] = &SendBomsRequestFeature{
@@ -506,7 +506,7 @@ func buildNetDeviceFeatures(planId int64) ([]*SendBomsRequestFeature, error) {
 				Boms: []*SendBomsRequestBom{
 					{
 						Code:  plan.BomId,
-						Count: plan.Number,
+						Count: float64(plan.Number),
 					},
 				},
 			}
@@ -807,7 +807,7 @@ func DownloadPlanningConfigChecklist(planId int64) ([]excel.ExportSheet, string,
 			SellType:       softwareBomPlanning.SellType,
 			BomId:          softwareBomPlanning.BomId,
 			AuthorizedUnit: softwareBomPlanning.AuthorizedUnit,
-			Number:         strconv.Itoa(softwareBomPlanning.Number),
+			Number:         strconv.FormatFloat(softwareBomPlanning.Number, 'f', -1, 64),
 		})
 	}
 	response = append(response, excel.ExportSheet{SheetName: "BOM清单", Data: bomListDownload})

@@ -803,8 +803,8 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 
 	// 产品编码为key，容量输入列表为value
 	var resourcePoolEcsResourceProductMap = make(map[string][]*RequestServerCapacity)
-	var bgwCapPlanningInputNumber int
-	var bmsCapPlanningInputNumber int
+	var bgwCapPlanningInputNumber float64
+	var bmsCapPlanningInputNumber float64
 	var nodeRoleIdMap = make(map[int64]*entity.NodeRoleBaseline)
 	// 计算所有消耗资源的总量
 	for _, commonServerCapacity := range resourcePoolServerCapacity.CommonServerCapacityList {
@@ -833,11 +833,9 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 			if capConvertBaseline.ProductCode == constant.ProductCodeCNBH {
 				switch capConvertBaseline.CapPlanningInput {
 				case constant.CapPlanningInputOneHundred:
-					commonServerCapacity.Number = int(serverCapacityMap[capConvertBaseline.Id] * constant.CapPlanningInputOneHundredInt)
+					commonServerCapacity.Number = serverCapacityMap[capConvertBaseline.Id] * constant.CapPlanningInputOneHundredInt
 				case constant.CapPlanningInputFiveHundred:
-					commonServerCapacity.Number = int(serverCapacityMap[capConvertBaseline.Id] * constant.CapPlanningInputFiveHundredInt)
-				case constant.CapPlanningInputOneThousand:
-					commonServerCapacity.Number = int(serverCapacityMap[capConvertBaseline.Id] * constant.CapPlanningInputOneThousandInt)
+					commonServerCapacity.Number = serverCapacityMap[capConvertBaseline.Id] * constant.CapPlanningInputFiveHundredInt
 				}
 				for key, capActualResBaselines := range capActualResBaselineMap {
 					if strings.Contains(key, constant.ProductCodeCNBH) && strings.Contains(key, constant.CapPlanningInputOpsAssets) {
@@ -877,9 +875,9 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 					CapActualResBaseline: *capActualResBaseline,
 					FeatureNumber:        commonServerCapacity.FeatureNumber,
 				}
-				capActualResNumber = float64(commonServerCapacity.Number)
+				capActualResNumber = commonServerCapacity.Number
 			} else {
-				capActualResNumber = capActualRes(float64(commonServerCapacity.Number), float64(commonServerCapacity.FeatureNumber), capActualResBaseline)
+				capActualResNumber = capActualRes(commonServerCapacity.Number, float64(commonServerCapacity.FeatureNumber), capActualResBaseline)
 			}
 			resourcePoolExpendResCodeMap[capActualResBaseline.ExpendResCode] += capActualResNumber
 		}
@@ -902,6 +900,9 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 		// 计算各角色节点单个服务器消耗
 		capServerCalcNumber := capServerCalc(k, capServerCalcBaseline, serverBaselineMap[serverPlanning.ServerBaselineId])
 		// 总消耗除以单个服务器消耗，等于服务器数量
+		if strings.Contains(k, constant.ExpendResCodeEndOfDisk) {
+			capActualResNumber = capActualResNumber * 1024
+		}
 		serverNumber := math.Ceil(capActualResNumber / capServerCalcNumber)
 		if resourcePoolCapNumber < int(serverNumber) {
 			resourcePoolCapNumber = int(serverNumber)
@@ -941,9 +942,9 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 		if nodeRoleBaseline != nil {
 			serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 			if serverBaseline.NetworkInterface == constant.NetworkInterface10GE {
-				resourcePoolCapNumber += int(math.Ceil(float64(bgwCapPlanningInputNumber) / 0.8 / 20))
+				resourcePoolCapNumber += int(math.Ceil(bgwCapPlanningInputNumber / 0.8 / 20))
 			} else if serverBaseline.NetworkInterface == constant.NetworkInterface25GE {
-				resourcePoolCapNumber += int(math.Ceil(float64(bgwCapPlanningInputNumber) / 0.8 / 50))
+				resourcePoolCapNumber += int(math.Ceil(bgwCapPlanningInputNumber / 0.8 / 50))
 			} else {
 				log.Errorf("can not find network interface enum: %s", serverBaseline.NetworkInterface)
 			}
@@ -955,7 +956,7 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 		// TODO 由于资源池改动，导致BMS的资源池和BMSGW资源池不一致，后续再讨论怎么处理
 		// bmsGwNodeRoleBaseline := nodeRoleBaselineMap[constant.NodeRoleCodeBMSGW]
 		if bmsNodeRoleBaseline != nil {
-			resourcePoolCapNumber += bmsCapPlanningInputNumber
+			resourcePoolCapNumber += int(math.Ceil(bmsCapPlanningInputNumber))
 		}
 		// if bmsGwNodeRoleBaseline != nil {
 		// 	resourcePoolCapNumber += int(math.Ceil(float64(bmsCapPlanningInputNumber)/30)) * 2
@@ -1081,10 +1082,10 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 			var vCpu, cluster float64
 			for _, requestCapacity := range commonServerCapacity {
 				if capConvertBaselineMap[requestCapacity.Id].CapPlanningInput == constant.CapPlanningInputVCpu {
-					vCpu = float64(requestCapacity.Number)
+					vCpu = requestCapacity.Number
 				}
 				if capConvertBaselineMap[requestCapacity.Id].CapPlanningInput == constant.CapPlanningInputContainerCluster {
-					cluster = float64(requestCapacity.Number)
+					cluster = requestCapacity.Number
 				}
 			}
 			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
@@ -1096,7 +1097,7 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 			// 前面已经算好了CNBH每个资产类型的数量，这里不需要计算了
 			var assetsNumber float64
 			for _, requestCapacity := range commonServerCapacity {
-				assetsNumber += float64(requestCapacity.Number)
+				assetsNumber += requestCapacity.Number
 			}
 			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 				CpuNumber:    4,
@@ -1109,14 +1110,14 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 					ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 						CpuNumber:    4,
 						MemoryNumber: 8,
-						Count:        requestCapacity.Number,
+						Count:        int(math.Ceil(requestCapacity.Number)),
 					})
 				}
 				if capConvertBaselineMap[requestCapacity.Id].SellSpecs == constant.SellSpecsUltimateEdition {
 					ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
 						CpuNumber:    8,
 						MemoryNumber: 16,
-						Count:        requestCapacity.Number,
+						Count:        int(math.Ceil(requestCapacity.Number)),
 					})
 				}
 			}
@@ -1136,16 +1137,16 @@ func handleEcsData(ecsCapacity *EcsCapacity, serverBaseline *entity.ServerBaseli
 			var vCpu, memory, cluster, count int
 			for _, requestCapacity := range commonServerCapacity {
 				if capConvertBaselineMap[requestCapacity.Id].CapPlanningInput == constant.CapPlanningInputComputeVCpu {
-					vCpu = requestCapacity.Number
+					vCpu = int(math.Ceil(requestCapacity.Number))
 				}
 				if capConvertBaselineMap[requestCapacity.Id].CapPlanningInput == constant.CapPlanningInputComputeMemory {
-					memory = requestCapacity.Number
+					memory = int(math.Ceil(requestCapacity.Number))
 				}
 				if capConvertBaselineMap[requestCapacity.Id].CapPlanningInput == constant.CapPlanningInputCluster {
-					cluster = requestCapacity.Number
+					cluster = int(math.Ceil(requestCapacity.Number))
 				}
 				if capConvertBaselineMap[requestCapacity.Id].CapPlanningInput == constant.CapPlanningInputComputeCount {
-					count = requestCapacity.Number
+					count = int(math.Ceil(requestCapacity.Number))
 				}
 			}
 			ecsCapacityList = append(ecsCapacityList, &EcsSpecs{
@@ -1281,7 +1282,7 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 					backupDataCapacity = serverCapacityMap[capConvertBaseline.Id]
 				}
 			}
-			expendResCodeMap[constant.ExpendResCodeCBRDisk] += backupDataCapacity * 1024
+			expendResCodeMap[constant.ExpendResCodeCBRDisk] += backupDataCapacity
 			break
 		case constant.ProductCodeHPC:
 			var vCpu, memory, count, cluster float64
@@ -1336,7 +1337,7 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 		case constant.ProductCodeCLS:
 			for _, capConvertBaseline := range capConvertBaselineList {
 				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputLogStorage {
-					expendResCodeMap[constant.ExpendResCodePAASDataDisk] += serverCapacityMap[capConvertBaseline.Id] * 1024
+					expendResCodeMap[constant.ExpendResCodePAASDataDisk] += serverCapacityMap[capConvertBaseline.Id]
 					break
 				}
 			}
@@ -1434,7 +1435,7 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 			}
 			expendResCodeMap[constant.ExpendResCodeDBVCpu] += small*5 + middle*8 + large*14
 			expendResCodeMap[constant.ExpendResCodeDBMemory] += small*16 + middle*30 + large*40
-			expendResCodeMap[constant.ExpendResCodeDBDisk] += (small*3 + middle*3 + large*3) * 1024
+			expendResCodeMap[constant.ExpendResCodeDBDisk] += small*3 + middle*3 + large*3
 			break
 		case constant.ProductCodeRDSDM:
 			var vCpu, memory, disk, copyNumber float64

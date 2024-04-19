@@ -37,11 +37,11 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 	}
 	bomMap := ComputingSoftwareBom(softwareData)
 	var softwareBomPlanningList []*entity.SoftwareBomPlanning
-	var cpuNumber int
+	var cpuNumber float64
 	for _, serverPlannings := range softwareData.ServerPlanningsMap {
 		for _, serverPlanning := range serverPlannings {
 			serverBaseline := softwareData.ServerBaselineMap[serverPlanning.ServerBaselineId]
-			cpuNumber += serverPlanning.Number * serverBaseline.CpuNum
+			cpuNumber += float64(serverPlanning.Number * serverBaseline.CpuNum)
 		}
 	}
 	for k, v := range bomMap {
@@ -53,7 +53,7 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 		if k == SecurityMaintenanceBom {
 			// 默认输出安全产品统一维保，BOM iD：0100115099084508，单位：年
 			if softwareData.ServiceYear > 1 {
-				softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: SecurityMaintenanceBom, CloudService: SecurityMaintenanceName, ServiceCode: SecurityMaintenanceCode, Number: softwareData.ServiceYear - 1})
+				softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: SecurityMaintenanceBom, CloudService: SecurityMaintenanceName, ServiceCode: SecurityMaintenanceCode, Number: float64(softwareData.ServiceYear - 1)})
 			}
 			continue
 		}
@@ -70,7 +70,7 @@ func SaveSoftwareBomPlanning(db *gorm.DB, planId int64) error {
 		if k == BigDataMaintenanceBom {
 			// 默认输出中电云大数据平台(维保服务)，BOM iD：0100115230260255，单位：年
 			if softwareData.ServiceYear > 1 {
-				softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: BigDataMaintenanceBom, CloudService: BigDataMaintenanceName, ServiceCode: BigDataMaintenanceCode, Number: softwareData.ServiceYear - 1})
+				softwareBomPlanningList = append(softwareBomPlanningList, &entity.SoftwareBomPlanning{PlanId: planId, BomId: BigDataMaintenanceBom, CloudService: BigDataMaintenanceName, ServiceCode: BigDataMaintenanceCode, Number: float64(softwareData.ServiceYear - 1)})
 			}
 			continue
 		}
@@ -261,9 +261,9 @@ func getSoftwareBomPlanningData(db *gorm.DB, planId int64) (*SoftwareData, error
 	}, nil
 }
 
-func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
+func ComputingSoftwareBom(softwareData *SoftwareData) map[string]float64 {
 	// bomId为key，数量为value
-	var bomMap = make(map[string]int)
+	var bomMap = make(map[string]float64)
 	serverPlanningsMap := softwareData.ServerPlanningsMap
 	serverBaselineMap := softwareData.ServerBaselineMap
 	serverCapPlanningMap := softwareData.ServerCapPlanningMap
@@ -281,10 +281,10 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
-			archNumberMap := make(map[string]int)
+			archNumberMap := make(map[string]float64)
 			for _, serverPlanning := range serverPlannings {
 				serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
-				archNumberMap[serverBaseline.Arch] += serverPlanning.Number * serverBaseline.CpuNum
+				archNumberMap[serverBaseline.Arch] += float64(serverPlanning.Number * serverBaseline.CpuNum)
 			}
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
 				archNumber, ok := archNumberMap[softwareBomLicenseBaseline.HardwareArch]
@@ -298,10 +298,10 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
 				serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
-				number += serverPlanning.Number * serverBaseline.CpuNum
+				number += float64(serverPlanning.Number * serverBaseline.CpuNum)
 			}
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
 				bomMap[softwareBomLicenseBaseline.BomId] = number
@@ -312,13 +312,14 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
-			archNumberMap := make(map[string]int)
+			archNumberMap := make(map[string]float64)
 			for _, serverPlanning := range serverPlannings {
 				serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputVCpu)]
-				var number int
+				var number float64
 				if serverCapPlanning != nil {
-					number = int(math.Ceil(float64(serverCapPlanning.Number) / 100))
+					// TODO 这里要不要取整还是直接用小数
+					number = math.Ceil(serverCapPlanning.Number / 100)
 				}
 				archNumberMap[serverBaseline.Arch] += number
 			}
@@ -336,7 +337,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
 				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputBackupDataCapacity)]
 				if serverCapPlanning != nil {
@@ -362,7 +363,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
 				// serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
 				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputStorageCapacity)]
@@ -373,7 +374,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 					// if serverCapPlanning.Features == constant.FeaturesNameEC {
 					// 	number += int(math.Ceil(float64(serverPlanning.Number*serverBaseline.StorageDiskNum*serverBaseline.StorageDiskCapacity) / 1024 * 0.9 * 0.91 * 2 / 3))
 					// }
-					number += int(math.Ceil(float64(serverCapPlanning.Number) / 1024))
+					// TODO 这里要不要取整还是直接用小数
+					number += math.Ceil(serverCapPlanning.Number / 1024)
 				}
 			}
 			if number == 0 {
@@ -387,18 +389,18 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			networkServerPlannings := serverPlanningsMap[constant.NodeRoleCodeNETWORK]
 			nfvServerPlannings := serverPlanningsMap[constant.NodeRoleCodeNFV]
 			bmsGWServerPlannings := serverPlanningsMap[constant.NodeRoleCodeBMSGW]
-			archCpuNumberMap := make(map[string]int)
+			archCpuNumberMap := make(map[string]float64)
 			for _, serverPlanning := range networkServerPlannings {
 				serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
-				archCpuNumberMap[serverBaseline.Arch] += serverPlanning.Number * serverBaseline.CpuNum
+				archCpuNumberMap[serverBaseline.Arch] += float64(serverPlanning.Number * serverBaseline.CpuNum)
 			}
 			for _, serverPlanning := range nfvServerPlannings {
 				serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
-				archCpuNumberMap[serverBaseline.Arch] += serverPlanning.Number * serverBaseline.CpuNum
+				archCpuNumberMap[serverBaseline.Arch] += float64(serverPlanning.Number * serverBaseline.CpuNum)
 			}
 			for _, serverPlanning := range bmsGWServerPlannings {
 				serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
-				archCpuNumberMap[serverBaseline.Arch] += serverPlanning.Number * serverBaseline.CpuNum
+				archCpuNumberMap[serverBaseline.Arch] += float64(serverPlanning.Number * serverBaseline.CpuNum)
 			}
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
 				cpuNumber := archCpuNumberMap[softwareBomLicenseBaseline.HardwareArch]
@@ -420,7 +422,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 			bomMap[SecurityMaintenanceBom] = 1
 			bomMap[CloudNativeSecBasicPkgBom] = 1
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
 				serverCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputFirewall)]
 				if serverCapPlanning != nil {
@@ -436,9 +438,9 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 			}
 		case constant.ProductCodeCSOC:
-			var assetAccessNumber int
-			var logStorageNumber int
-			var vulnerabilityScanningNumber int
+			var assetAccessNumber float64
+			var logStorageNumber float64
+			var vulnerabilityScanningNumber float64
 			serverPlannings := serverPlanningsMap[constant.NodeRoleCodeNFV]
 			if len(serverPlannings) == 0 {
 				continue
@@ -482,7 +484,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 		case constant.ProductCodeDSP:
 			// 根据数量匹配1-5，6-30以及30以上，三个阶梯的bom，再根据数据库个数，输出bom的数量，例如有26个数据库实例，则需要输出26个6-30bom
-			var number int
+			var number float64
 			serverPlannings := serverPlanningsMap[constant.NodeRoleCodeNFV]
 			if len(serverPlannings) == 0 {
 				continue
@@ -519,8 +521,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			bomMap[SecurityMaintenanceBom] = 1
 			bomMap[CloudNativeSecBasicPkgBom] = 1
 			// 根据包数量直接转换为bom数量
-			var oneHundredNumber int
-			var fiveHundredNumber int
+			var oneHundredNumber float64
+			var fiveHundredNumber float64
 			serverPlannings := serverPlanningsMap[constant.NodeRoleCodeCompute]
 			for _, serverPlanning := range serverPlannings {
 				oneHundredServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputOneHundred)]
@@ -533,7 +535,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 			}
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
-				var number int
+				var number float64
 				if softwareBomLicenseBaseline.SellSpecs == constant.CapPlanningInputOneHundred {
 					number = oneHundredNumber
 				}
@@ -545,9 +547,9 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 			}
 		case constant.ProductCodeCWP:
-			var protectiveEcsTerminalNumber int
-			var protectiveContainerServiceNumber int
-			var protectedWebsiteDirectoryNumber int
+			var protectiveEcsTerminalNumber float64
+			var protectiveContainerServiceNumber float64
+			var protectedWebsiteDirectoryNumber float64
 			serverPlannings := serverPlanningsMap[constant.NodeRoleCodeNFV]
 			if len(serverPlannings) == 0 {
 				continue
@@ -596,7 +598,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			bomMap[SecurityMaintenanceBom] = 1
 			bomMap[CloudNativeSecBasicPkgBom] = 1
 			// 没有输入，输出1
-			number := 1
+			number := float64(1)
 			for _, softwareBomLicenseBaseline := range softwareBomLicenseBaselineList {
 				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
 					bomMap[softwareBomLicenseBaseline.BomId] = number
@@ -608,10 +610,10 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				continue
 			}
 			bomMap[DatabaseManagementBom] = 1
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
-				var vCpuNumber int
-				var copyNumber int
+				var vCpuNumber float64
+				var copyNumber float64
 				vCpuServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputVCpuTotal)]
 				copyServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputCopy)]
 				if vCpuServerCapPlanning != nil {
@@ -643,7 +645,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				continue
 			}
 			bomMap[DatabaseManagementBom] = 1
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
 				smallServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputSmall)]
 				middleServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputMiddle)]
@@ -669,7 +671,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
 				brokerNumber, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber := handlePAASCapPlanningInput(serverPlanning.ResourcePoolId, serverCapPlanningMap, productCode)
 				number += (standardEditionNumber*2 + professionalEditionNumber*4 + enterpriseEditionNumber*8 + platinumEditionNumber*16) * brokerNumber
@@ -680,7 +682,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 				if softwareBom.CalcMethod == constant.KAFKASoftwareBomCalcMethodExpansionPackage {
 					if number-200 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
+						// TODO 这里要不要取整还是直接用小数
+						bomMap[softwareBom.BomId] = math.Ceil(float64(number-200) / 100)
 					}
 				}
 			}
@@ -696,7 +699,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 				if softwareBom.CalcMethod == constant.CSPSoftwareBomCalcMethodExpansionPackage {
 					if number-500 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-500) / 100))
+						// TODO 这里要不要取整还是直接用小数
+						bomMap[softwareBom.BomId] = math.Ceil(float64(number-500) / 100)
 					}
 				}
 			}
@@ -705,7 +709,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
 				_, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber := handlePAASCapPlanningInput(serverPlanning.ResourcePoolId, serverCapPlanningMap, productCode)
 				number += standardEditionNumber*12 + professionalEditionNumber*24 + enterpriseEditionNumber*36 + platinumEditionNumber*48
@@ -716,7 +720,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 				if softwareBom.CalcMethod == constant.ROCKETMQSoftwareBomCalcMethodExpansionPackage {
 					if number-200 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
+						// TODO 这里要不要取整还是直接用小数
+						bomMap[softwareBom.BomId] = math.Ceil(float64(number-200) / 100)
 					}
 				}
 			}
@@ -725,7 +730,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
 				_, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, _ := handlePAASCapPlanningInput(serverPlanning.ResourcePoolId, serverCapPlanningMap, productCode)
 				number += standardEditionNumber*3 + professionalEditionNumber*6 + enterpriseEditionNumber*12
@@ -736,7 +741,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 				if softwareBom.CalcMethod == constant.APIMSoftwareBomCalcMethodExpansionPackage {
 					if number-200 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 100))
+						// TODO 这里要不要取整还是直接用小数
+						bomMap[softwareBom.BomId] = math.Ceil(float64(number-200) / 100)
 					}
 				}
 			}
@@ -745,7 +751,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
 				_, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, _ := handlePAASCapPlanningInput(serverPlanning.ResourcePoolId, serverCapPlanningMap, productCode)
 				number += standardEditionNumber*40 + professionalEditionNumber*80 + enterpriseEditionNumber*120
@@ -756,7 +762,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 				if softwareBom.CalcMethod == constant.CONNECTSoftwareBomCalcMethodExpansionPackage {
 					if number-200 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(number-200) / 50))
+						// TODO 这里要不要取整还是直接用小数
+						bomMap[softwareBom.BomId] = math.Ceil(float64(number-200) / 50)
 					}
 				}
 			}
@@ -765,7 +772,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
 				_, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, _ := handlePAASCapPlanningInput(serverPlanning.ResourcePoolId, serverCapPlanningMap, productCode)
 				number += standardEditionNumber*16 + professionalEditionNumber*64 + enterpriseEditionNumber*96
@@ -776,7 +783,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 				if softwareBomLicenseBaseline.CalcMethod == constant.CLCPSoftwareBomCalcMethodExpansionPackage {
 					if number-48 > 0 {
-						bomMap[softwareBomLicenseBaseline.BomId] = int(math.Ceil(float64(number-48) / 16))
+						// TODO 这里要不要取整还是直接用小数
+						bomMap[softwareBomLicenseBaseline.BomId] = math.Ceil(float64(number-48) / 16)
 					}
 				}
 				if softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
@@ -789,7 +797,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 			}
 		case constant.ProductCodeCOS:
-			var monitoringNodeNumber int
+			var monitoringNodeNumber float64
 			monitoringNode := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputMonitoringNode)]
 			if monitoringNode != nil {
 				monitoringNodeNumber = monitoringNode.Number
@@ -800,7 +808,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 				if softwareBom.CalcMethod == constant.COSSoftwareBomCalcMethodExpansionPackage {
 					if monitoringNodeNumber-1000 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(monitoringNodeNumber-1000) / 200))
+						// TODO 这里要不要取整还是直接用小数
+						bomMap[softwareBom.BomId] = math.Ceil(float64(monitoringNodeNumber-1000) / 200)
 					}
 				}
 			}
@@ -809,7 +818,7 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			if len(serverPlannings) == 0 {
 				continue
 			}
-			var logStorageNumber int
+			var logStorageNumber float64
 			for _, serverPlanning := range serverPlannings {
 				logStorage := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputLogStorage)]
 				if logStorage != nil {
@@ -822,7 +831,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 				if softwareBom.CalcMethod == constant.CLSSoftwareBomCalcMethodExpansionPackage {
 					if logStorageNumber-10 > 0 {
-						bomMap[softwareBom.BomId] = int(math.Ceil(float64(logStorageNumber-10) / 5))
+						// TODO 这里要不要取整还是直接用小数
+						bomMap[softwareBom.BomId] = math.Ceil(float64(logStorageNumber-10) / 5)
 					}
 				}
 			}
@@ -833,10 +843,10 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 			bomMap[BigDataManagementBom] = 1
 			bomMap[BigDataMaintenanceBom] = 1
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
-				var vCpuNumber int
-				var copyNumber int
+				var vCpuNumber float64
+				var copyNumber float64
 				vCpuServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputVCpuTotal)]
 				copyServerCapPlanning := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, serverPlanning.ResourcePoolId, constant.CapPlanningInputCopy)]
 				if vCpuServerCapPlanning != nil {
@@ -869,17 +879,17 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 			}
 			bomMap[BigDataManagementBom] = 1
 			bomMap[BigDataMaintenanceBom] = 1
-			var number int
+			var number float64
 			for _, serverPlanning := range serverPlannings {
 				serverBaseline := serverBaselineMap[serverPlanning.ServerBaselineId]
-				number += serverPlanning.Number * serverBaseline.Cpu
+				number += float64(serverPlanning.Number * serverBaseline.Cpu)
 			}
 			if number == 0 || number < 300 {
 				number = 300
 			}
 			bomMap[BigDataPlatformScaleBom] = number
 		case constant.ProductCodeCDP:
-			var userNumber int
+			var userNumber float64
 			user := serverCapPlanningMap[fmt.Sprintf("%v-%v", productCode, constant.CapPlanningInputUser)]
 			if user != nil {
 				userNumber = user.Number
@@ -890,7 +900,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 				}
 				if softwareBomLicenseBaseline.CalcMethod == constant.CDPSoftwareBomCalcMethodExpansionPackage {
 					if userNumber-100 > 0 {
-						bomMap[softwareBomLicenseBaseline.BomId] = int(math.Ceil(float64(userNumber-100) / 50))
+						// TODO 这里要不要取整还是直接用小数
+						bomMap[softwareBomLicenseBaseline.BomId] = math.Ceil(float64(userNumber-100) / 50)
 					}
 				}
 				if softwareBomLicenseBaseline.ValueAddedService == constant.SoftwareBomValueAddedServiceBenchmarkPkg && softwareBomLicenseBaseline.SellType == constant.SoftwareBomLicense {
@@ -902,8 +913,8 @@ func ComputingSoftwareBom(softwareData *SoftwareData) map[string]int {
 	return bomMap
 }
 
-func handlePAASCapPlanningInput(resourcePoolId int64, serverCapPlanningMap map[string]*entity.ServerCapPlanning, productCode string) (int, int, int, int, int) {
-	var brokerNumber, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber int
+func handlePAASCapPlanningInput(resourcePoolId int64, serverCapPlanningMap map[string]*entity.ServerCapPlanning, productCode string) (float64, float64, float64, float64, float64) {
+	var brokerNumber, standardEditionNumber, professionalEditionNumber, enterpriseEditionNumber, platinumEditionNumber float64
 	broker := serverCapPlanningMap[fmt.Sprintf("%v-%v-%v", productCode, resourcePoolId, constant.CapPlanningInputBroker)]
 	if broker != nil {
 		brokerNumber = broker.Number

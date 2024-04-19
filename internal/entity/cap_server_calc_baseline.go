@@ -11,7 +11,7 @@ type CapServerCalcBaseline struct {
 	OccNodeRes          string `gorm:"column:occ_node_res" json:"occNodeRes"`                    // 占用节点资源
 	OccNodeResCode      string `gorm:"column:occ_node_res_code" json:"occNodeResCode"`           // 占用节点资源编码
 	NodeWastage         string `gorm:"column:node_wastage" json:"nodeWastage"`                   // 节点损耗
-	NodeWastageCalcType int    `gorm:"column:node_wastage_calc_type" json:"nodeWastageCalcType"` // 节点损耗计算类型，1：数量，2：百分比
+	NodeWastageCalcType int    `gorm:"column:node_wastage_calc_type" json:"nodeWastageCalcType"` // 节点损耗计算类型，1：数量，2：百分比，3：数据盘数量
 	WaterLevel          string `gorm:"column:water_level" json:"waterLevel"`                     // 水位
 }
 

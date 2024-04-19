@@ -39,8 +39,8 @@ type SendBomsRequestFeature struct {
 }
 
 type SendBomsRequestBom struct {
-	Code  string `json:"code"`
-	Count int    `json:"count"`
+	Code  string  `json:"code"`
+	Count float64 `json:"count"`
 }
 
 type SendBomsResponse struct {
