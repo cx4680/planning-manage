@@ -837,7 +837,11 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 					CapActualResBaseline: *capActualResBaseline,
 					FeatureNumber:        commonServerCapacity.FeatureNumber,
 				}
-				capActualResNumber = commonServerCapacity.Number
+				if capConvertBaseline.ProductCode == constant.ProductCodeEBS || capConvertBaseline.ProductCode == constant.ProductCodeEFS || capConvertBaseline.ProductCode == constant.ProductCodeOSS {
+					capActualResNumber = commonServerCapacity.Number * 1024
+				} else {
+					capActualResNumber = commonServerCapacity.Number
+				}
 			} else {
 				capActualResNumber = capActualRes(commonServerCapacity.Number, float64(commonServerCapacity.FeatureNumber), capActualResBaseline)
 			}
@@ -862,9 +866,6 @@ func computing(db *gorm.DB, resourcePoolServerCapacity *ResourcePoolServerCapaci
 		// 计算各角色节点单个服务器消耗
 		capServerCalcNumber := capServerCalc(k, capServerCalcBaseline, serverBaselineMap[serverPlanning.ServerBaselineId])
 		// 总消耗除以单个服务器消耗，等于服务器数量
-		if strings.Contains(k, constant.ExpendResCodeEndOfDisk) {
-			capActualResNumber = capActualResNumber * 1024
-		}
 		serverNumber := math.Ceil(capActualResNumber / capServerCalcNumber)
 		if resourcePoolCapNumber < int(serverNumber) {
 			resourcePoolCapNumber = int(serverNumber)
@@ -1244,7 +1245,7 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 					backupDataCapacity = serverCapacityMap[capConvertBaseline.Id]
 				}
 			}
-			expendResCodeMap[constant.ExpendResCodeCBRDisk] += backupDataCapacity
+			expendResCodeMap[constant.ExpendResCodeCBRDisk] += backupDataCapacity * 1024
 			break
 		case constant.ProductCodeHPC:
 			var vCpu, memory, count, cluster float64
@@ -1299,7 +1300,7 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 		case constant.ProductCodeCLS:
 			for _, capConvertBaseline := range capConvertBaselineList {
 				if capConvertBaseline.CapPlanningInput == constant.CapPlanningInputLogStorage {
-					expendResCodeMap[constant.ExpendResCodePAASDataDisk] += serverCapacityMap[capConvertBaseline.Id]
+					expendResCodeMap[constant.ExpendResCodePAASDataDisk] += serverCapacityMap[capConvertBaseline.Id] * 1024
 					break
 				}
 			}
@@ -1342,7 +1343,7 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 			}
 			expendResCodeMap[constant.ExpendResCodeDBVCpu] += vCpu * copyNumber
 			expendResCodeMap[constant.ExpendResCodeDBMemory] += memory * copyNumber
-			expendResCodeMap[constant.ExpendResCodeDBDisk] += disk * copyNumber
+			expendResCodeMap[constant.ExpendResCodeDBDisk] += disk * copyNumber * 1024
 			break
 		case constant.ProductCodeREDIS:
 			var vCpu, memory, copyNumber float64
@@ -1380,7 +1381,7 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 			}
 			expendResCodeMap[constant.ExpendResCodeBDVCpu] += vCpu * copyNumber
 			expendResCodeMap[constant.ExpendResCodeBDMemory] += memory * copyNumber
-			expendResCodeMap[constant.ExpendResCodeBDDisk] += disk * copyNumber
+			expendResCodeMap[constant.ExpendResCodeBDDisk] += disk * copyNumber * 1024
 			break
 		case constant.ProductCodeDTS:
 			var small, middle, large float64
@@ -1397,7 +1398,7 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 			}
 			expendResCodeMap[constant.ExpendResCodeDBVCpu] += small*5 + middle*8 + large*14
 			expendResCodeMap[constant.ExpendResCodeDBMemory] += small*16 + middle*30 + large*40
-			expendResCodeMap[constant.ExpendResCodeDBDisk] += small*3 + middle*3 + large*3
+			expendResCodeMap[constant.ExpendResCodeDBDisk] += (small*3 + middle*3 + large*3) * 1024
 			break
 		case constant.ProductCodeRDSDM:
 			var vCpu, memory, disk, copyNumber float64
@@ -1417,7 +1418,7 @@ func SpecialCapacityComputing(serverCapacityMap map[int64]float64, productCapMap
 			}
 			expendResCodeMap[constant.ExpendResCodeECSLDVCpu] += vCpu * copyNumber
 			expendResCodeMap[constant.ExpendResCodeECSLDMemory] += memory * copyNumber
-			expendResCodeMap[constant.ExpendResCodeECSLDDisk] += disk * copyNumber
+			expendResCodeMap[constant.ExpendResCodeECSLDDisk] += disk * copyNumber * 1024
 			break
 		default:
 			break
