@@ -23,6 +23,7 @@ type ServerPlanning struct {
 	ShelveMode          string    `gorm:"column:shelve_mode" json:"shelveMode"`                     // 上架模式
 	ShelvePriority      int       `gorm:"column:shelve_priority" json:"shelvePriority"`             // 上架优先级
 	MixedResourcePoolId int64     `gorm:"column:mixed_resource_pool_id" json:"mixedResourcePoolId"` // 混合部署资源池id
+	WaterLevel          int       `gorm:"column:water_level" json:"waterLevel"`                     // 水位，百分数
 	CreateUserId        string    `gorm:"column:create_user_id" json:"createUserId"`                // 创建人id
 	CreateTime          time.Time `gorm:"column:create_time" json:"createTime"`                     // 创建时间
 	UpdateUserId        string    `gorm:"column:update_user_id" json:"updateUserId"`                // 更新人id

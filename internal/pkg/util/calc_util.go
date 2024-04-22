@@ -4,6 +4,9 @@ import (
 	"sort"
 
 	"github.com/opentrx/seata-golang/v2/pkg/util/log"
+
+	"code.cestc.cn/ccos/common/planning-manage/internal/api/constant"
+	"code.cestc.cn/ccos/common/planning-manage/internal/entity"
 )
 
 func Pack(items []Item, boxSize Rectangle) []Box {
@@ -101,4 +104,52 @@ func CalcNfvServerNumber(serverNumber int, masterNumber int) int {
 		nfvServerNumber = 16
 	}
 	return nfvServerNumber
+}
+
+func CalcMasterServerNumber(pureIaaS bool, serverNumber int, azManageList []*entity.AzManage, cellManage *entity.CellManage) int {
+	var masterNumber int
+	if pureIaaS {
+		if len(azManageList) > 1 {
+			if cellManage.Type == constant.CellTypeControl {
+				if serverNumber <= 495 {
+					masterNumber = 5
+				} else if serverNumber <= 1991 {
+					masterNumber = 9
+				} else {
+					masterNumber = 15
+				}
+			} else {
+				if serverNumber <= 197 {
+					masterNumber = 3
+				} else if serverNumber <= 495 {
+					masterNumber = 5
+				} else if serverNumber <= 1991 {
+					masterNumber = 9
+				} else {
+					masterNumber = 15
+				}
+			}
+		} else {
+			if serverNumber <= 197 {
+				masterNumber = 3
+			} else if serverNumber <= 495 {
+				masterNumber = 5
+			} else if serverNumber <= 1991 {
+				masterNumber = 9
+			} else {
+				masterNumber = 15
+			}
+		}
+	} else {
+		if serverNumber <= 195 {
+			masterNumber = 5
+		} else if serverNumber <= 493 {
+			masterNumber = 7
+		} else if serverNumber <= 1991 {
+			masterNumber = 9
+		} else {
+			masterNumber = 15
+		}
+	}
+	return masterNumber
 }

@@ -290,47 +290,9 @@ func ListServer(request *Request) ([]*Server, error) {
 			if err = data.DB.Where("id = ?", projectManage.CellId).Find(&cellManage).Error; err != nil {
 				return nil, err
 			}
-			if len(azManageList) > 1 {
-				if cellManage.Type == constant.CellTypeControl {
-					if serverNumber <= 495 {
-						masterNumber = 5
-					} else if serverNumber <= 1991 {
-						masterNumber = 9
-					} else {
-						masterNumber = 15
-					}
-				} else {
-					if serverNumber <= 197 {
-						masterNumber = 3
-					} else if serverNumber <= 495 {
-						masterNumber = 5
-					} else if serverNumber <= 1991 {
-						masterNumber = 9
-					} else {
-						masterNumber = 15
-					}
-				}
-			} else {
-				if serverNumber <= 197 {
-					masterNumber = 3
-				} else if serverNumber <= 495 {
-					masterNumber = 5
-				} else if serverNumber <= 1991 {
-					masterNumber = 9
-				} else {
-					masterNumber = 15
-				}
-			}
+			masterNumber = util.CalcMasterServerNumber(pureIaaS, serverNumber, azManageList, cellManage)
 		} else {
-			if serverNumber <= 195 {
-				masterNumber = 5
-			} else if serverNumber <= 493 {
-				masterNumber = 7
-			} else if serverNumber <= 1991 {
-				masterNumber = 9
-			} else {
-				masterNumber = 15
-			}
+			masterNumber = util.CalcMasterServerNumber(pureIaaS, serverNumber, nil, nil)
 		}
 		// 是否和原始服务器数量比较，如果比较且之前的数据大于现有的数据，则不修改
 		if list[masterServerPlanningIndex].Number < masterNumber {
