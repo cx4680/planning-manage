@@ -50,7 +50,8 @@ func InitDatabase(setting *settings.Setting) {
 
 	if connString == "" || err != nil {
 		log.Error(err, "Open database error")
-		panic(err)
+		//panic(err)
+		return
 	}
 
 	sqlDB, err := db.DB()

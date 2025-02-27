@@ -16,7 +16,8 @@ func (e *engine) serverRun(engine *gin.Engine) {
 	httpServer := initServer(e.setting.Port, engine)
 	if e.setting.Https == true {
 		log.Info("start https server_planning listening", "addr", httpServer.Addr)
-		err = httpServer.ListenAndServeTLS("./ssl/tls.crt", "./ssl/tls.key")
+		//err = httpServer.ListenAndServeTLS("./ssl/tls.crt", "./ssl/tls.key")
+		err = httpServer.ListenAndServe()
 	} else {
 		log.Info("start http server_planning listening", "addr", httpServer.Addr)
 		err = httpServer.ListenAndServe()
